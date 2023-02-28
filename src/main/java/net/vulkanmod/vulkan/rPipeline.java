@@ -27,12 +27,13 @@ public class rPipeline
         createDevAddress();
         //May not need verTformat as will be Trateing TranslucentLayer9s)/BlockRenderLayerz for now
 //        System.out.println(!Vulkan.deviceAddress ? "FAIL!: No Support for VK_KHR_buffer_device_address Available!" : "OK!: VK_KHR_buffer_device_address Fully Supported!");
+        VKCapabilitiesDevice capabilities = Vulkan.getDevice().getCapabilities();
         System.out.println(!Vulkan.isRTCapable? "FAIL!: Not isRTCapable!" : "OK!: is isRTCapable!");
-        System.out.println(!Vulkan.getDevice().getCapabilities().VK_KHR_buffer_device_address ? "FAIL!: No Support for VK_KHR_buffer_device_address Available!" : "OK!: VK_KHR_buffer_device_address Fully Supported!");
-        System.out.println(!Vulkan.getDevice().getCapabilities().VK_KHR_ray_tracing_pipeline ? "FAIL!: No Support for VK_KHR_ray_tracing_pipeline Available!" : "OK!: VK_KHR_ray_tracing_pipeline Fully Supported!");
-        System.out.println(!Vulkan.getDevice().getCapabilities().VK_KHR_ray_query ? "FAIL!: No Support for VK_KHR_ray_query Available!" : "OK!: VK_KHR_ray_query Fully Supported!");
-        System.out.println(!Vulkan.getDevice().getCapabilities().VK_KHR_acceleration_structure ? "FAIL!: No Support for VK_KHR_acceleration_structure Available!" : "OK!: VK_KHR_acceleration_structure Fully Supported!");
-        System.out.println(!Vulkan.getDevice().getCapabilities().VK_KHR_deferred_host_operations ? "FAIL!: No Support for VK_KHR_deferred_host_operations Available!" : "OK!: VK_KHR_deferred_host_operations Fully Supported!");
+        System.out.println(!capabilities.VK_KHR_buffer_device_address ? "FAIL!: No Support for VK_KHR_buffer_device_address Available!" : "OK!: VK_KHR_buffer_device_address Fully Supported!");
+        System.out.println(!capabilities.VK_KHR_ray_tracing_pipeline ? "FAIL!: No Support for VK_KHR_ray_tracing_pipeline Available!" : "OK!: VK_KHR_ray_tracing_pipeline Fully Supported!");
+        System.out.println(!capabilities.VK_KHR_ray_query ? "FAIL!: No Support for VK_KHR_ray_query Available!" : "OK!: VK_KHR_ray_query Fully Supported!");
+        System.out.println(!capabilities.VK_KHR_acceleration_structure ? "FAIL!: No Support for VK_KHR_acceleration_structure Available!" : "OK!: VK_KHR_acceleration_structure Fully Supported!");
+        System.out.println(!capabilities.VK_KHR_deferred_host_operations ? "FAIL!: No Support for VK_KHR_deferred_host_operations Available!" : "OK!: VK_KHR_deferred_host_operations Fully Supported!");
 
 //        createRPipeline(1);
     }
