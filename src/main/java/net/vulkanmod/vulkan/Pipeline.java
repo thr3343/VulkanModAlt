@@ -540,7 +540,7 @@ public class Pipeline {
         };
     }
 
-    private static long createShaderModule(ByteBuffer spirvCode) {
+    static long createShaderModule(ByteBuffer spirvCode) {
 
         try(MemoryStack stack = stackPush()) {
 

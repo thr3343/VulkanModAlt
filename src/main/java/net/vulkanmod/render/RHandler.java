@@ -8,6 +8,7 @@ import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
+import net.vulkanmod.vulkan.rPipeline;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -26,6 +27,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class RHandler
 {
+    public static final rPipeline R_PIPELINE=new rPipeline();
     public static final ObjectArrayList<VBO> translucentVBOs = new ObjectArrayList<>(1024);
     public static ObjectArrayList<VBO> uniqueVBOs =new ObjectArrayList<>(1024);
     public static double camX;

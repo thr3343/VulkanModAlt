@@ -83,7 +83,12 @@ public class ShaderSPIRVUtils {
 
         VERTEX_SHADER(shaderc_glsl_vertex_shader),
         GEOMETRY_SHADER(shaderc_glsl_geometry_shader),
-        FRAGMENT_SHADER(shaderc_glsl_fragment_shader);
+        FRAGMENT_SHADER(shaderc_glsl_fragment_shader),
+        RAYGEN_SHADER(shaderc_glsl_raygen_shader),
+        ANYHIT_SHADER(shaderc_glsl_anyhit_shader),
+        CLOSESTHIT_SHADER(shaderc_glsl_closesthit_shader),
+        MISS_SHADER(shaderc_glsl_miss_shader),
+        INTERSECTION_SHADER(shaderc_glsl_intersection_shader);
 
         private final int kind;
 

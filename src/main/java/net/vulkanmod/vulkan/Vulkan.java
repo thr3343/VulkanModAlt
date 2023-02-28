@@ -45,6 +45,8 @@ import static org.lwjgl.vulkan.KHRSwapchain.vkDestroySwapchainKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.vkGetSwapchainImagesKHR;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.VK_API_VERSION_1_1;
+import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
+import static org.lwjgl.vulkan.VK13.VK_API_VERSION_1_3;
 
 public class Vulkan {
 
@@ -52,10 +54,14 @@ public class Vulkan {
 
     public static final int INDEX_SIZE = Short.BYTES;
 
-    private static final boolean ENABLE_VALIDATION_LAYERS = false;
-//    private static final boolean ENABLE_VALIDATION_LAYERS = true;
+//    private static final boolean ENABLE_VALIDATION_LAYERS = false;
+    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
+    public static boolean isRTCapable;
+//    public static boolean deviceAddress;
+//    static boolean rayQuery;
+
     static {
         if(ENABLE_VALIDATION_LAYERS) {
             VALIDATION_LAYERS = new HashSet<>();
@@ -67,7 +73,13 @@ public class Vulkan {
         }
     }
 
-    private static final Set<String> DEVICE_EXTENSIONS = Stream.of(VK_KHR_SWAPCHAIN_EXTENSION_NAME)
+    private static final Set<String> DEVICE_EXTENSIONS = Stream.of(
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+                    KHRBufferDeviceAddress.VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+                    KHRRayTracingPipeline.VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+                    KHRRayQuery.VK_KHR_RAY_QUERY_EXTENSION_NAME,
+                    KHRAccelerationStructure.VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+                    KHRDeferredHostOperations.VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
             .collect(toSet());
 
 
@@ -258,14 +270,16 @@ public class Vulkan {
 
             // Use calloc to initialize the structs with 0s. Otherwise, the program can crash due to random values
 
+            int vkVersion = extracted(stack);
+
             VkApplicationInfo appInfo = VkApplicationInfo.callocStack(stack);
 
             appInfo.sType(VK_STRUCTURE_TYPE_APPLICATION_INFO);
             appInfo.pApplicationName(stack.UTF8Safe("VulkanMod"));
-            appInfo.applicationVersion(VK_MAKE_VERSION(1, 0, 0));
+            appInfo.applicationVersion(vkVersion);
             appInfo.pEngineName(stack.UTF8Safe("No Engine"));
-            appInfo.engineVersion(VK_MAKE_VERSION(1, 0, 0));
-            appInfo.apiVersion(VK_API_VERSION_1_1);
+            appInfo.engineVersion(vkVersion);
+            appInfo.apiVersion(vkVersion);
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack);
 
@@ -292,6 +306,12 @@ public class Vulkan {
 
             instance = new VkInstance(instancePtr.get(0), createInfo);
         }
+    }
+
+    private static int extracted(MemoryStack stack) {
+        IntBuffer pBuffer= stack.mallocInt(1);
+        vkEnumerateInstanceVersion(pBuffer);
+        return pBuffer.get(0);
     }
 
     private static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo) {
@@ -418,17 +438,48 @@ public class Vulkan {
                 queueCreateInfo.pQueuePriorities(stack.floats(1.0f));
             }
 
+
+            VkPhysicalDeviceAccelerationStructureFeaturesKHR vkAccelerationStructureCreateInfoKHR = VkPhysicalDeviceAccelerationStructureFeaturesKHR.calloc(stack)
+                    .sType$Default();
+
+            VkPhysicalDeviceRayTracingPipelineFeaturesKHR vkPhysicalDeviceRayTracingPipelineFeaturesKHR = VkPhysicalDeviceRayTracingPipelineFeaturesKHR.calloc(stack)
+                    .sType$Default();
+//                    .pNext(0)
+//                    .rayTracingPipeline(true)
+//                    .rayTracingPipelineTraceRaysIndirect(true)
+//                    .rayTracingPipelineShaderGroupHandleCaptureReplay(false)
+//                    .rayTracingPipelineShaderGroupHandleCaptureReplayMixed(false)
+//                    .rayTraversalPrimitiveCulling(true);
+            VkPhysicalDeviceBufferDeviceAddressFeaturesKHR vkPhysicalDeviceBufferDeviceAddressFeaturesEXT = VkPhysicalDeviceBufferDeviceAddressFeaturesKHR.calloc(stack)
+                    .sType$Default();
+//                    .bufferDeviceAddress(true);
+            VkPhysicalDeviceRayQueryFeaturesKHR vkPhysicalDeviceRayQueryFeaturesKHR = VkPhysicalDeviceRayQueryFeaturesKHR.calloc(stack)
+                    .sType$Default();
+
+
             VkPhysicalDeviceFeatures deviceFeatures = VkPhysicalDeviceFeatures.callocStack(stack);
             deviceFeatures.samplerAnisotropy(true);
             deviceFeatures.multiDrawIndirect(true);
 
+            VkPhysicalDeviceFeatures2 deviceFeatures2 = VkPhysicalDeviceFeatures2.calloc(stack)
+                    .sType$Default()
+                    .pNext(vkPhysicalDeviceRayTracingPipelineFeaturesKHR)
+                    .pNext(vkPhysicalDeviceBufferDeviceAddressFeaturesEXT)
+                    .pNext(vkPhysicalDeviceRayQueryFeaturesKHR)
+                    .pNext(vkAccelerationStructureCreateInfoKHR)
+                    .features(deviceFeatures);
+
+            VK11.vkGetPhysicalDeviceFeatures2(physicalDevice, deviceFeatures2);
+
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.callocStack(stack);
 
             createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
+            createInfo.pNext(deviceFeatures2);
             createInfo.pQueueCreateInfos(queueCreateInfos);
             // queueCreateInfoCount is automatically set
 
-            createInfo.pEnabledFeatures(deviceFeatures);
+//            createInfo.pEnabledFeatures(deviceFeatures);
+            DEVICE_EXTENSIONS.remove(KHRRayQuery.VK_KHR_RAY_QUERY_EXTENSION_NAME);
 
             createInfo.ppEnabledExtensionNames(asPointerBuffer(DEVICE_EXTENSIONS));
 
@@ -442,7 +493,7 @@ public class Vulkan {
                 throw new RuntimeException("Failed to create logical device");
             }
 
-            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo);
+            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, extracted(stack));
 
             PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
 
@@ -451,6 +502,8 @@ public class Vulkan {
 
             vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
             presentQueue = new VkQueue(pQueue.get(0), device);
+
+            isRTCapable=vkPhysicalDeviceBufferDeviceAddressFeaturesEXT.bufferDeviceAddress()&&vkPhysicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline()&&vkAccelerationStructureCreateInfoKHR.accelerationStructure();
 
         }
     }
@@ -466,7 +519,7 @@ public class Vulkan {
             allocatorCreateInfo.device(device);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
             allocatorCreateInfo.instance(instance);
-            allocatorCreateInfo.vulkanApiVersion(VK_API_VERSION_1_1);
+            allocatorCreateInfo.vulkanApiVersion(extracted(stack));
 
             PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
 
@@ -1019,16 +1072,25 @@ public class Vulkan {
 
             vkEnumerateDeviceExtensionProperties(device, (String)null, extensionCount, availableExtensions);
 
-            Set<String> extensions = availableExtensions.stream()
+//            Set<String> extensions = availableExtensions.stream()
+//                    .map(VkExtensionProperties::extensionNameString)
+//                    .collect(toSet());
+//
+//            extensions.removeAll(DEVICE_EXTENSIONS);
+            Set<String> contains = availableExtensions.stream()
                     .map(VkExtensionProperties::extensionNameString)
                     .collect(toSet());
+            for(var a : contains)
+            {
+                if(DEVICE_EXTENSIONS.contains(a) && !contains.contains(a))
+                {
+                    DEVICE_EXTENSIONS.remove(a);
+                }
+            }
 
-            extensions.removeAll(DEVICE_EXTENSIONS);
 
-            return availableExtensions.stream()
-                    .map(VkExtensionProperties::extensionNameString)
-                    .collect(toSet())
-                    .containsAll(DEVICE_EXTENSIONS);
+
+            return DEVICE_EXTENSIONS.contains(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
         }
     }
 
