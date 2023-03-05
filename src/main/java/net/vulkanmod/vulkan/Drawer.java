@@ -510,7 +510,7 @@ public class Drawer {
     }
 
     public static void clearAttachments(int v) {
-        if (v == (GL11C.GL_COLOR_BUFFER_BIT|GL11C.GL_DEPTH_BUFFER_BIT)) return;
+//        if (v == (GL11C.GL_COLOR_BUFFER_BIT|GL11C.GL_DEPTH_BUFFER_BIT)) return;
         if(skipRendering) return;
 
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
@@ -521,12 +521,12 @@ public class Drawer {
             colorValue.color().float32(VRenderSystem.clearColor);
 
             VkClearValue depthValue = VkClearValue.callocStack(stack);
-            depthValue.depthStencil().depth(VRenderSystem.clearDepth);
+            depthValue.depthStencil().depth(1.0f).stencil(0);
 
             int attachmentsCount;
             VkClearAttachment.Buffer pAttachments;
             switch (v) {
-                case GL11C.GL_DEPTH_BUFFER_BIT -> //GUI/HUD /GUI.HUD/Screen change
+                case GL11C.GL_DEPTH_BUFFER_BIT -> //GUI/HUD /GUI.HUD/Screen change Or GUi Elemnts such as RenderHand e.g.
                 {
                     attachmentsCount = 1;
 
@@ -547,7 +547,20 @@ public class Drawer {
                     clearColor.colorAttachment(0);
                     clearColor.clearValue(colorValue);
                 }
-                //LevelRenderer
+                case (GL11C.GL_COLOR_BUFFER_BIT|GL11C.GL_DEPTH_BUFFER_BIT) -> //LevelRenderer: SkyColour
+                {
+                    attachmentsCount = 2;
+
+                    pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
+
+                    VkClearAttachment clearColor = pAttachments.get(0);
+                    clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+                    clearColor.clearValue(colorValue);
+
+                    VkClearAttachment clearDepth = pAttachments.get(1);
+                    clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+                    clearDepth.clearValue(depthValue);
+                }
                 default -> throw new RuntimeException("unexpected value");
             }
 
