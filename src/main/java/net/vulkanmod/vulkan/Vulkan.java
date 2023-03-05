@@ -689,7 +689,7 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkFormatProperties props = VkFormatProperties.callocStack(stack);
+            VkFormatProperties props = VkFormatProperties.mallocStack(stack);
 
             for(int i = 0; i < formatCandidates.capacity(); ++i) {
 
@@ -804,7 +804,7 @@ public class Vulkan {
     }
 
     public static VkViewport.Buffer viewport(MemoryStack stack) {
-        VkViewport.Buffer viewport = VkViewport.callocStack(1, stack);
+        VkViewport.Buffer viewport = VkViewport.mallocStack(1, stack);
         viewport.x(0.0f);
         viewport.y(swapChainExtent.height());
         viewport.width(swapChainExtent.width());
@@ -816,8 +816,8 @@ public class Vulkan {
     }
 
     public static VkRect2D.Buffer scissor(MemoryStack stack) {
-        VkRect2D.Buffer scissor = VkRect2D.callocStack(1, stack);
-        scissor.offset(VkOffset2D.callocStack(stack).set(0, 0));
+        VkRect2D.Buffer scissor = VkRect2D.mallocStack(1, stack);
+        scissor.offset(VkOffset2D.mallocStack(stack).set(0, 0));
         scissor.extent(swapChainExtent);
 
         return scissor;
