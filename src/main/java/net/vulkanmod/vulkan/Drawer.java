@@ -173,7 +173,7 @@ public class Drawer {
             renderPassInfo.renderArea(renderArea);
 
             VkClearValue.Buffer clearValues = VkClearValue.callocStack(2, stack);
-            clearValues.get(0).color().float32(stack.floats(0.0f, 0.0f, 0.0f, 1.0f));
+            clearValues.get(0).color().float32(VRenderSystem.clearColor);
             clearValues.get(1).depthStencil().set(1.0f, 0);
             renderPassInfo.pClearValues(clearValues);
 
@@ -510,77 +510,43 @@ public class Drawer {
     }
 
     public static void clearAttachments(int v) {
-//        if (v == (GL11C.GL_COLOR_BUFFER_BIT|GL11C.GL_DEPTH_BUFFER_BIT)) return;
+        if (v != (GL11C.GL_DEPTH_BUFFER_BIT)) return;
         if(skipRendering) return;
 
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         try(MemoryStack stack = stackPush()) {
             //ClearValues have to be different for each attachment to clear, it seems it works like a buffer: color and depth attributes override themselves
-            VkClearValue colorValue = VkClearValue.callocStack(stack);
-            colorValue.color().float32(VRenderSystem.clearColor);
+//            VkClearValue colorValue = VkClearValue.callocStack(stack);
+//            colorValue.color().float32(VRenderSystem.clearColor);
 
-            VkClearValue depthValue = VkClearValue.callocStack(stack);
+            //Always use Fast Stencil Clears If Possible
+            VkClearValue depthValue = VkClearValue.mallocStack(stack);
             depthValue.depthStencil().depth(1.0f).stencil(0);
 
-            int attachmentsCount;
-            VkClearAttachment.Buffer pAttachments;
-            switch (v) {
-                case GL11C.GL_DEPTH_BUFFER_BIT -> //GUI/HUD /GUI.HUD/Screen change Or GUi Elemnts such as RenderHand e.g.
-                {
-                    attachmentsCount = 1;
 
-                    pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
-
-                    VkClearAttachment clearDepth = pAttachments.get(0);
-                    clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                    clearDepth.clearValue(depthValue);
-                }
-                case GL11C.GL_COLOR_BUFFER_BIT -> //Splash Overlay
-                {
-                    attachmentsCount = 1;
-
-                    pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
-
-                    VkClearAttachment clearColor = pAttachments.get(0);
-                    clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                    clearColor.colorAttachment(0);
-                    clearColor.clearValue(colorValue);
-                }
-                case (GL11C.GL_COLOR_BUFFER_BIT|GL11C.GL_DEPTH_BUFFER_BIT) -> //LevelRenderer: SkyColour
-                {
-                    attachmentsCount = 2;
-
-                    pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
-
-                    VkClearAttachment clearColor = pAttachments.get(0);
-                    clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                    clearColor.clearValue(colorValue);
-
-                    VkClearAttachment clearDepth = pAttachments.get(1);
-                    clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                    clearDepth.clearValue(depthValue);
-                }
-                default -> throw new RuntimeException("unexpected value");
-            }
+            VkClearAttachment.Buffer clearDepth = VkClearAttachment.mallocStack(1, stack);
+            clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
+            clearDepth.clearValue(depthValue);
 
             //Rect to clear
-            VkRect2D renderArea = VkRect2D.callocStack(stack);
-            renderArea.offset(VkOffset2D.callocStack(stack).set(0, 0));
+            VkRect2D renderArea = VkRect2D.mallocStack(stack);
+            renderArea.offset(VkOffset2D.mallocStack(stack).set(0,0));
             renderArea.extent(getSwapchainExtent());
 
-            VkClearRect.Buffer pRect = VkClearRect.callocStack(1, stack);
-            pRect.get(0).rect(renderArea);
-            pRect.get(0).layerCount(1);
+            VkClearRect.Buffer pRect = VkClearRect.mallocStack(1, stack);
+            pRect.rect(renderArea);
+            pRect.baseArrayLayer(0);
+            pRect.layerCount(1);
 
-            vkCmdClearAttachments(commandBuffer, pAttachments, pRect);
+            vkCmdClearAttachments(commandBuffer, clearDepth, pRect);
         }
     }
 
     public static void setViewport(int x, int y, int width, int height) {
 
         try(MemoryStack stack = stackPush()) {
-            VkViewport.Buffer viewport = VkViewport.callocStack(1, stack);
+            VkViewport.Buffer viewport = VkViewport.mallocStack(1, stack);
             viewport.x(x);
             viewport.y(height + y);
             viewport.width(width);

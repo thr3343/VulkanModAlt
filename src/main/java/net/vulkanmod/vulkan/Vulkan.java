@@ -643,9 +643,10 @@ public class Vulkan {
             VkAttachmentDescription colorAttachment = attachments.get(0);
             colorAttachment.format(swapChainImageFormat);
             colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-            colorAttachment.loadOp(EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT);
+            colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
             colorAttachment.storeOp(VK13.VK_ATTACHMENT_STORE_OP_NONE);
-
+            colorAttachment.stencilLoadOp(EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT);
+            colorAttachment.stencilStoreOp(VK13.VK_ATTACHMENT_STORE_OP_NONE);
             colorAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
             colorAttachment.finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 
@@ -731,7 +732,7 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkFormatProperties props = VkFormatProperties.callocStack(stack);
+            VkFormatProperties props = VkFormatProperties.mallocStack(stack);
 
             for(int i = 0; i < formatCandidates.capacity(); ++i) {
 
@@ -846,7 +847,7 @@ public class Vulkan {
     }
 
     public static VkViewport.Buffer viewport(MemoryStack stack) {
-        VkViewport.Buffer viewport = VkViewport.callocStack(1, stack);
+        VkViewport.Buffer viewport = VkViewport.mallocStack(1, stack);
         viewport.x(0.0f);
         viewport.y(swapChainExtent.height());
         viewport.width(swapChainExtent.width());
@@ -858,8 +859,8 @@ public class Vulkan {
     }
 
     public static VkRect2D.Buffer scissor(MemoryStack stack) {
-        VkRect2D.Buffer scissor = VkRect2D.callocStack(1, stack);
-        scissor.offset(VkOffset2D.callocStack(stack).set(0, 0));
+        VkRect2D.Buffer scissor = VkRect2D.mallocStack(1, stack);
+        scissor.offset(VkOffset2D.mallocStack(stack).set(0, 0));
         scissor.extent(swapChainExtent);
 
         return scissor;
