@@ -10,41 +10,47 @@ import org.lwjgl.vulkan.*;
 import java.nio.LongBuffer;
 
 import static net.vulkanmod.vulkan.Pipeline.createShaderModule;
+import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+import static org.lwjgl.vulkan.VK12.VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
 public class rPipeline
 {
     TLAS tTlas;
     BLAS tBlas;
-    SSBO tSSBO;
+    private final SSBO tSSBO = new SSBO(65535, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | NVRayTracing.VK_BUFFER_USAGE_RAY_TRACING_BIT_NV);
     private String shdr;
     private long rayGenShaderModule;
     private long ahitShaderModule;
     private long RBuffer;
-    private long devAddress;
+    private final long devAddress;
 
-    public rPipeline(/*VertexFormat vertexFormat, String pat*/)
+    public rPipeline(/*VertexFormat vertexFormat, String pat*/) throws UnsupportedOperationException
     {
-        createDevAddress();
-        //May not need verTformat as will be Trateing TranslucentLayer9s)/BlockRenderLayerz for now
-//        System.out.println(!Vulkan.deviceAddress ? "FAIL!: No Support for VK_KHR_buffer_device_address Available!" : "OK!: VK_KHR_buffer_device_address Fully Supported!");
+        //May not need vertexFormat as will be Tracing TranslucentLayers/BlockRenderLayers for now
+
         VKCapabilitiesDevice capabilities = Vulkan.getDevice().getCapabilities();
         System.out.println(!Vulkan.isRTCapable? "FAIL!: Not isRTCapable!" : "OK!: is isRTCapable!");
-        System.out.println(!capabilities.VK_KHR_buffer_device_address ? "FAIL!: No Support for VK_KHR_buffer_device_address Available!" : "OK!: VK_KHR_buffer_device_address Fully Supported!");
+        System.out.println(capabilities.vkGetBufferDeviceAddress == 0 ? "FAIL!: No Support for VK_KHR_buffer_device_address Available!" : "OK!: VK_KHR_buffer_device_address Fully Supported!");
         System.out.println(!capabilities.VK_KHR_ray_tracing_pipeline ? "FAIL!: No Support for VK_KHR_ray_tracing_pipeline Available!" : "OK!: VK_KHR_ray_tracing_pipeline Fully Supported!");
         System.out.println(!capabilities.VK_KHR_ray_query ? "FAIL!: No Support for VK_KHR_ray_query Available!" : "OK!: VK_KHR_ray_query Fully Supported!");
         System.out.println(!capabilities.VK_KHR_acceleration_structure ? "FAIL!: No Support for VK_KHR_acceleration_structure Available!" : "OK!: VK_KHR_acceleration_structure Fully Supported!");
         System.out.println(!capabilities.VK_KHR_deferred_host_operations ? "FAIL!: No Support for VK_KHR_deferred_host_operations Available!" : "OK!: VK_KHR_deferred_host_operations Fully Supported!");
-
+        devAddress = createDevAddress();
+        if(!Vulkan.isRTCapable) throw new UnsupportedOperationException("FAIL!: Not isRTCapable!");
 //        createRPipeline(1);
     }
 
-    private void createDevAddress()
+    private long createDevAddress()
     {
         try(MemoryStack stack = MemoryStack.stackPush()) {
+
             VkBufferDeviceAddressInfo vkBufferDeviceAddressInfo = VkBufferDeviceAddressInfo.malloc(stack)
                     .sType$Default()
                     .pNext(0)
-                    .buffer(0);
+                    .buffer(tSSBO.buffer);
+
+            return VK12.vkGetBufferDeviceAddress(Vulkan.getDevice(), vkBufferDeviceAddressInfo);
         }
     }
 

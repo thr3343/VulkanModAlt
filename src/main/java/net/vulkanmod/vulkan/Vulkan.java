@@ -44,6 +44,7 @@ import static org.lwjgl.vulkan.KHRSwapchain.vkCreateSwapchainKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.vkDestroySwapchainKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.vkGetSwapchainImagesKHR;
 import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK11.VK_API_VERSION_1_1;
 import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
 
 public class Vulkan {
@@ -52,19 +53,20 @@ public class Vulkan {
 
     public static final int INDEX_SIZE = Short.BYTES;
 
-//    private static final boolean ENABLE_VALIDATION_LAYERS = false;
-    private static final boolean ENABLE_VALIDATION_LAYERS = true;
+    private static final boolean ENABLE_VALIDATION_LAYERS = false;
+//    private static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
     private static final Set<String> REQUESTED_DEVICE_EXTENSIONS = Stream.of(
                     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-                    KHRBufferDeviceAddress.VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+//                    KHRBufferDeviceAddress.VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
                     KHRRayTracingPipeline.VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
                     KHRRayQuery.VK_KHR_RAY_QUERY_EXTENSION_NAME,
                     KHRAccelerationStructure.VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
                     KHRDeferredHostOperations.VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME)
             .collect(toSet());
     public static boolean isRTCapable;
+    private static final int vkVersion = getVkVer();
     //    public static boolean deviceAddress;
 //    static boolean rayQuery;
 
@@ -80,7 +82,7 @@ public class Vulkan {
     }
 
 
-    private static final Set<String> LOADED_DEVICE_EXTENSIONS = new HashSet<>(6);
+    private static final Set<String> LOADED_DEVICE_EXTENSIONS = new HashSet<>(REQUESTED_DEVICE_EXTENSIONS.size());
 
 
 
@@ -270,7 +272,7 @@ public class Vulkan {
 
             // Use calloc to initialize the structs with 0s. Otherwise, the program can crash due to random values
 
-            int vkVersion = extracted(stack);
+
 
             VkApplicationInfo appInfo = VkApplicationInfo.callocStack(stack);
 
@@ -308,10 +310,14 @@ public class Vulkan {
         }
     }
 
-    private static int extracted(MemoryStack stack) {
-        IntBuffer pBuffer= stack.mallocInt(1);
-        vkEnumerateInstanceVersion(pBuffer);
-        return pBuffer.get(0);
+    private static int getVkVer() {
+        try(MemoryStack stack = stackPush())
+        {
+            IntBuffer pBuffer= stack.mallocInt(1);
+            vkEnumerateInstanceVersion(pBuffer);
+            return pBuffer.get(0);
+        }
+
     }
 
     private static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo) {
@@ -446,10 +452,10 @@ public class Vulkan {
             deviceFeatures.samplerAnisotropy(true);
             deviceFeatures.multiDrawIndirect(true);
 
-            VkPhysicalDeviceFeatures2 deviceFeatures2 = VkPhysicalDeviceFeatures2.calloc(stack)
+            final VkPhysicalDeviceVulkan12Features value = VkPhysicalDeviceVulkan12Features.calloc(stack).sType$Default();
+            VkPhysicalDeviceFeatures2 deviceFeatures2 = VkPhysicalDeviceFeatures2.malloc(stack)
                     .sType$Default()
-                    .pNext(VkPhysicalDeviceRayTracingPipelineFeaturesKHR.malloc(stack).sType$Default())
-                    .pNext(VkPhysicalDeviceRayQueryFeaturesKHR.malloc(stack).sType$Default())
+                    .pNext(value)
                     .features(deviceFeatures);
 
             VK11.vkGetPhysicalDeviceFeatures2(physicalDevice, deviceFeatures2);
@@ -471,7 +477,7 @@ public class Vulkan {
                 throw new RuntimeException("Failed to create logical device");
             }
 
-            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, extracted(stack));
+            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, vkVersion);
 
             PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
 
@@ -482,18 +488,18 @@ public class Vulkan {
             presentQueue = new VkQueue(pQueue.get(0), device);
 
             final VKCapabilitiesDevice capabilities = device.getCapabilities();
-
-            final boolean devAddr = capabilities.VK_KHR_buffer_device_address;
+            
+            final boolean devAddr = capabilities.vkGetBufferDeviceAddress!=0;
             final boolean rayTcrPipeline = capabilities.VK_KHR_ray_tracing_pipeline;
             final boolean accelStruct = capabilities.VK_KHR_acceleration_structure;
             final boolean hostOp = capabilities.VK_KHR_deferred_host_operations;
 
             isRTCapable=
-                    (devAddr)&&
-                    (rayTcrPipeline)&&
+                    devAddr &&
+                            rayTcrPipeline &&
 //                    (device.getCapabilities().VK_KHR_ray_query)&&
-                    (accelStruct)&&
-                    (hostOp);
+                            accelStruct &&
+                            hostOp && capabilities.Vulkan12;
 
         }
     }
@@ -509,7 +515,7 @@ public class Vulkan {
             allocatorCreateInfo.device(device);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
             allocatorCreateInfo.instance(instance);
-            allocatorCreateInfo.vulkanApiVersion(extracted(stack));
+            allocatorCreateInfo.vulkanApiVersion(vkVersion);
 
             PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
 
@@ -576,7 +582,7 @@ public class Vulkan {
             createInfo.imageColorSpace(surfaceFormat.colorSpace());
             createInfo.imageExtent(extent);
             createInfo.imageArrayLayers(1);
-            createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+            createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_STORAGE_BIT);
 
             QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
