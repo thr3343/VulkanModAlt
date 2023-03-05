@@ -532,7 +532,7 @@ public class WorldRenderer {
         renderType.setupRenderState();
         translucentSort(renderType, camX, camY, camZ); //may be better to place translucent textures ina separate renderpass and submit it together with the vbos
         if (Config.drawIndirect)
-            if (RHandler.uniqueVBOs.size() != prev || needsUpdate2) {
+            if (!RHandler.uniqueVBOs.isEmpty() && RHandler.uniqueVBOs.size() != prev || needsUpdate2) {
                 needsUpdate2=false;
                 prev = RHandler.uniqueVBOs.size();
                 RHandler.drawCommands.clear();
@@ -619,7 +619,7 @@ public class WorldRenderer {
                 Drawer.drawIndexedBindless(RHandler.translucentVBOs.get(i).indirectCommand);
             }
         }
-        else Drawer.drawIndexedBindlessIndirect();
+        else if (!RHandler.uniqueVBOs.isEmpty()) Drawer.drawIndexedBindlessIndirect();
 
 
 //

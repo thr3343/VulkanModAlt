@@ -10,15 +10,14 @@ import net.vulkanmod.render.RHandler;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.PushConstant;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.opengl.GL11C;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -26,7 +25,6 @@ import java.util.Set;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
-import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.system.MemoryUtil.memPutAddress;
@@ -146,6 +144,7 @@ public class Drawer {
 
         if(skipRendering) return;
 
+
 //        nvkWaitForFences(device, inFlightFences.capacity(), inFlightFences.address0(), 1, VUtil.UINT64_MAX);
         nvkWaitForFences(device, 1, inFlightFences.address(currentFrame), 1, -1);
 
@@ -161,6 +160,7 @@ public class Drawer {
 
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.callocStack(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+            beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
             VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
             renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
@@ -510,6 +510,7 @@ public class Drawer {
     }
 
     public static void clearAttachments(int v) {
+        if (v == (GL11C.GL_COLOR_BUFFER_BIT|GL11C.GL_DEPTH_BUFFER_BIT)) return;
         if(skipRendering) return;
 
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
@@ -525,7 +526,8 @@ public class Drawer {
             int attachmentsCount;
             VkClearAttachment.Buffer pAttachments;
             switch (v) {
-                case 0x100 -> {
+                case GL11C.GL_DEPTH_BUFFER_BIT -> //GUI/HUD /GUI.HUD/Screen change
+                {
                     attachmentsCount = 1;
 
                     pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
@@ -534,7 +536,8 @@ public class Drawer {
                     clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
                     clearDepth.clearValue(depthValue);
                 }
-                case 0x4000 -> {
+                case GL11C.GL_COLOR_BUFFER_BIT -> //Splash Overlay
+                {
                     attachmentsCount = 1;
 
                     pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
@@ -544,19 +547,7 @@ public class Drawer {
                     clearColor.colorAttachment(0);
                     clearColor.clearValue(colorValue);
                 }
-                case 0x4100 -> {
-                    attachmentsCount = 2;
-
-                    pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
-
-                    VkClearAttachment clearColor = pAttachments.get(0);
-                    clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                    clearColor.clearValue(colorValue);
-
-                    VkClearAttachment clearDepth = pAttachments.get(1);
-                    clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                    clearDepth.clearValue(depthValue);
-                }
+                //LevelRenderer
                 default -> throw new RuntimeException("unexpected value");
             }
 
