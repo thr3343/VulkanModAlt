@@ -134,7 +134,9 @@ public class Pipeline {
             viewportState.sType(VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO);
 
             viewportState.viewportCount(1);
+            viewportState.pViewports(Vulkan.viewport(stack));
             viewportState.scissorCount(1);
+            viewportState.pScissors(Vulkan.scissor(stack));
 
             // ===> RASTERIZATION STAGE <===
 
@@ -149,7 +151,15 @@ public class Pipeline {
             else rasterizer.cullMode(VK_CULL_MODE_NONE);
 
             rasterizer.frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
-            rasterizer.depthBiasEnable(true);
+
+            if (Objects.equals(this.path, "core/position_tex"))
+            {
+                rasterizer.depthBiasEnable(true);
+                rasterizer.depthBiasConstantFactor(-3.0F);
+                rasterizer.depthBiasClamp(0);
+                rasterizer.depthBiasSlopeFactor(-3.0F);
+            }
+            else rasterizer.depthBiasEnable(false);
 
             // ===> MULTISAMPLING <===
 
@@ -767,7 +777,7 @@ public class Pipeline {
     }
 
     public static DepthState defaultDepthState() {
-        return new DepthState(true, true, 515);
+        return new DepthState(false, 0, 0, 0, true, true, 515);
     }
 
     public static ColorMask defaultColorMask() { return new ColorMask(true, true, true, true); }
@@ -943,11 +953,19 @@ public class Pipeline {
     }
 
     public static class DepthState {
+        private final boolean depthBiasEnable;
+        private final float depthBiasConstantFactor;
+        private final float depthBiasClamp;
+        private final float depthBiasSlopeFactor ;
         public final boolean depthTest;
         public final boolean depthMask;
         public final int function;
 
-        public DepthState(boolean depthTest, boolean depthMask, int function) {
+        public DepthState(boolean depthBias, float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor, boolean depthTest, boolean depthMask, int function) {
+            this.depthBiasEnable = depthBias;
+            this.depthBiasConstantFactor = depthBiasConstantFactor;
+            this.depthBiasClamp = depthBiasClamp;
+            this.depthBiasSlopeFactor = depthBiasSlopeFactor;
             this.depthTest = depthTest;
             this.depthMask = depthMask;
             this.function = glToVulkan(function);

@@ -566,6 +566,7 @@ public abstract class LevelRendererMixin {
 
                                             PoseStack poseStack2 = RenderSystem.getModelViewStack();
                                             poseStack2.pushPose();
+                                            final Matrix4f pose = poseStack2.last().pose();
                                             poseStack2.mulPoseMatrix(poseStack.last().pose());
                                             RenderSystem.applyModelViewMatrix();
                                             this.minecraft.debugRenderer.render(poseStack, bufferSource, d, e, g);
@@ -584,21 +585,7 @@ public abstract class LevelRendererMixin {
                                             this.renderBuffers.crumblingBufferSource().endBatch();
                                             //Lines and partcules must be drawn before and  after the chunkLayer respectively to be properly Visible
                                             //Not sure if transparencyChain is needed as the layers seem to render fine without depth Clearing.Copying
-                                            if (this.transparencyChain != null) {
-                                                RenderStateShard.WEATHER_TARGET.setupRenderState();
-                                                profilerFiller.popPush("weather");
-                                                this.renderSnowAndRain(lightTexture, f, d, e, g);
-                                                this.renderWorldBorder(camera);
-                                                RenderStateShard.WEATHER_TARGET.clearRenderState();
-                                                this.transparencyChain.process(f);
-                                                this.minecraft.getMainRenderTarget().bindWrite(false);
-                                            } else {
-                                                RenderSystem.depthMask(false);
-                                                profilerFiller.popPush("weather");
-                                                this.renderSnowAndRain(lightTexture, f, d, e, g);
-                                                this.renderWorldBorder(camera);
-                                                RenderSystem.depthMask(true);
-                                            }
+
                                             poseStack2.popPose();
                                             RenderSystem.applyModelViewMatrix();
                                             {
@@ -616,9 +603,28 @@ public abstract class LevelRendererMixin {
                                                 bufferSource.endBatch();
 
                                             }
-
+                                            //Render WorldBorder after VBOs
                                             poseStack2.pushPose();
-                                            poseStack2.mulPoseMatrix(poseStack.last().pose());
+                                            poseStack2.mulPoseMatrix(pose);
+                                            RenderSystem.applyModelViewMatrix();
+                                            if (this.transparencyChain != null) {
+                                                RenderStateShard.WEATHER_TARGET.setupRenderState();
+                                                profilerFiller.popPush("weather");
+                                                this.renderSnowAndRain(lightTexture, f, d, e, g);
+                                                this.renderWorldBorder(camera);
+                                                RenderStateShard.WEATHER_TARGET.clearRenderState();
+                                                this.transparencyChain.process(f);
+                                                this.minecraft.getMainRenderTarget().bindWrite(false);
+                                            } else {
+                                                RenderSystem.depthMask(false);
+                                                profilerFiller.popPush("weather");
+                                                this.renderSnowAndRain(lightTexture, f, d, e, g);
+                                                this.renderWorldBorder(camera);
+                                                RenderSystem.depthMask(true);
+                                            }
+
+
+
                                             RenderSystem.applyModelViewMatrix();
                                             if (this.minecraft.options.getCloudsType() != CloudStatus.OFF) {
                                                 if (this.transparencyChain != null) {
@@ -633,6 +639,7 @@ public abstract class LevelRendererMixin {
                                                     this.renderClouds(poseStack, matrix4f, f, d, e, g);
                                                 }
                                             }
+
 
 
 

@@ -48,7 +48,8 @@ public class VRenderSystem {
     public static ByteBuffer shaderColor = MemoryUtil.memAlloc(4 * 4);
     public static ByteBuffer shaderFogColor = MemoryUtil.memAlloc(4 * 4);
 
-    private static final float[] depthBias = new float[2];
+    static final float[] depthBias = new float[2];
+    private static boolean depthBiasEnable = false;
 
     public static void initRenderer()
     {
@@ -246,7 +247,7 @@ public class VRenderSystem {
     }
 
     public static Pipeline.DepthState getDepthState() {
-        return new Pipeline.DepthState(depthTest, depthMask, depthFun);
+        return new Pipeline.DepthState(depthBiasEnable, depthBias[0], 0, depthBias[1], depthTest, depthMask, depthFun);
     }
 
     public static void colorMask(boolean b, boolean b1, boolean b2, boolean b3) {
@@ -275,10 +276,12 @@ public class VRenderSystem {
     }
 
     public static void enablePolygonOffset() {
+        depthBiasEnable=true;
         Drawer.setDepthBias(depthBias[0], depthBias[1]);
     }
 
     public static void disablePolygonOffset() {
+        depthBiasEnable=false;
         Drawer.setDepthBias(0.0F, 0.0F);
     }
 
