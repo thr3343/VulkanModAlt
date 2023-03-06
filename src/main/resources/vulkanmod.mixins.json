@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_16",
   "plugin": "net.vulkanmod.mixin.MixinPlugin",
   "mixins": [
+    "chunk.CubicSamplerM"
   ],
   "client": [
     "WindowMixin",
