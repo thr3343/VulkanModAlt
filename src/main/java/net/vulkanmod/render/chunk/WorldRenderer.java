@@ -237,8 +237,10 @@ public class WorldRenderer {
         if (renderSection == null) {
             boolean flag = blockpos.getY() > this.level.getMinBuildHeight();
             int j = flag ? this.level.getMaxBuildHeight() - 8 : this.level.getMinBuildHeight() + 8;
-            int k = Mth.floor(vec3.x / 16.0D) * 16;
-            int l = Mth.floor(vec3.z / 16.0D) * 16;
+            int i3 = (int) (vec3.x / 16.0D);
+            int k = (vec3.x / 16.0D < (double) i3 ? i3 - 1 : i3) * 16;
+            int i2 = (int) (vec3.z / 16.0D);
+            int l = (vec3.z / 16.0D < (double) i2 ? i2 - 1 : i2) * 16;
 
             List<RenderSection> list = Lists.newArrayList();
 

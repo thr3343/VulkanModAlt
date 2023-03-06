@@ -104,8 +104,10 @@ public class SectionGrid {
 
 //      count = count;
 
-        int i = Mth.floor(x);
-        int j = Mth.floor(z);
+        int i2 = (int) x;
+        int i = x < (double) i2 ? i2 - 1 : i2;
+        int i1 = (int) z;
+        int j = z < (double) i1 ? i1 - 1 : i1;
 
         this.chunkAreaManager.repositionAreas(i, j);
 

@@ -66,7 +66,8 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
         int j = this.x0 + this.width / 2;
         int k = j - i;
         int l = j + i;
-        int m = Mth.floor(y - (double)this.y0) - this.headerHeight + (int)this.getScrollAmount() - 4;
+        int i1 = (int) (y - (double) this.y0);
+        int m = (y - (double) this.y0 < (double) i1 ? i1 - 1 : i1) - this.headerHeight + (int)this.getScrollAmount() - 4;
         int n = m / this.itemHeight;
         if (x < this.getScrollbarPosition() && x >= (double)k && x <= (double)l && n >= 0 && m >= 0 && n < this.getItemCount()) {
             return (net.vulkanmod.config.OptionList2.Entry)this.children().get(n);
