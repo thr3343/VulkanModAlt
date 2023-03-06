@@ -34,19 +34,19 @@ public class VRenderSystem {
     public static boolean cull = true;
 
     public static final float clearDepth = 1.0f;
-    public static FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
+    public static final FloatBuffer clearColor = MemoryUtil.memAllocFloat(4);
+    public static final ByteBuffer modelViewMatrix = MemoryUtil.memAlloc(16 * 4);
+    public static final ByteBuffer projectionMatrix = MemoryUtil.memAlloc(16 * 4);
+    public static final ByteBuffer TextureMatrix = MemoryUtil.memAlloc(16 * 4);
 
-    public static ByteBuffer modelViewMatrix = MemoryUtil.memAlloc(16 * 4);
-    public static ByteBuffer projectionMatrix = MemoryUtil.memAlloc(16 * 4);
-    public static ByteBuffer TextureMatrix = MemoryUtil.memAlloc(16 * 4);
-    public static ByteBuffer MVP = MemoryUtil.memAlloc(16 * 4);
+    public static final ByteBuffer MVP = MemoryUtil.memAlloc(16 * 4);
 
-    public static ByteBuffer ChunkOffset = MemoryUtil.memAlloc(3 * 4);
-    public static ByteBuffer lightDirection0 = MemoryUtil.memAlloc(3 * 4);
-    public static ByteBuffer lightDirection1 = MemoryUtil.memAlloc(3 * 4);
+    public static final ByteBuffer ChunkOffset = MemoryUtil.memAlloc(3 * 4);
+    public static final ByteBuffer lightDirection0 = MemoryUtil.memAlloc(3 * 4);
+    public static final ByteBuffer lightDirection1 = MemoryUtil.memAlloc(3 * 4);
 
-    public static ByteBuffer shaderColor = MemoryUtil.memAlloc(4 * 4);
-    public static ByteBuffer shaderFogColor = MemoryUtil.memAlloc(4 * 4);
+    public static final ByteBuffer shaderColor = MemoryUtil.memAlloc(4 * 4);
+    public static final ByteBuffer shaderFogColor = MemoryUtil.memAlloc(4 * 4);
 
     static final float[] depthBias = new float[2];
     private static boolean depthBiasEnable = false;
@@ -147,6 +147,15 @@ public class VRenderSystem {
         mat.store(projectionMatrix.asFloatBuffer());
     }
 
+    public static void set2() {
+//        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.asFloatBuffer());
+        long P = MemoryUtil.memAddress0(projectionMatrix);
+        long l = MemoryUtil.memAddress0(MVP);
+
+
+        for (int i = 0; i < 8; i++)
+            MemoryUtil.memPutLong(l + (i << 3), MemoryUtil.memGetLong(P + (i << 3)));
+    }
     public static void set() {
         org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.asFloatBuffer());
 //        org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.asFloatBuffer());
@@ -226,7 +235,7 @@ public class VRenderSystem {
         Drawer.currentLogicOpState.setLogicOp(p_69836_);
     }
 
-    public static void clearColor(float f1, float f2, float f3, float f4) {
+    public static void setRenderPassColor(float f1, float f2, float f3, float f4) {
         clearColor.put(0, f1);
         clearColor.put(1, f2);
         clearColor.put(2, f3);
@@ -234,8 +243,8 @@ public class VRenderSystem {
 
     }
 
-    public static void clear(int v) {
-        Drawer.clearAttachments(v);
+    public static void clearDepthBuffer(int v) {
+        Drawer.clearDepthAttachment(v);
     }
 
     public static void disableDepthTest() {

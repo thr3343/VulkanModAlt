@@ -18,6 +18,7 @@ import net.vulkanmod.vulkan.shader.PushConstant;
 import net.vulkanmod.vulkan.shader.UBO;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -45,10 +46,10 @@ public class Pipeline {
     private static final long pipelineCache = createPipelineCache();
     private static final int imagesSize = getSwapChainImages().size();
 
-    private String path;
+    @NotNull private final String path;
     private long descriptorSetLayout;
     private long pipelineLayout;
-    private Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
+    private final Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
     private VertexFormat vertexFormat;
 
     private final long[] descriptorPools = new long[imagesSize];
@@ -63,7 +64,7 @@ public class Pipeline {
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
 
-    public Pipeline(VertexFormat vertexFormat, String path) {
+    public Pipeline(VertexFormat vertexFormat, @NotNull String path) {
         this.path = path;
 
         createDescriptorSetLayout(path);
@@ -152,7 +153,7 @@ public class Pipeline {
 
             rasterizer.frontFace(VK_FRONT_FACE_COUNTER_CLOCKWISE);
 
-            if (Objects.equals(this.path, "core/position_tex"))
+            if (this.path.equals("core/position_tex")) //WorldBorder
             {
                 rasterizer.depthBiasEnable(true);
                 rasterizer.depthBiasConstantFactor(-3.0F);

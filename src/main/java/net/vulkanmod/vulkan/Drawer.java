@@ -26,8 +26,7 @@ import java.util.Set;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.NULL;
-import static org.lwjgl.system.MemoryUtil.memPutAddress;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -159,11 +158,11 @@ public class Drawer {
         try(MemoryStack stack = stackPush()) {
 
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.callocStack(stack);
-            beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+            beginInfo.sType$Default();
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
             VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
-            renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
+            renderPassInfo.sType$Default();
 
             renderPassInfo.renderPass(getRenderPass());
 
@@ -188,11 +187,9 @@ public class Drawer {
 
             vkCmdBeginRenderPass(commandBuffer, renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            VkViewport.Buffer pViewport = Vulkan.viewport(stack);
-            vkCmdSetViewport(commandBuffer, 0, pViewport);
+            vkCmdSetViewport(commandBuffer, 0, Vulkan.viewport(stack));
 
-            VkRect2D.Buffer pScissor = Vulkan.scissor(stack);
-            vkCmdSetScissor(commandBuffer, 0, pScissor);
+            vkCmdSetScissor(commandBuffer, 0, Vulkan.scissor(stack));
 
             vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
 
@@ -315,17 +312,19 @@ public class Drawer {
 
             final int imageIndex = pImageIndex.get(0);
 
-            VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
-            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+            VkSubmitInfo submitInfo = VkSubmitInfo.mallocStack(stack);
+            submitInfo.sType$Default();
+            submitInfo.pNext(NULL);
 
             submitInfo.waitSemaphoreCount(1);
             memPutAddress(submitInfo.address() + VkSubmitInfo.PWAITSEMAPHORES, imageAvailableSemaphores.address(currentFrame));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT));
+            memPutAddress(submitInfo.address() + VkSubmitInfo.PWAITDSTSTAGEMASK, stack.npointer(VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT));
 
             memPutAddress(submitInfo.address() + VkSubmitInfo.PSIGNALSEMAPHORES, renderFinishedSemaphores.address(currentFrame));
             VkSubmitInfo.nsignalSemaphoreCount(submitInfo.address(), 1);
 
-            submitInfo.pCommandBuffers(stack.pointers(commandBuffers.get(imageIndex)));
+            memPutAddress(submitInfo.address() + VkSubmitInfo.PCOMMANDBUFFERS, (stack.npointer(commandBuffers.get(imageIndex))));
+            VkSubmitInfo.ncommandBufferCount(submitInfo.address(), 1);
 
             vkResetFences(device, (inFlightFences.get(currentFrame)));
 
@@ -336,16 +335,18 @@ public class Drawer {
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 
-            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.callocStack(stack);
+            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.mallocStack(stack);
             presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
+            presentInfo.pNext(NULL);
 
             memPutAddress(presentInfo.address() + VkPresentInfoKHR.PWAITSEMAPHORES, renderFinishedSemaphores.address(currentFrame));
             VkPresentInfoKHR.nwaitSemaphoreCount(presentInfo.address(), 1);
 
             presentInfo.swapchainCount(1);
-            presentInfo.pSwapchains(stack.longs(Vulkan.getSwapChain()));
+            memPutAddress(presentInfo.address() + VkPresentInfoKHR.PSWAPCHAINS, stack.npointer(Vulkan.getSwapChain()));
 
             presentInfo.pImageIndices(pImageIndex);
+            memPutAddress(presentInfo.address() + VkPresentInfoKHR.PRESULTS, NULL);
 
             vkResult = vkQueuePresentKHR(Vulkan.getPresentQueue(), presentInfo);
 
@@ -509,7 +510,7 @@ public class Drawer {
         vkCmdSetDepthBias(commandBuffer, units, 0.0f, factor);
     }
 
-    public static void clearAttachments(int v) {
+    public static void clearDepthAttachment(int v) {
         if (v != (GL11C.GL_DEPTH_BUFFER_BIT)) return;
         if(skipRendering) return;
 

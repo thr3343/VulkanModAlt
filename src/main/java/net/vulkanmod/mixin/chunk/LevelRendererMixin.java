@@ -587,7 +587,7 @@ public abstract class LevelRendererMixin {
                                             //Not sure if transparencyChain is needed as the layers seem to render fine without depth Clearing.Copying
 
                                             poseStack2.popPose();
-                                            RenderSystem.applyModelViewMatrix();
+
                                             {
 
 
@@ -606,7 +606,7 @@ public abstract class LevelRendererMixin {
                                             //Render WorldBorder after VBOs
                                             poseStack2.pushPose();
                                             poseStack2.mulPoseMatrix(pose);
-                                            RenderSystem.applyModelViewMatrix();
+
                                             if (this.transparencyChain != null) {
                                                 RenderStateShard.WEATHER_TARGET.setupRenderState();
                                                 profilerFiller.popPush("weather");
