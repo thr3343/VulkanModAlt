@@ -36,12 +36,12 @@ public class GameRendererMixin {
     @Shadow private @Nullable static ShaderInstance positionColorTexLightmapShader;
     @Shadow private @Nullable static ShaderInstance positionTexColorNormalShader;
     @Shadow private @Nullable static ShaderInstance positionTexLightmapColorShader;
-    @Shadow private @Nullable static ShaderInstance rendertypeSolidShader;
+//    @Shadow private @Nullable static ShaderInstance rendertypeSolidShader;
     @Shadow private @Nullable static ShaderInstance rendertypeCutoutMippedShader;
-    @Shadow private @Nullable static ShaderInstance rendertypeCutoutShader;
-    @Shadow private @Nullable static ShaderInstance rendertypeTranslucentShader;
-    @Shadow private @Nullable static ShaderInstance rendertypeTranslucentMovingBlockShader;
-    @Shadow private @Nullable static ShaderInstance rendertypeTranslucentNoCrumblingShader;
+//    @Shadow private @Nullable static ShaderInstance rendertypeCutoutShader;
+//    @Shadow private @Nullable static ShaderInstance rendertypeTranslucentShader;
+//    @Shadow private @Nullable static ShaderInstance rendertypeTranslucentMovingBlockShader;
+//    @Shadow private @Nullable static ShaderInstance rendertypeTranslucentNoCrumblingShader;
     @Shadow private @Nullable static ShaderInstance rendertypeArmorCutoutNoCullShader;
     @Shadow private @Nullable static ShaderInstance rendertypeEntitySolidShader;
     @Shadow private @Nullable static ShaderInstance rendertypeEntityCutoutShader;
@@ -74,7 +74,7 @@ public class GameRendererMixin {
     @Shadow private @Nullable static ShaderInstance rendertypeTextSeeThroughShader;
     @Shadow private @Nullable static ShaderInstance rendertypeTextIntensitySeeThroughShader;
     @Shadow private @Nullable static ShaderInstance rendertypeLightningShader;
-    @Shadow private @Nullable static ShaderInstance rendertypeTripwireShader;
+//    @Shadow private @Nullable static ShaderInstance rendertypeTripwireShader;
     @Shadow private @Nullable static ShaderInstance rendertypeEndPortalShader;
     @Shadow private @Nullable static ShaderInstance rendertypeEndGatewayShader;
     @Shadow private @Nullable static ShaderInstance rendertypeLinesShader;
@@ -129,24 +129,24 @@ public class GameRendererMixin {
 //         list1.add(Pair.of(new ShaderInstance(manager, "position_tex_lightmap_color", DefaultVertexFormat.POSITION_TEX_LIGHTMAP_COLOR), (p_172687_) -> {
 //            positionTexLightmapColorShader = p_172687_;
 //         }));
-            list1.add(Pair.of(new ShaderInstance(manager, "rendertype_solid", DefaultVertexFormat.BLOCK), (p_172684_) -> {
-                rendertypeSolidShader = p_172684_;
-            }));
+//            list1.add(Pair.of(new ShaderInstance(manager, "rendertype_solid", DefaultVertexFormat.BLOCK), (p_172684_) -> {
+//                rendertypeSolidShader = p_172684_;
+//            }));
             list1.add(Pair.of(new ShaderInstance(manager, "rendertype_cutout_mipped", DefaultVertexFormat.BLOCK), (p_172681_) -> {
                 rendertypeCutoutMippedShader = p_172681_;
             }));
-            list1.add(Pair.of(new ShaderInstance(manager, "rendertype_cutout", DefaultVertexFormat.BLOCK), (p_172678_) -> {
-                rendertypeCutoutShader = p_172678_;
-            }));
-            list1.add(Pair.of(new ShaderInstance(manager, "rendertype_translucent", DefaultVertexFormat.BLOCK), (p_172675_) -> {
-                rendertypeTranslucentShader = p_172675_;
-            }));
-         list1.add(Pair.of(new ShaderInstance(manager, "rendertype_translucent_moving_block", DefaultVertexFormat.BLOCK), (p_172672_) -> {
-            rendertypeTranslucentMovingBlockShader = p_172672_;
-         }));
-         list1.add(Pair.of(new ShaderInstance(manager, "rendertype_translucent_no_crumbling", DefaultVertexFormat.BLOCK), (p_172669_) -> {
-            rendertypeTranslucentNoCrumblingShader = p_172669_;
-         }));
+//            list1.add(Pair.of(new ShaderInstance(manager, "rendertype_cutout", DefaultVertexFormat.BLOCK), (p_172678_) -> {
+//                rendertypeCutoutShader = p_172678_;
+//            }));
+//            list1.add(Pair.of(new ShaderInstance(manager, "rendertype_translucent", DefaultVertexFormat.BLOCK), (p_172675_) -> {
+//                rendertypeTranslucentShader = p_172675_;
+//            }));
+//         list1.add(Pair.of(new ShaderInstance(manager, "rendertype_translucent_moving_block", DefaultVertexFormat.BLOCK), (p_172672_) -> {
+//            rendertypeTranslucentMovingBlockShader = p_172672_;
+//         }));
+//         list1.add(Pair.of(new ShaderInstance(manager, "rendertype_translucent_no_crumbling", DefaultVertexFormat.BLOCK), (p_172669_) -> {
+//            rendertypeTranslucentNoCrumblingShader = p_172669_;
+//         }));
          list1.add(Pair.of(new ShaderInstance(manager, "rendertype_armor_cutout_no_cull", DefaultVertexFormat.NEW_ENTITY), (p_172666_) -> {
             rendertypeArmorCutoutNoCullShader = p_172666_;
          }));
@@ -252,9 +252,9 @@ public class GameRendererMixin {
          list1.add(Pair.of(new ShaderInstance(manager, "rendertype_lightning", DefaultVertexFormat.POSITION_COLOR), (p_172787_) -> {
             rendertypeLightningShader = p_172787_;
          }));
-         list1.add(Pair.of(new ShaderInstance(manager, "rendertype_tripwire", DefaultVertexFormat.BLOCK), (p_172785_) -> {
-                rendertypeTripwireShader = p_172785_;
-            }));
+//         list1.add(Pair.of(new ShaderInstance(manager, "rendertype_tripwire", DefaultVertexFormat.BLOCK), (p_172785_) -> {
+//                rendertypeTripwireShader = p_172785_;
+//            }));
          ShaderInstance endPortalShader = new ShaderInstance(manager, "rendertype_end_portal", DefaultVertexFormat.POSITION);
          list1.add(Pair.of(endPortalShader, (p_172782_) -> {
             rendertypeEndPortalShader = p_172782_;

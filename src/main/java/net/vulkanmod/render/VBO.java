@@ -6,9 +6,8 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.math.Matrix4f;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.ShaderInstance;
-import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.render.chunk.util.VBOUtil;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
@@ -23,6 +22,7 @@ import java.nio.ByteBuffer;
 public class VBO {
     public boolean preInitalised=true;
     public boolean hasAbort=false;
+    public boolean translucentAlphaBlending =false;
     private VertexBuffer vertexBuffer;
     private IndexBuffer indexBuffer;
     private VertexFormat.IndexType indexType;
@@ -33,13 +33,13 @@ public class VBO {
     private VertexFormat vertexFormat;
 
     private boolean autoIndexed = false;
-    private final RenderType renderType;
+
     private int x;
     private int y;
     private int z;
 
-    public VBO(RenderType renderType, int x, int y, int z) {
-        this.renderType = renderType;
+    public VBO(int x, int y, int z) {
+
         this.x = x;
         this.y = y;
         this.z = z;
@@ -70,9 +70,9 @@ public class VBO {
         final long addr = MemoryUtil.memAddress0(buffer.vertexBuffer());
         for(int i = 0; i< buffer.vertexBuffer().remaining(); i+=32)
         {
-            MemoryUtil.memPutFloat(addr+i,   (MemoryUtil.memGetFloat(addr+i)  +(float)(x- WorldRenderer.camX - WorldRenderer.originX)));
+            MemoryUtil.memPutFloat(addr+i,   (MemoryUtil.memGetFloat(addr+i)  +(float)(x- VBOUtil.camX - VBOUtil.originX)));
             MemoryUtil.memPutFloat(addr+i+4, (MemoryUtil.memGetFloat(addr+i+4)+y));
-            MemoryUtil.memPutFloat(addr+i+8, (MemoryUtil.memGetFloat(addr+i+8)+(float)(z- WorldRenderer.camZ - WorldRenderer.originZ)));
+            MemoryUtil.memPutFloat(addr+i+8, (MemoryUtil.memGetFloat(addr+i+8)+(float)(z- VBOUtil.camZ - VBOUtil.originZ)));
         }
     }
 
@@ -139,6 +139,7 @@ public class VBO {
     }
 
     public void close() {
+        if(this.preInitalised) return;
         if(vertexCount <= 0) return;
         vertexBuffer.freeBuffer();
         vertexBuffer = null;
@@ -150,6 +151,8 @@ public class VBO {
         this.vertexCount = 0;
         this.indexCount = 0;
         preInitalised=true;
+        VBOUtil.removeVBO(this);
+
     }
 
     public VertexFormat getFormat() {

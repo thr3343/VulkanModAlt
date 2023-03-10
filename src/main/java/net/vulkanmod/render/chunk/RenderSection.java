@@ -3,9 +3,6 @@ package net.vulkanmod.render.chunk;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.VertexBuffer;
-import it.unimi.dsi.fastutil.objects.ObjectArraySet;
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
@@ -21,13 +18,13 @@ import net.vulkanmod.render.VBO;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 public class RenderSection {
     private final int index;
+
+    public final VBO vbo;
 
     private final RenderSection[] neighbours = new RenderSection[6];
     private ChunkAreaManager.Tree chunkAreaTree;
@@ -42,7 +39,6 @@ public class RenderSection {
     @Nullable
     private ChunkTask.SortTransparencyTask lastResortTransparencyTask;
     private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
-    private final Map<RenderType, VBO> buffers;
     private AABB bb;
     private boolean dirty = true;
     private boolean lightReady = false;
@@ -62,20 +58,17 @@ public class RenderSection {
     public RenderSection(int index, int x, int y, int z) {
         this.index = index;
         this.origin.set(x, y, z);
-        buffers =
-        //TODO later: find something better
-        new Reference2ReferenceArrayMap<>(RenderType.chunkBufferLayers().stream().collect(Collectors.toMap((renderType) ->
-                renderType, (renderType) -> new VBO(renderType, x, y, z))));
+
+        vbo = new VBO(x, y, z);
     }
 
     public void setOrigin(int x, int y, int z) {
         this.reset();
         this.origin.set(x, y, z);
         this.bb = new AABB(x, y, z, x + 16, y + 16, z + 16);
-        for(VBO vbo : buffers.values())
-        {
-            vbo.updateOrigin(x, y, z);
-        }
+
+        vbo.updateOrigin(x, y, z);
+
         for(Direction direction : Direction.values()) {
             this.relativeOrigins[direction.ordinal()].set(this.origin).move(direction, 16);
         }
@@ -87,19 +80,20 @@ public class RenderSection {
 
     }
 
-    public boolean resortTransparency(RenderType renderType, TaskDispatcher taskDispatcher) {
-        CompiledSection compiledSection1 = this.getCompiledSection();
+    public boolean resortTransparency(TaskDispatcher taskDispatcher) {
+//        CompiledSection compiledSection1 = this.getCompiledSection();
         if (this.lastResortTransparencyTask != null) {
             this.lastResortTransparencyTask.cancel();
         }
 
-        if (!compiledSection1.renderTypes.contains(renderType)) {
+        if (!vbo.translucentAlphaBlending/* || compiledSection1.renderTypes != (renderType)*/) {
             return false;
         } else {
             this.lastResortTransparencyTask = new ChunkTask.SortTransparencyTask(this);
             taskDispatcher.schedule(this.lastResortTransparencyTask);
             return true;
         }
+
     }
 
     public void rebuildChunkAsync(TaskDispatcher dispatcher, RenderRegionCache renderRegionCache) {
@@ -165,10 +159,6 @@ public class RenderSection {
 
     public BlockPos getOrigin() {
         return this.origin;
-    }
-
-    public VBO getBuffer(RenderType renderType) {
-        return buffers.get(renderType);
     }
 
     public void setNeighbour(int index, @Nullable RenderSection chunk) {
@@ -251,7 +241,7 @@ public class RenderSection {
 
     public void releaseBuffers() {
         this.reset();
-        this.buffers.values().forEach(VBO::close);
+        this.vbo.close();
     }
 
     public static class CompiledSection {
@@ -260,7 +250,7 @@ public class RenderSection {
                 return false;
             }
         };
-        final Set<RenderType> renderTypes = new ObjectArraySet<>();
+//        final Set<RenderType> renderTypes = new ObjectArraySet<>();
         boolean isCompletelyEmpty = true;
         final List<BlockEntity> renderableBlockEntities = Lists.newArrayList();
         VisibilitySet visibilitySet = new VisibilitySet();
@@ -271,9 +261,9 @@ public class RenderSection {
             return this.isCompletelyEmpty;
         }
 
-        public boolean isEmpty(RenderType p_112759_) {
+        /*public boolean isEmpty(RenderType p_112759_) {
             return !this.renderTypes.contains(p_112759_);
-        }
+        }*/
 
         public List<BlockEntity> getRenderableBlockEntities() {
             return this.renderableBlockEntities;
