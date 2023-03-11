@@ -295,4 +295,14 @@ public class VRenderSystem {
     public static void depthFunc(int p_69457_) {
         depthFun = p_69457_;
     }
+
+    public static void set2() {
+//        org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.asFloatBuffer());
+        long P = MemoryUtil.memAddress0(projectionMatrix);
+        long l = MemoryUtil.memAddress0(MVP);
+
+
+        for (int i = 0; i < 8; i++)
+            MemoryUtil.memPutLong(l + (i << 3), MemoryUtil.memGetLong(P + (i << 3)));
+    }
 }

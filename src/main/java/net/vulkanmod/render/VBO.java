@@ -113,22 +113,6 @@ public class VBO {
 
     }
 
-    public void _drawWithShader(Matrix4f MV, Matrix4f P, ShaderInstance shader) {
-        if (this.indexCount != 0) {
-            RenderSystem.assertOnRenderThread();
-
-            RenderSystem.setShader(() -> shader);
-
-            VRenderSystem.applyMVP(MV, P);
-
-            Drawer drawer = Drawer.getInstance();
-            drawer.draw(vertexBuffer, indexBuffer, indexCount, mode.asGLMode);
-
-            VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
-
-        }
-    }
-
     public void drawChunkLayer() {
         if (this.indexCount != 0) {
 

@@ -1,6 +1,11 @@
 package net.vulkanmod.mixin.chunk;
 
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.math.Matrix4f;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.minecraft.client.Camera;
@@ -14,6 +19,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
+import net.vulkanmod.render.SkyBoxVBO;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -22,6 +28,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Set;
@@ -41,7 +48,16 @@ public abstract class LevelRendererMixin {
     @Shadow @Final private Minecraft minecraft;
     @Shadow @Final private Set<BlockEntity> globalBlockEntities;
     @Shadow private boolean generateClouds;
+
+    @Shadow private static BufferBuilder.RenderedBuffer buildSkyDisc(BufferBuilder bufferBuilder, float f) { return null; }
+
+    @Shadow protected abstract BufferBuilder.RenderedBuffer drawStars(BufferBuilder bufferBuilder);
+
     private WorldRenderer worldRenderer;
+
+    private static final SkyBoxVBO starBuffer = new SkyBoxVBO();
+    private static final SkyBoxVBO skyBuffer = new SkyBoxVBO();
+    private static final SkyBoxVBO darkBuffer = new SkyBoxVBO();
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void init(Minecraft minecraft, EntityRenderDispatcher entityRenderDispatcher, BlockEntityRenderDispatcher blockEntityRenderDispatcher, RenderBuffers renderBuffers, CallbackInfo ci) {
@@ -99,6 +115,61 @@ public abstract class LevelRendererMixin {
         this.worldRenderer.renderChunkLayer(renderType, poseStack, camX, camY, camZ, projectionMatrix);
     }
 
+    //Avoid NullPointer when calling VertexBuffer.bind()
+    @Redirect(method = "renderSky", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;bind()V"))
+    private void bindSkyBoxVBO(VertexBuffer instance)
+    {
+
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    private void createDarkSky() {
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder bufferBuilder = tesselator.getBuilder();
+
+
+        BufferBuilder.RenderedBuffer renderedBuffer = buildSkyDisc(bufferBuilder, -16.0F);
+
+        darkBuffer.upload_(renderedBuffer);
+        VertexBuffer.unbind();
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    private void createLightSky() {
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder bufferBuilder = tesselator.getBuilder();
+
+        BufferBuilder.RenderedBuffer renderedBuffer = buildSkyDisc(bufferBuilder, 16.0F);
+
+        skyBuffer.upload_(renderedBuffer);
+        VertexBuffer.unbind();
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    private void createStars() {
+        Tesselator tesselator = Tesselator.getInstance();
+        BufferBuilder bufferBuilder = tesselator.getBuilder();
+        RenderSystem.setShader(GameRenderer::getPositionShader);
+
+
+        BufferBuilder.RenderedBuffer renderedBuffer = this.drawStars(bufferBuilder);
+
+        starBuffer.upload_(renderedBuffer);
+        VertexBuffer.unbind();
+    }
+
     /**
      * @author
      * @reason
@@ -124,6 +195,24 @@ public abstract class LevelRendererMixin {
             }
 
         }
+    }
+    
+    @Redirect(method = "renderSky", at=@At(value = "INVOKE", ordinal = 0, target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;drawWithShader(Lcom/mojang/math/Matrix4f;Lcom/mojang/math/Matrix4f;Lnet/minecraft/client/renderer/ShaderInstance;)V"))
+    private void drawWithShaderSkyBuffer(VertexBuffer instance, Matrix4f matrix4f, Matrix4f matrix4f2, ShaderInstance shaderInstance)
+    {
+        skyBuffer._drawWithShader(matrix4f, matrix4f2, shaderInstance);
+    }
+
+    @Redirect(method = "renderSky", at=@At(value = "INVOKE", ordinal = 1, target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;drawWithShader(Lcom/mojang/math/Matrix4f;Lcom/mojang/math/Matrix4f;Lnet/minecraft/client/renderer/ShaderInstance;)V"))
+    private void drawWithShaderStarBuffer(VertexBuffer instance, Matrix4f matrix4f, Matrix4f matrix4f2, ShaderInstance shaderInstance)
+    {
+        starBuffer._drawWithShader(matrix4f, matrix4f2, shaderInstance);
+    }
+
+    @Redirect(method = "renderSky", at=@At(value = "INVOKE", ordinal = 2, target = "Lcom/mojang/blaze3d/vertex/VertexBuffer;drawWithShader(Lcom/mojang/math/Matrix4f;Lcom/mojang/math/Matrix4f;Lnet/minecraft/client/renderer/ShaderInstance;)V"))
+    private void drawWithShaderDarkBuffer(VertexBuffer instance, Matrix4f matrix4f, Matrix4f matrix4f2, ShaderInstance shaderInstance)
+    {
+        darkBuffer._drawWithShader(matrix4f, matrix4f2, shaderInstance);
     }
 
     /**
