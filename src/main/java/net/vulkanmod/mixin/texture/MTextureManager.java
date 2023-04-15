@@ -28,12 +28,12 @@ public abstract class MTextureManager {
      */
     @Overwrite
     public void tick() {
-        if(Drawer.skipRendering) return;
-        TransferQueue.startRecording();
-        for (Tickable tickable : this.tickableTextures) {
-            tickable.tick();
-        }
-        TransferQueue.endRecording();
+//        if(Drawer.skipRendering) return;
+//        TransferQueue.startRecording();
+//        for (Tickable tickable : this.tickableTextures) {
+//            tickable.tick();
+//        }
+//        TransferQueue.endRecording();
     }
 
     /**

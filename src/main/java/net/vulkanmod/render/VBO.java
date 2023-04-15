@@ -1,13 +1,13 @@
 package net.vulkanmod.render;
 
 import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.Environment;
+import net.vulkanmod.render.chunk.util.VBOUtil;
 import net.vulkanmod.vulkan.Drawer;
-import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
-import net.vulkanmod.vulkan.memory.IndexBuffer;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.memory.VertexBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
@@ -18,9 +18,10 @@ import static net.vulkanmod.render.chunk.util.VBOUtil.*;
 
 @Environment(EnvType.CLIENT)
 public class VBO {
+    final public int index;
     public boolean preInitalised=true;
     public boolean hasAbort=false;
-    public VertexBuffer vertexBuffer;
+    public VkBufferPointer fakeVerBufferPointer;
     public int indexCount;
     private int vertexCount;
 
@@ -28,8 +29,10 @@ public class VBO {
     private int x;
     private int y;
     private int z;
+    private int size_t;
 
-    public VBO(String name, int x, int y, int z) {
+    public VBO(int index, String name, int x, int y, int z) {
+        this.index = index;
         this.type = getLayer(name);
         this.x = x;
         this.y = y;
@@ -43,12 +46,13 @@ public class VBO {
         this.vertexCount = parameters.vertexCount();
 
         final ByteBuffer vertBuff = buffer.vertexBuffer();
+        this.size_t = vertBuff.remaining();
 //        final ByteBuffer idxBuff = buffer.indexBuffer();
 
         if(!sort) translateVBO(vertBuff);
 
 
-        if (!sort) this.configureVertexFormat(parameters, vertBuff);
+        this.configureVertexFormat(parameters, vertBuff);
 //        if (type==RenderTypes.TRANSLUCENT) this.configureIndexBuffer(parameters, idxBuff);
 
         buffer.release();
@@ -73,31 +77,30 @@ public class VBO {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
         if (!parameters.indexOnly()) {
 
-            if(this.vertexBuffer==null) this.vertexBuffer = new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
-            if(data.remaining()>vertexBuffer.getTotalSize())
+            if(this.fakeVerBufferPointer ==null || !VBOUtil.isAlreadyLoaded(this.index, this.type, this.size_t))
             {
-                this.vertexBuffer.freeBuffer();
-                this.vertexBuffer=new VertexBuffer(data.remaining(), MemoryTypes.GPU_MEM);
+                fakeVerBufferPointer =VBOUtil.addSubAlloc(vertexCount, this.size_t, this.type);
             }
 
-            //
-
-            vertexBuffer.uploadToBuffer(32 * parameters.vertexCount(), data);
+            VBOUtil.upload(fakeVerBufferPointer, this.size_t, data, this.type);
 
         }
     }
 
+    public void DrawChunkLayer() {
+        Drawer.drawIndexedBindless(this.fakeVerBufferPointer.i2()>>5, this.indexCount);
+    }
 
     public void close() {
         if(preInitalised) return;
         if(vertexCount <= 0) return;
-        vertexBuffer.freeBuffer();
-        vertexBuffer = null;
+
+        removeVBO(this);
+        fakeVerBufferPointer = null;
 
         this.vertexCount = 0;
         this.indexCount = 0;
         preInitalised=true;
-        removeVBO(this);
     }
 
     public void updateOrigin(int x, int y, int z) {

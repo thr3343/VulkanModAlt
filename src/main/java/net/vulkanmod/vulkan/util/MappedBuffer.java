@@ -19,6 +19,7 @@ public record MappedBuffer(ByteBuffer buffer, long ptr)
     public void putFloat(int idx, float f) {
         VUtil.UNSAFE.putFloat(ptr + idx, f);
     }
+    public void putShort(int idx, short f) { VUtil.UNSAFE.putShort(ptr + idx, f); }
 
     public void putInt(int idx, int f) {
         VUtil.UNSAFE.putInt(ptr + idx, f);

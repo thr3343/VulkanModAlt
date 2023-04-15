@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
-import it.unimi.dsi.fastutil.objects.Reference2ReferenceArrayMap;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderType;
@@ -20,11 +19,8 @@ import net.vulkanmod.render.VBO;
 import javax.annotation.Nullable;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class RenderSection {
     private final int index;
@@ -42,7 +38,7 @@ public class RenderSection {
     @Nullable
     private ChunkTask.SortTransparencyTask lastResortTransparencyTask;
     private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
-    private final Map<RenderType, VBO> buffers;
+    public final VBO vbo;
     private AABB bb;
     private boolean dirty = true;
     private boolean lightReady = false;
@@ -62,20 +58,17 @@ public class RenderSection {
     public RenderSection(int index, int x, int y, int z) {
         this.index = index;
         this.origin.set(x, y, z);
-        buffers =
+        vbo =
         //TODO later: find something better
-        new Reference2ReferenceArrayMap<>(Stream.of(RenderType.CUTOUT, RenderType.CUTOUT_MIPPED, RenderType.TRANSLUCENT).collect(Collectors.toMap((renderType) ->
-                renderType, (renderType) -> new VBO(renderType.name, x, y, z))));
+        new VBO(this.index, RenderType.CUTOUT.name, x, y, z);
     }
 
     public void setOrigin(int x, int y, int z) {
         this.reset();
         this.origin.set(x, y, z);
         this.bb = new AABB(x, y, z, x + 16, y + 16, z + 16);
-        for(VBO vbo : buffers.values())
-        {
-            vbo.updateOrigin(x, y, z);
-        }
+        vbo.updateOrigin(x, y, z);
+
         for(Direction direction : Direction.values()) {
             this.relativeOrigins[direction.ordinal()].set(this.origin).move(direction, 16);
         }
@@ -167,10 +160,6 @@ public class RenderSection {
         return this.origin;
     }
 
-    public VBO getBuffer(RenderType renderType) {
-        return buffers.get(renderType);
-    }
-
     public void setNeighbour(int index, @Nullable RenderSection chunk) {
         this.neighbours[index] = chunk;
     }
@@ -251,7 +240,7 @@ public class RenderSection {
 
     public void releaseBuffers() {
         this.reset();
-        this.buffers.values().forEach(VBO::close);
+        this.vbo.close();
     }
 
     public static class CompiledSection {

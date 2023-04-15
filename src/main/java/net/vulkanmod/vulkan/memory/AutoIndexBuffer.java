@@ -1,11 +1,14 @@
 package net.vulkanmod.vulkan.memory;
 
+import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ShortBuffer;
 
 public class AutoIndexBuffer {
+    private static MappedBuffer buffer;
+    private static final int rowReOrderDepth = 6*16;
     int vertexCount;
     DrawType drawType;
     IndexBuffer indexBuffer;
@@ -19,26 +22,26 @@ public class AutoIndexBuffer {
     private void createIndexBuffer(int vertexCount) {
         this.vertexCount = vertexCount;
         int size;
-        ByteBuffer buffer;
+
 
         switch (drawType) {
             case QUADS -> {
                 size = vertexCount * 3 / 2 * IndexBuffer.IndexType.SHORT.size;
-                buffer = genQuadIdxs(vertexCount);
+                genQuadIdxs(vertexCount);
             }
             case TRIANGLE_FAN -> {
                 size = (vertexCount - 2) * 3 * IndexBuffer.IndexType.SHORT.size;
-                buffer = genTriangleFanIdxs(vertexCount);
+                genTriangleFanIdxs(vertexCount);
             }
             case TRIANGLE_STRIP -> {
                 size = (vertexCount - 2) * 3 * IndexBuffer.IndexType.SHORT.size;
-                buffer = genTriangleStripIdxs(vertexCount);
+                genTriangleStripIdxs(vertexCount);
             }
             default -> throw new RuntimeException("unknown drawType");
         }
 
         indexBuffer = new IndexBuffer(size, MemoryTypes.GPU_MEM);
-        indexBuffer.copyBuffer(buffer);
+        indexBuffer.copyBuffer(buffer.buffer());
     }
 
     public void checkCapacity(int vertexCount) {
@@ -53,11 +56,11 @@ public class AutoIndexBuffer {
         }
     }
 
-    public static ByteBuffer genQuadIdxs(int vertexCount) {
+    public static void genQuadIdxs(int vertexCount) {
         //short[] idxs = {0, 1, 2, 0, 2, 3};
 
         int indexCount = vertexCount * 3 / 2;
-        ByteBuffer buffer = MemoryUtil.memAlloc(indexCount * Short.BYTES);
+        buffer = MappedBuffer.AddMappedBuffer(indexCount * Short.BYTES);
 
         //short[] idxs = new short[indexCount];
 
@@ -73,40 +76,50 @@ public class AutoIndexBuffer {
             j += 12;
         }
 
-        return buffer;
         //this.type.copyIndexBuffer(this, bufferSize, idxs);
     }
 
-    public static ByteBuffer genTriangleFanIdxs(int vertexCount) {
+    public static void genTriangleFanIdxs(int vertexCount) {
         int indexCount = (vertexCount - 2) * 3;
-        ByteBuffer buffer = MemoryUtil.memAlloc(indexCount * Short.BYTES);
-        ShortBuffer idxs = buffer.asShortBuffer();
+        buffer = MappedBuffer.AddMappedBuffer(indexCount * Short.BYTES);
+
 
         //short[] idxs = byteBuffer.asShortBuffer().array();
 
         int j = 0;
-        for (int i = 0; i < vertexCount - 2; ++i) {
-//            idxs[j] = 0;
-//            idxs[j + 1] = (short) (i + 1);
-//            idxs[j + 2] = (short) (i + 2);
+        for(int index = 0; index < vertexCount; index += 4* rowReOrderDepth) {
 
-            idxs.put(j, (short) 0);
-            idxs.put(j + 1, (short) (i + 1));
-            idxs.put(j + 2, (short) (i + 2));
+            for (int i = rowReOrderDepth - 1; i >= 0; i--) {
+                j = addIdxBlock(j, index+(i*4));
+            }
 
-            j += 3;
+
         }
 
-        buffer.rewind();
-        return buffer;
+
+        //this.type.copyIndexBuffer(this, bufferSize, idxs);
     }
 
-    public static ByteBuffer genTriangleStripIdxs(int vertexCount) {
+    private static int addIdxBlock(int vtx, int idx) {
+        {
+            buffer.putShort(vtx, (short) (idx));
+            buffer.putShort(vtx + 2, (short) (idx + 1));
+            buffer.putShort(vtx + 4, (short) (idx + 2));
+            buffer.putShort(vtx + 6, (short) (idx + 2));
+            buffer.putShort(vtx + 8, (short) (idx + 3));
+            buffer.putShort(vtx + 10, (short) (idx));
+
+            vtx += 12;
+        }
+        return vtx;
+    }
+
+    public static void genTriangleStripIdxs(int vertexCount) {
         int indexCount = (vertexCount - 2) * 3;
 
         //TODO: free buffer
-        ByteBuffer buffer = MemoryUtil.memAlloc(indexCount * Short.BYTES);
-        ShortBuffer idxs = buffer.asShortBuffer();
+        buffer = MappedBuffer.AddMappedBuffer(indexCount * Short.BYTES);
+
 
         //short[] idxs = byteBuffer.asShortBuffer().array();
 
@@ -116,15 +129,14 @@ public class AutoIndexBuffer {
 //            idxs[j + 1] = (short) (i + 1);
 //            idxs[j + 2] = (short) (i + 2);
 
-            idxs.put(j, (short) i);
-            idxs.put(j + 1, (short) (i + 1));
-            idxs.put(j + 2, (short) (i + 2));
+            buffer.putShort(j, (short) i);
+            buffer.putShort(j + 2, (short) (i + 1));
+            buffer.putShort(j + 4, (short) (i + 2));
 
-            j += 3;
+            j += 6;
         }
 
-        buffer.rewind();
-        return buffer;
+
     }
 
     public IndexBuffer getIndexBuffer() { return indexBuffer; }

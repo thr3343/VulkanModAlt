@@ -10,7 +10,7 @@ public abstract class Buffer {
 
     protected int bufferSize;
     protected int usedBytes;
-    protected int offset;
+    public int offset;
 
     protected MemoryType type;
     protected int usage;

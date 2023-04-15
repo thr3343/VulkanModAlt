@@ -116,9 +116,10 @@ public abstract class LevelRendererMixin {
 
 
     @Redirect(method = "renderLevel", at=@At(value="INVOKE", ordinal =0, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLcom/mojang/math/Matrix4f;)V"))
-    private void renderChunkLayer1(LevelRenderer instance, RenderType renderType, PoseStack poseStack, double d, double e, double f, Matrix4f matrix4f)
+    private void renderChunkLayer1(LevelRenderer instance, RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f matrix4f)
     {
-        VBOUtil.updateCamTranslation(poseStack, d, e, f, matrix4f);
+        VBOUtil.updateCamTranslation(poseStack, camX, camY, camZ, matrix4f);
+        this.worldRenderer.renderChunkLayer(renderType, camX, camY, camZ, matrix4f);
     }
     /**
      * @author
@@ -136,7 +137,7 @@ public abstract class LevelRendererMixin {
     @Overwrite
     private void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix)
     {
-        this.worldRenderer.renderChunkLayer(renderType, camX, camY, camZ, projectionMatrix);
+//        this.worldRenderer.renderChunkLayer(renderType, camX, camY, camZ, projectionMatrix);
     }
 
 

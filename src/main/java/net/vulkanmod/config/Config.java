@@ -11,7 +11,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 
 public class Config {
-
+    public static int vertexStride = 2048;
     public int frameQueueSize = 2;
     public VideoResolution resolution = VideoResolution.getFirstAvailable();
     public boolean windowedFullscreen = false;

@@ -185,7 +185,12 @@ public class Options {
                             return Component.nullToEmpty(t);
                         },
                         value -> config.advCulling = value,
-                        () -> config.advCulling)
+                        () -> config.advCulling),
+                new RangeOption("VertexStride", 128, 32768, 32,
+                        value -> Config.vertexStride = value,
+                        () -> Config.vertexStride)
+                        .setTooltip(Component.nullToEmpty("""
+                        VertexStride"""))
         };
 
     }

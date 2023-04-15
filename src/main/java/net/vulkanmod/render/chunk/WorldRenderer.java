@@ -28,6 +28,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.Config;
+import net.vulkanmod.config.Options;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.Profiler;
@@ -37,8 +39,9 @@ import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.chunk.util.VBOUtil;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.IndexBuffer;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.shader.Pipeline;
+import net.vulkanmod.vulkan.util.VUtil;
 
 import javax.annotation.Nullable;
 import java.util.Collection;
@@ -47,13 +50,12 @@ import java.util.Set;
 import java.util.SortedSet;
 
 import static net.vulkanmod.render.chunk.util.VBOUtil.*;
-import static org.lwjgl.vulkan.VK10.VK_INDEX_TYPE_UINT16;
-import static org.lwjgl.vulkan.VK10.vkCmdBindIndexBuffer;
+import static org.lwjgl.vulkan.VK10.*;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
 
-    private final Minecraft minecraft;
+    public final Minecraft minecraft;
 
     private ClientLevel level;
     private int lastViewDistance;
@@ -253,8 +255,7 @@ public class WorldRenderer {
         this.sectionsInFrustum.clear();
 
         cutoutChunks.clear();
-        cutoutMippedChunks.clear();
-        translucentChunks.clear();
+//        translucentChunks.clear();
 
         this.lastFrame++;
 
@@ -267,13 +268,11 @@ public class WorldRenderer {
 
             this.scheduleUpdate(renderSection);
 
-            renderSection.compiledSection.renderTypes.stream().filter(renderType ->
-                    !renderSection.getBuffer(renderType).preInitalised).forEach(renderType -> {
-                        final VBO buffer = renderSection.getBuffer(renderType);
+            renderSection.compiledSection.renderTypes.stream().filter(renderType -> !renderSection.vbo.preInitalised).forEach(renderType -> {
+                final VBO buffer = renderSection.vbo;
                         switch (buffer.type) {
                             case CUTOUT -> cutoutChunks.add(buffer);
-                            case CUTOUT_MIPPED -> cutoutMippedChunks.add(buffer);
-                            case TRANSLUCENT -> translucentChunks.add(buffer);
+//                            case TRANSLUCENT -> translucentChunks.add(buffer);
                         }
             });
 
@@ -331,8 +330,7 @@ public class WorldRenderer {
         this.sectionsInFrustum.clear();
 
         VBOUtil.cutoutChunks.clear();
-        VBOUtil.cutoutMippedChunks.clear();
-        VBOUtil.translucentChunks.clear();
+//        VBOUtil.translucentChunks.clear();
 
         this.lastFrame++;
 
@@ -344,13 +342,11 @@ public class WorldRenderer {
 
             this.scheduleUpdate(renderSection);
 
-            renderSection.compiledSection.renderTypes.stream().filter(renderType ->
-                    !renderSection.getBuffer(renderType).preInitalised).forEach(renderType -> {
-                final VBO buffer = renderSection.getBuffer(renderType);
-                switch (buffer.type) {
-                    case CUTOUT -> cutoutChunks.add(buffer);
-                    case CUTOUT_MIPPED -> cutoutMippedChunks.add(buffer);
-                    case TRANSLUCENT -> translucentChunks.add(buffer);
+            renderSection.compiledSection.renderTypes.stream().filter(renderType -> !renderSection.vbo.preInitalised).forEach(renderType -> {
+                final VBO buffer = renderSection.vbo;
+                if (buffer.type == RenderTypes.CUTOUT) {
+                    cutoutChunks.add(buffer);
+//                    case TRANSLUCENT -> translucentChunks.add(buffer);
                 }
             });
 
@@ -464,6 +460,7 @@ public class WorldRenderer {
     public void allChanged() {
         resetOrigin();
         if (this.level != null) {
+            resetAllBuffers();
 //            this.graphicsChanged();
             this.level.clearTintCaches();
 //            if (this.taskDispatcher == null) {
@@ -495,6 +492,14 @@ public class WorldRenderer {
             }
 
         }
+    }
+
+    private void resetAllBuffers() {
+        vkDeviceWaitIdle(Vulkan.getDevice());
+        cutoutChunks.clear();
+//        translucentChunks.clear();
+        UberVertexBuffer.reset(0);
+//        transVertexBuffer.reset(0);
     }
 
     private void resetOrigin() {
@@ -547,15 +552,11 @@ public class WorldRenderer {
         //debug
         Profiler p = Profiler.getProfiler("chunks");
 
-        final RenderTypes layer = getLayer(renderType);
-        final ObjectArrayList<VBO> sections =
-                switch (layer) {
-                    case CUTOUT_MIPPED -> cutoutMippedChunks;
-                    case CUTOUT -> cutoutChunks;
-                    case TRANSLUCENT -> translucentChunks;
-                };
-        if(sections.isEmpty()) return;
-        p.pushMilestone("layer " + layer.name);
+//        final RenderTypes layer = getLayer(renderType);
+//        if(layer!=RenderTypes.CUTOUT) return;
+
+        if(cutoutChunks.isEmpty()) return;
+        p.pushMilestone("layer " + RenderTypes.CUTOUT.name);
 
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
@@ -577,18 +578,28 @@ public class WorldRenderer {
 
 
         Drawer drawer = Drawer.getInstance();
-        Pipeline pipeline = ((ShaderMixed)(layer.shader)).getPipeline();
+        Pipeline pipeline = ((ShaderMixed)(RenderTypes.CUTOUT.shader)).getPipeline();
         drawer.bindPipeline(pipeline);
 
         drawer.uploadAndBindUBOs(pipeline);
 
-        vkCmdBindIndexBuffer(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), drawer.getQuadsIndexBuffer().getIndexBuffer().getId(), drawer.getQuadsIndexBuffer().getIndexBuffer().getOffset(), VK_INDEX_TYPE_UINT16);
+        //        vkCmdBindIndexBuffer(commandBuffer, drawer.getQuadsIndexBuffer().getIndexBuffer().getId(), drawer.getQuadsIndexBuffer().getIndexBuffer().getOffset(), VK_INDEX_TYPE_UINT16);
 
-        for(final VBO vbo : sections)
-        {
-          Drawer.drawIndexed2(vbo.vertexBuffer, vbo.indexCount);
+
+        //        int size = layer==RenderTypes.CUTOUT?UberVertexBuffer.usedBytes: transVertexBuffer.usedBytes;
+        VUtil.UNSAFE.putLong(Drawer.pBuffers, UberVertexBuffer.bufferPointerSuperSet);
+        VUtil.UNSAFE.putLong(Drawer.pOffsets, 0);
+        nvkCmdBindVertexBuffers(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), 0, 1, Drawer.pBuffers, Drawer.pOffsets);
+
+//        int vertCount = (layer == RenderTypes.CUTOUT ? UberVertexBuffer : transVertexBuffer).vertCount;
+        //todo: free based on Rlative VertSize,(Ignroing any COttatiosn re;atvie torelative VBo BOundaries;i.e.g Dynamic Batch Sizing e.g.) not VBO: as sizing is now efefctviely equal, swap it with a previous relAlloc to ensure.maintaiN Effective Contiguity
+        for (int vertOffs = UberVertexBuffer.vertCount; vertOffs >=0; vertOffs-= Config.vertexStride) {
+//            if(UberVertexBuffer.vertCount+Short.MAX_VALUE+1> vertOffs)
+            {
+                Drawer.test2((Config.vertexStride >> 1) *3, UberVertexBuffer.vertCount-vertOffs);
+//                vertOffs+=Short.MAX_VALUE+1;
+            }
         }
-
 
 
 //        p1.end();

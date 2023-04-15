@@ -67,6 +67,8 @@ public abstract class DebugHudM {
         strings.add(String.format("Off-heap: " + getOffHeapMemory() + "MB"));
         strings.add("NativeMemory: " + MemoryManager.getInstance().getNativeMemoryMB() + "MB");
         strings.add("DeviceMemory: " + MemoryManager.getInstance().getDeviceMemoryMB() + "MB");
+        strings.add("DeviceMemory2: " + (UberVertexBuffer.usedBytes >> 20) + "MB");
+        strings.add("ReservedMemory: " + (UberVertexBuffer.size_t >> 20) + "MB");
         strings.add("");
         strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + DeviceInfo.cpuInfo);
@@ -76,13 +78,31 @@ public abstract class DebugHudM {
         strings.add("");
         strings.add("-=VBO Stats=-");
         strings.add("Cutout: "+ cutoutChunks.size());
-        strings.add("cutoutMipped: "+ cutoutMippedChunks.size());
-        strings.add("Translucent: "+ translucentChunks.size());
+
         strings.add("");
         strings.add("Total: "+ (
-                cutoutChunks.size() +
-                cutoutMippedChunks.size() +
-                translucentChunks.size()));
+                cutoutChunks.size()));
+
+        strings.add("Cutout-Buffers");
+        strings.add("");
+
+//        strings.add("Allocs: " + VirtualBuffer.allocs);
+//        strings.add("allocBytes: " + VirtualBuffer.allocBytes);
+        strings.add("subAllocs: " + UberVertexBuffer.subAllocs);
+//        strings.add("Blocks: " + VirtualBuffer.blocks);
+//        strings.add("BlocksBytes: " + VirtualBuffer.blockBytes);
+
+        strings.add("minRange: " + UberVertexBuffer.unusedRangesS);
+        strings.add("maxRange: " + UberVertexBuffer.unusedRangesM);
+        strings.add("unusedRangesCount: " + UberVertexBuffer.unusedRangesCount);
+        strings.add("minVBOSize: " + UberVertexBuffer.allocMin);
+        strings.add("maxVBOSize: " + UberVertexBuffer.allocMax);
+        strings.add("vertexCount: " + UberVertexBuffer.vertCount);
+        strings.add("indexCount: " + UberVertexBuffer.vertCount/3*2);
+        strings.add("unusedBytes: " + (UberVertexBuffer.size_t- UberVertexBuffer.usedBytes >> 20) + "MB");
+        strings.add("freeRanges: " + (UberVertexBuffer.FreeRanges.size()));
+        strings.add("activeRanges: " + (UberVertexBuffer.activeRanges.size()));
+
 
         return strings;
     }

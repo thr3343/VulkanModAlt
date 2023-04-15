@@ -1,7 +1,5 @@
 package net.vulkanmod.render.chunk;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.mojang.blaze3d.vertex.BufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -171,7 +169,7 @@ public class ChunkTask {
             final List<CompletableFuture<Void>> list = new ArrayList<>(compileResults.renderedLayers.size());
             if(!compileResults.renderedLayers.isEmpty()) compiledChunk.isCompletelyEmpty = false;
             compileResults.renderedLayers.forEach((renderType, renderedBuffer) -> {
-                list.add(taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, this.renderSection.getBuffer(renderType), false));
+                list.add(taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, this.renderSection.vbo, false));
                 compiledChunk.renderTypes.add(renderType);
             });
             return Util.sequenceFailFast(list).handle((listx, throwable) -> {
@@ -338,7 +336,7 @@ public class ChunkTask {
                     if (this.cancelled.get()) {
                         return CompletableFuture.completedFuture(Result.CANCELLED);
                     } else {
-                        CompletableFuture<Result> completablefuture = taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, renderSection.getBuffer(RenderType.translucent()), true).thenApply((p_112898_) -> {
+                        CompletableFuture<Result> completablefuture = taskDispatcher.scheduleUploadChunkLayer(renderedBuffer, renderSection.vbo, true).thenApply((p_112898_) -> {
                             return Result.CANCELLED;
                         });
                         return completablefuture.handle((p_199960_, p_199961_) -> {

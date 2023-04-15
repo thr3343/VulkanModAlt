@@ -61,8 +61,8 @@ public class Drawer {
 
     private static final LongBuffer buffers = MemoryUtil.memAllocLong(1);
     private static final LongBuffer offsets = MemoryUtil.memAllocLong(1);
-    private static final long pBuffers = MemoryUtil.memAddress0(buffers);
-    private static final long pOffsets = MemoryUtil.memAddress0(offsets);
+    public static final long pBuffers = MemoryUtil.memAddress0(buffers);
+    public static final long pOffsets = MemoryUtil.memAddress0(offsets);
 
 
     public Drawer()
@@ -79,7 +79,7 @@ public class Drawer {
         }
 
         uniformBuffers = new UniformBuffers(UBOSize);
-        quadsIndexBuffer = new AutoIndexBuffer(98304, AutoIndexBuffer.DrawType.QUADS);
+        quadsIndexBuffer = new AutoIndexBuffer(32768, AutoIndexBuffer.DrawType.QUADS);
         triangleFanIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_FAN);
         triangleStripIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
 
@@ -141,7 +141,6 @@ public class Drawer {
 
 //        CompletableFuture.runAsync(MemoryManager::freeBuffers);
         MemoryManager.getInstance().setCurrentFrame(currentFrame);
-        MemoryManager.getInstance().freeBuffers();
 
         resetDescriptors();
 
@@ -465,6 +464,20 @@ public class Drawer {
 
 //            Profiler.Push("draw");
         vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, 0, 0);
+    }
+
+    public static void drawIndexedBindless(int vertexBuffer, int indexCount) {
+        VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
+
+
+
+//            Profiler.Push("draw");
+        vkCmdDrawIndexed(commandBuffer, indexCount, 1, 0, vertexBuffer, 0);
+    }
+
+
+    public static void test2(int idxCnt, int vertOffs) {
+        vkCmdDrawIndexed(commandBuffers.get(currentFrame), idxCnt, 1, 0, vertOffs, 0);
     }
 
     public void bindPipeline(Pipeline pipeline) {
