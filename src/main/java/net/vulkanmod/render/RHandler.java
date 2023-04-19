@@ -38,7 +38,7 @@ public class RHandler
     public static  long drawCmdBuffer;
 
     public static final VirtualBuffer virtualBuffer=new VirtualBuffer(VUtil.alignedINT32_T, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    public static final VirtualBuffer virtualBufferIdx=new VirtualBuffer(VUtil.alignedINT32_T/8, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+//    public static final VirtualBuffer virtualBufferIdx=new VirtualBuffer(VUtil.alignedINT32_T/8, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
     public static ObjectArrayList<VBO> retiredVBOs = new ObjectArrayList<>(1024);
     private static  long drawCmdAlloc;
     private static final int size_t=0x10000;

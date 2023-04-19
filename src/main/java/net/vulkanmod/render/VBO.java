@@ -28,7 +28,7 @@ public class VBO implements Comparable<VBO> {
     public int z;
     private VkBufferPointer fakeVertexBuffer;
     public boolean translucentAlphaBlending =false; //if has translucent But applies a Tint/AlphaBlending (100% transparent is OK and can be treated as Solid)
-    private VkBufferPointer fakeIndexBuffer;
+//    private VkBufferPointer fakeIndexBuffer;
     public int indexCount;
     private int vertexCount;
     private VertexFormat.Mode mode;
@@ -63,7 +63,7 @@ public class VBO implements Comparable<VBO> {
         indirectCommand
                 .indexCount(parameters.indexCount())
                 .vertexOffset(!parameters.indexOnly()? configureVertexFormat(buffer.vertexBuffer()) : fakeVertexBuffer.i2()>>5)
-                .firstIndex(configureIndexBuffer(parameters.sequentialIndex(), buffer.indexBuffer()))
+                .firstIndex(0)
                 .firstInstance(0)
                 .instanceCount(this.indexCount != 0 ? 1 : 0); //Cull if Empty
 
@@ -99,33 +99,6 @@ public class VBO implements Comparable<VBO> {
         }
     }
 
-    private int configureIndexBuffer(boolean seqIdx, ByteBuffer data) {
-        {
-            if(seqIdx)
-            {
-                AutoIndexBuffer autoIndexBuffer;
-                if(this.mode != VertexFormat.Mode.TRIANGLE_FAN) {
-                    autoIndexBuffer = Drawer.getQuadsIndexBuffer();
-                } else {
-                    autoIndexBuffer = Drawer.getTriangleFanIndexBuffer();
-                    this.indexCount = (vertexCount - 2) * 3;
-                }
-                data=autoIndexBuffer.getBuffer();
-            }
-            if(fakeIndexBuffer ==null || !RHandler.virtualBufferIdx.isAlreadyLoaded(index, data.remaining()))
-            {
-                fakeIndexBuffer =RHandler.virtualBufferIdx.addSubIncr(index, data.remaining());
-            }
-            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
-            stagingBuffer.copyBuffer(fakeIndexBuffer.size_t(), data);
-
-            copyStagingtoLocalBuffer(stagingBuffer.getId(), stagingBuffer.offset, RHandler.virtualBufferIdx.bufferPointerSuperSet, fakeIndexBuffer.i2(), fakeIndexBuffer.size_t());
-
-            return fakeIndexBuffer.i2()>>1;
-        }
-
-    }
-
     public void drawChunkLayer() {
         if (this.indexCount != 0) {
 
@@ -139,8 +112,8 @@ public class VBO implements Comparable<VBO> {
         RHandler.virtualBuffer.addFreeableRange(index, fakeVertexBuffer);
         fakeVertexBuffer =null;
 
-            RHandler.virtualBufferIdx.addFreeableRange(index, fakeIndexBuffer);
-            fakeIndexBuffer = null;
+//            RHandler.virtualBufferIdx.addFreeableRange(index, fakeIndexBuffer);
+//            fakeIndexBuffer = null;
 
 
         this.vertexCount = 0;

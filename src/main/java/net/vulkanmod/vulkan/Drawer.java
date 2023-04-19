@@ -87,7 +87,7 @@ public class Drawer {
         inFlightFences.free();
         RHandler.drawCommands.free();
         RHandler.virtualBuffer.cleanUp();
-        RHandler.virtualBufferIdx.cleanUp();
+//        RHandler.virtualBufferIdx.cleanUp();
     }
 
     public static void draw(ByteBuffer buffer, int drawMode, VertexFormat vertexFormat, int vertexCount)

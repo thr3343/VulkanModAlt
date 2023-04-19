@@ -61,8 +61,8 @@ public abstract class DebugHudM {
         strings.add(String.format("Off-heap: " + getOffHeapMemory() + "MB"));
         strings.add("NativeMemory: " + MemoryManager.getInstance().getNativeMemoryMB() + "MB");
         strings.add("DeviceMemory: " + (MemoryManager.getInstance().getDeviceMemoryMB()>>20) + "MB");
-        strings.add("DeviceMemory2: " + (RHandler.virtualBuffer.usedBytes>>20)+"+"+(RHandler.virtualBufferIdx.usedBytes>>20) + "MB");
-        strings.add("ReservedMemory: " + (RHandler.virtualBuffer.size_t>>20)+"+"+(RHandler.virtualBufferIdx.size_t>>20) + "MB");
+//        strings.add("DeviceMemory2: " + (RHandler.virtualBuffer.usedBytes>>20)+"+"+(RHandler.virtualBufferIdx.usedBytes>>20) + "MB");
+//        strings.add("ReservedMemory: " + (RHandler.virtualBuffer.size_t>>20)+"+"+(RHandler.virtualBufferIdx.size_t>>20) + "MB");
         strings.add("");
         strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + DeviceInfo.cpuInfo);
@@ -95,26 +95,26 @@ public abstract class DebugHudM {
         strings.add("freeRanges: " + (RHandler.virtualBuffer.FreeRanges.size()));
         strings.add("activeRanges: " + (RHandler.virtualBuffer.activeRanges.size()));
 
-        strings.add("");
-        strings.add("Index-Buffers");
-        strings.add("");
+//        strings.add("");
+//        strings.add("Index-Buffers");
+//        strings.add("");
 
-        strings.add("Used Bytes: " + (RHandler.virtualBufferIdx.usedBytes >> 20) + "MB");
-        strings.add("Max Size: " + (RHandler.virtualBufferIdx.size_t >> 20) + "MB");
-//        strings.add("Allocs: " + RHandler.virtualBufferIdx.allocs);
-//        strings.add("allocBytes: " + RHandler.virtualBufferIdx.allocBytes);
-        strings.add("subAllocs: " + RHandler.virtualBufferIdx.subAllocs);
-//        strings.add("Blocks: " + RHandler.virtualBufferIdx.blocks);
-//        strings.add("BlocksBytes: " + RHandler.virtualBufferIdx.blockBytes);
-//        strings.add("subIncr: " + RHandler.virtualBufferIdx.subIncr);
-        strings.add("minRange: " + RHandler.virtualBufferIdx.unusedRangesS);
-        strings.add("maxRange: " + RHandler.virtualBufferIdx.unusedRangesM);
-        strings.add("unusedRangesCount: " + RHandler.virtualBufferIdx.unusedRangesCount);
-        strings.add("minIndexSize: " + RHandler.virtualBufferIdx.allocMin);
-        strings.add("maxIndexSize: " + RHandler.virtualBufferIdx.allocMax);
-        strings.add("unusedBytes: " + (RHandler.virtualBufferIdx.size_t- RHandler.virtualBufferIdx.usedBytes >> 20) + "MB");
-        strings.add("freeRanges: " + (RHandler.virtualBufferIdx.FreeRanges.size()));
-        strings.add("activeRanges: " + (RHandler.virtualBufferIdx.activeRanges.size()));
+//        strings.add("Used Bytes: " + (RHandler.virtualBufferIdx.usedBytes >> 20) + "MB");
+//        strings.add("Max Size: " + (RHandler.virtualBufferIdx.size_t >> 20) + "MB");
+////        strings.add("Allocs: " + RHandler.virtualBufferIdx.allocs);
+////        strings.add("allocBytes: " + RHandler.virtualBufferIdx.allocBytes);
+//        strings.add("subAllocs: " + RHandler.virtualBufferIdx.subAllocs);
+////        strings.add("Blocks: " + RHandler.virtualBufferIdx.blocks);
+////        strings.add("BlocksBytes: " + RHandler.virtualBufferIdx.blockBytes);
+////        strings.add("subIncr: " + RHandler.virtualBufferIdx.subIncr);
+//        strings.add("minRange: " + RHandler.virtualBufferIdx.unusedRangesS);
+//        strings.add("maxRange: " + RHandler.virtualBufferIdx.unusedRangesM);
+//        strings.add("unusedRangesCount: " + RHandler.virtualBufferIdx.unusedRangesCount);
+//        strings.add("minIndexSize: " + RHandler.virtualBufferIdx.allocMin);
+//        strings.add("maxIndexSize: " + RHandler.virtualBufferIdx.allocMax);
+//        strings.add("unusedBytes: " + (RHandler.virtualBufferIdx.size_t- RHandler.virtualBufferIdx.usedBytes >> 20) + "MB");
+//        strings.add("freeRanges: " + (RHandler.virtualBufferIdx.FreeRanges.size()));
+//        strings.add("activeRanges: " + (RHandler.virtualBufferIdx.activeRanges.size()));
 
         return strings;
     }

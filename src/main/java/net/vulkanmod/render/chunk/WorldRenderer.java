@@ -445,7 +445,7 @@ public class WorldRenderer {
         vkDeviceWaitIdle(Vulkan.getDevice()); //Use a heavier Wait to avoid potential crashes
 //        if(size> maxGPUMemLimit) size= (int) maxGPUMemLimit;
         RHandler.virtualBuffer.reset(size);
-        RHandler.virtualBufferIdx.reset(size/8);
+//        RHandler.virtualBufferIdx.reset(size/8);
         TaskDispatcher.resetting=false;
         Drawer.skipRendering=false;
 
@@ -593,7 +593,7 @@ public class WorldRenderer {
             long offsets = stack.npointer(0);
 //            Profiler.Push("bindVertex");
             VK10.nvkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-            vkCmdBindIndexBuffer(commandBuffer, RHandler.virtualBufferIdx.bufferPointerSuperSet, 0, VK_INDEX_TYPE_UINT16);
+//            vkCmdBindIndexBuffer(commandBuffer, RHandler.virtualBufferIdx.bufferPointerSuperSet, 0, VK_INDEX_TYPE_UINT16);
         }
 //        RHandler.uniqueVBOs.unstableSort(null);
 
