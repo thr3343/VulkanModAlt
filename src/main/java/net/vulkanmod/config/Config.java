@@ -17,6 +17,7 @@ public class Config {
     public static int vboAlignmentActual = 4;
     public static boolean noFog=true;
     public static boolean drawIndirect=true;
+    public static boolean transferDMAQueue=true;
     public int frameQueueSize = 2;
     public VideoResolution resolution = VideoResolution.getFirstAvailable();
     public boolean windowedFullscreen = false;

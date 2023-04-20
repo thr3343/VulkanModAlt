@@ -207,25 +207,29 @@ public class Options {
                         Acts as a "Reserve Space" to allow VBO Resizing
                         Larger values reduces fragmentation and reallocations but increases memory usage""")),
                 new SwitchOption("noFog",
-                        value -> {
-
-                            Config.noFog=value;
-
-                        }, () -> Config.noFog)
+                        value -> Config.noFog=value,
+                        () -> Config.noFog)
                         .setTooltip(Component.nullToEmpty("""
                         Disables all forms of Fog when enabled
                         Uses an alternate shader with all fog effects removed
                         May increase performance slightly""")),
                 new SwitchOption("multiDrawIndirect",
-                        value -> {
-
-                            Config.drawIndirect=value;
-
-                        }, () -> Config.drawIndirect)
+                        value -> Config.drawIndirect=value,
+                        () -> Config.drawIndirect)
                         .setTooltip(Component.nullToEmpty("""
                         Enable GPUMultiDrawIndirect
                         Allows the GPU Driver to handle DrawCalls instead of the CPU
                         May improve or worsen performance: Depends on hardware""")),
+                new SwitchOption("Dedicated Transfer Queue",
+                        value -> Config.transferDMAQueue=value,
+                        () -> Config.transferDMAQueue)
+                        .setTooltip(Component.nullToEmpty("""
+                        WARNING: EXPERIMENTAL!: IS BROKEN WITH VSYNC!
+                        Enable use of separate DMA Transfer Queue if supported
+                        May help to reduce chunk stutter
+                        May improve FPS stability/Smoothness/Other or no absolutely nothing: Depends on hardware
+                        May Help to fix Nvidia VSync UBO update stutters in exclusive fullScreen if present
+                        Requires restart due to Vulkan limitations :(""")),
         };
 
     }

@@ -10,6 +10,7 @@ import net.vulkanmod.render.RHandler;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.PushConstant;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.system.MemoryStack;
@@ -92,21 +93,14 @@ public class Drawer {
 
     public static void draw(ByteBuffer buffer, int drawMode, VertexFormat vertexFormat, int vertexCount)
     {
+        if(drawMode!=7) return;
         assertCommandBufferState();
 
         if(!(vertexCount > 0)) return;
 
-        AutoIndexBuffer autoIndexBuffer;
-        switch (drawMode) {
-            case 7 -> autoIndexBuffer = quadsIndexBuffer;
-            case 6 -> autoIndexBuffer = triangleFanIndexBuffer;
-            case 5 -> autoIndexBuffer = triangleStripIndexBuffer;
-            default -> throw new RuntimeException("unknown drawType");
-        }
+        quadsIndexBuffer.checkCapacity(vertexCount);
 
-        autoIndexBuffer.checkCapacity(vertexCount);
-
-        drawAutoIndexed(buffer, vertexBuffers[currentFrame], autoIndexBuffer.getIndexBuffer(), drawMode, vertexFormat, vertexCount);
+        drawAutoIndexed(buffer, vertexBuffers[currentFrame], quadsIndexBuffer.getIndexBuffer(), drawMode, vertexFormat, vertexCount);
 
     }
 
@@ -145,7 +139,7 @@ public class Drawer {
 
 
 //        nvkWaitForFences(device, inFlightFences.capacity(), inFlightFences.address0(), 1, VUtil.UINT64_MAX);
-        nvkWaitForFences(device, 1, inFlightFences.address(currentFrame), 1, -1);
+        nvkWaitForFences(device, 1, inFlightFences.address(currentFrame), 1, VUtil.UINT64_MAX);
 
 //        CompletableFuture.runAsync(MemoryManager::freeBuffers);
 //        MemoryManager.getInstance().setCurrentFrame(currentFrame);
@@ -167,7 +161,7 @@ public class Drawer {
             renderPassInfo.renderArea(VkRect2D.malloc(stack).offset(VkOffset2D.malloc(stack).set(0, 0)).extent(getSwapchainExtent()));
 
             VkClearValue.Buffer clearValues = VkClearValue.malloc(2, stack);
-            clearValues.get(0).color(VkClearValue.ncolor(MemoryUtil.memAddress0(VRenderSystem.clearColor)));
+            clearValues.get(0).color().float32(0, 0).float32(1, 0).float32(2, 0).float32(3, 1);
             clearValues.get(1).depthStencil().set(1.0f, 0);
             renderPassInfo.pClearValues(clearValues);
 
@@ -517,20 +511,18 @@ public class Drawer {
 //            colorValue.color().float32(VRenderSystem.clearColor);
 
             //Always use Fast Stencil Clears If Possible
-            VkClearValue depthValue = VkClearValue.mallocStack(stack);
-            depthValue.depthStencil().depth(1.0f).stencil(0);
 
 
-            VkClearAttachment.Buffer clearDepth = VkClearAttachment.mallocStack(1, stack);
+            VkClearAttachment.Buffer clearDepth = VkClearAttachment.malloc(1, stack);
             clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-            clearDepth.clearValue(depthValue);
+            clearDepth.clearValue().depthStencil().set(1, 0);
 
             //Rect to clear
-            VkRect2D renderArea = VkRect2D.mallocStack(stack);
-            renderArea.offset(VkOffset2D.mallocStack(stack).set(0,0));
+            VkRect2D renderArea = VkRect2D.malloc(stack);
+            renderArea.offset().set(0,0);
             renderArea.extent(getSwapchainExtent());
 
-            VkClearRect.Buffer pRect = VkClearRect.mallocStack(1, stack);
+            VkClearRect.Buffer pRect = VkClearRect.malloc(1, stack);
             pRect.rect(renderArea);
             pRect.baseArrayLayer(0);
             pRect.layerCount(1);

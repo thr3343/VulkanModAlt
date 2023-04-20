@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan.texture;
 
 import it.unimi.dsi.fastutil.bytes.Byte2LongMap;
 import it.unimi.dsi.fastutil.bytes.Byte2LongOpenHashMap;
+import net.vulkanmod.config.Config;
 import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
@@ -252,10 +253,10 @@ public class VulkanImage {
             int destinationStage;
 
             barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-            barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+            barrier.dstAccessMask(Config.transferDMAQueue?VK_ACCESS_TRANSFER_READ_BIT:VK_ACCESS_SHADER_READ_BIT);
 
             sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            destinationStage = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+            destinationStage = Config.transferDMAQueue ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
 
             vkCmdPipelineBarrier(commandBuffer.getHandle(),
                     sourceStage, destinationStage,
@@ -421,8 +422,11 @@ public class VulkanImage {
         try(MemoryStack stack = stackPush()) {
 
             final VkImageSubresourceRange a = VkImageSubresourceRange.malloc(stack)
-                    .set(0, mipLevels, 0, 1,
-                            newLayout == VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
+                    .baseMipLevel(0)
+                    .levelCount(mipLevels)
+                    .baseArrayLayer(0)
+                    .layerCount(1)
+                    .aspectMask(newLayout == VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
 
             final VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack)
                 .sType$Default()
@@ -446,7 +450,7 @@ public class VulkanImage {
                     barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
                     barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
                     sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                    destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                    destinationStage = Config.transferDMAQueue ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
                 }
                 case VK_IMAGE_LAYOUT_UNDEFINED + VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL -> {
                     barrier.srcAccessMask(0);

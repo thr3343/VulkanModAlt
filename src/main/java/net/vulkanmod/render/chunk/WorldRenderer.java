@@ -587,13 +587,16 @@ public class WorldRenderer {
 //        Supplier<RenderSection> getter = flag ? iterator::next : iterator::previous;
 
         try(MemoryStack stack = stackPush()) {
-            VkCommandBuffer commandBuffer = Drawer.commandBuffers.get(Drawer.getCurrentFrame());
 
-            long vertexBuffers = stack.npointer(RHandler.virtualBuffer.bufferPointerSuperSet);
-            long offsets = stack.npointer(0);
-//            Profiler.Push("bindVertex");
-            VK10.nvkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-//            vkCmdBindIndexBuffer(commandBuffer, RHandler.virtualBufferIdx.bufferPointerSuperSet, 0, VK_INDEX_TYPE_UINT16);
+            //            Profiler.Push("bindVertex");
+            VkCommandBuffer commandBuffer = Drawer.commandBuffers.get(Drawer.getCurrentFrame());
+            VK10.nvkCmdBindVertexBuffers(
+                    commandBuffer,
+                    0,
+                    1,
+                    stack.npointer(RHandler.virtualBuffer.bufferPointerSuperSet),
+                    stack.npointer(0));
+            vkCmdBindIndexBuffer(commandBuffer, Drawer.getQuadsIndexBuffer().getIndexBuffer().getId(), 0, VK_INDEX_TYPE_UINT16);
         }
 //        RHandler.uniqueVBOs.unstableSort(null);
 

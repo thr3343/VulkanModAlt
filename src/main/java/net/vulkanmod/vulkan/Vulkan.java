@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan;
 
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.Config;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
@@ -125,19 +126,20 @@ public class Vulkan {
     static class QueueFamilyIndices {
 
         // We use Integer to use null as the empty value
-        static Integer graphicsFamily;
-        static Integer presentFamily;
+        static int graphicsFamily=-1;
+        static int transferFamily=-1;
+        static int presentFamily=-1;
 
         public static boolean isComplete() {
-            return graphicsFamily != null && presentFamily != null;
+            return graphicsFamily != -1 && transferFamily!=-1 && presentFamily != -1;
         }
 
         public static int[] unique() {
-            return IntStream.of(graphicsFamily, presentFamily).distinct().toArray();
+            return IntStream.of(graphicsFamily, transferFamily, presentFamily).distinct().toArray();
         }
 
         public static int[] array() {
-            return new int[] {graphicsFamily, presentFamily};
+            return new int[] {graphicsFamily, transferFamily, presentFamily};
         }
 
         public static void findQueueFamilies(VkPhysicalDevice device) {
@@ -153,23 +155,32 @@ public class Vulkan {
                 VkQueueFamilyProperties.Buffer queueFamilies = VkQueueFamilyProperties.mallocStack(queueFamilyCount.get(0), stack);
 
                 vkGetPhysicalDeviceQueueFamilyProperties(device, queueFamilyCount, queueFamilies);
+                if(queueFamilies.capacity()==1) {
+                    graphicsFamily=transferFamily=presentFamily=0;
+                }
+                else for(int i = 0; i < queueFamilies.capacity(); i++) {
 
-                IntBuffer presentSupport = stack.ints(VK_FALSE);
-
-                for(int i = 0; i < queueFamilies.capacity() || !isComplete(); i++) {
-
-                    if((queueFamilies.get(i).queueFlags() & VK_QUEUE_GRAPHICS_BIT) != 0) {
+                    final int flags = queueFamilies.get(i).queueFlags();
+                    boolean hasGraphics = (flags & VK_QUEUE_GRAPHICS_BIT)!=0;
+                    boolean hasTransfer = (flags & VK_QUEUE_TRANSFER_BIT)!=0;
+                    boolean hasComputePresent = (flags & VK_QUEUE_COMPUTE_BIT)!=0;
+                    if(hasGraphics) {
                         graphicsFamily = i;
                     }
-
-                    vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, presentSupport);
-
-                    if(presentSupport.get(0) == VK_TRUE) {
+                    if(hasTransfer && !hasGraphics) {
+                        transferFamily = Config.transferDMAQueue? i : graphicsFamily;
+                    }
+                    //Queues supporting Compute always Support/Imply present
+                    if(hasComputePresent) {
                         presentFamily = i;
                     }
 
                     if(isComplete()) break;
                 }
+
+                System.out.println("Queue Family Graphics: "+graphicsFamily);
+                System.out.println("Queue Family Transfer: "+transferFamily);
+                System.out.println("Queue Family Present: "+presentFamily);
             }
         }
     }
@@ -203,6 +214,7 @@ public class Vulkan {
     public static SwapChainSupportDetails swapChainSupport;
 
     private static VkQueue graphicsQueue;
+    private static VkQueue transferQueue;
     private static VkQueue presentQueue;
 
     static final int frameQueueSize = Initializer.CONFIG.frameQueueSize;
@@ -482,23 +494,27 @@ public class Vulkan {
             deviceFeatures.samplerAnisotropy(true);
             deviceFeatures.multiDrawIndirect(true);
 
-            final VkPhysicalDeviceVulkan12Features value = VkPhysicalDeviceVulkan12Features.calloc(stack).sType$Default();
-            VkPhysicalDeviceFeatures2 deviceFeatures2 = VkPhysicalDeviceFeatures2.malloc(stack)
+            final VkPhysicalDeviceVulkan12Features supported = VkPhysicalDeviceVulkan12Features.malloc(stack).sType$Default();
+
+            final VkPhysicalDeviceFeatures2 deviceFeatures2 = VkPhysicalDeviceFeatures2.malloc(stack)
                     .sType$Default()
-                    .pNext(value)
+                    .pNext(supported)
                     .features(deviceFeatures);
 
             VK11.vkGetPhysicalDeviceFeatures2(physicalDevice, deviceFeatures2);
 
-            VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
+            final VkPhysicalDeviceVulkan12Features enabled = VkPhysicalDeviceVulkan12Features.calloc(stack)
                     .sType$Default()
-                    .pNext(deviceFeatures2)
-                    .pQueueCreateInfos(queueCreateInfos)
-                    .ppEnabledExtensionNames(asPointerBuffer(LOADED_DEVICE_EXTENSIONS));
+                    .separateDepthStencilLayouts(supported.separateDepthStencilLayouts());
 
-            if(ENABLE_VALIDATION_LAYERS) {
-                createInfo.ppEnabledLayerNames(asPointerBuffer(VALIDATION_LAYERS));
-            }
+            final VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
+                    .sType$Default()
+                    .pNext(enabled)
+                    .pEnabledFeatures(deviceFeatures)
+                    .pQueueCreateInfos(queueCreateInfos)
+                    .ppEnabledExtensionNames(asPointerBuffer(LOADED_DEVICE_EXTENSIONS))
+                    .ppEnabledLayerNames(ENABLE_VALIDATION_LAYERS ? asPointerBuffer(VALIDATION_LAYERS) : null);
+
 
             PointerBuffer pDevice = stack.mallocPointer(1);
 
@@ -513,18 +529,23 @@ public class Vulkan {
             vkGetDeviceQueue(device, QueueFamilyIndices.graphicsFamily, 0, pQueue);
             graphicsQueue = new VkQueue(pQueue.get(0), device);
 
+            //Cant allow Queue configuration to change during runtime due to the need to recreate the device
+
+            vkGetDeviceQueue(device, QueueFamilyIndices.transferFamily, 0, pQueue);
+            transferQueue = Config.transferDMAQueue ? new VkQueue(pQueue.get(0), device) : graphicsQueue;
+
             vkGetDeviceQueue(device, QueueFamilyIndices.presentFamily, 0, pQueue);
             presentQueue = new VkQueue(pQueue.get(0), device);
 
             final VKCapabilitiesDevice capabilities = device.getCapabilities();
             
-            final boolean devAddr = capabilities.vkGetBufferDeviceAddress!=0;
+//            final boolean devAddr = capabilities.vkGetBufferDeviceAddress!=0;
             final boolean rayTcrPipeline = capabilities.VK_KHR_ray_tracing_pipeline;
             final boolean accelStruct = capabilities.VK_KHR_acceleration_structure;
             final boolean hostOp = capabilities.VK_KHR_deferred_host_operations;
 
             isRTCapable=
-                    devAddr &&
+//                    devAddr &&
                             rayTcrPipeline &&
 //                    (device.getCapabilities().VK_KHR_ray_query)&&
                             accelStruct &&
@@ -1168,6 +1189,8 @@ public class Vulkan {
     }
 
     public static VkQueue getPresentQueue() { return presentQueue; }
+
+    public static VkQueue getTransferQueue() { return transferQueue; }
 
     public static VkQueue getGraphicsQueue() { return graphicsQueue; }
 

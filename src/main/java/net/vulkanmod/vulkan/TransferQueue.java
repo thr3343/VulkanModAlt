@@ -33,7 +33,7 @@ public class TransferQueue {
 
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(Vulkan.QueueFamilyIndices.graphicsFamily);
+            poolInfo.queueFamilyIndex(Vulkan.QueueFamilyIndices.transferFamily);
             poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
             LongBuffer pCommandPool = stack.mallocLong(1);
@@ -137,7 +137,7 @@ public class TransferQueue {
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
 
-            vkQueueSubmit(Vulkan.getGraphicsQueue(), submitInfo, fence);
+            vkQueueSubmit(Vulkan.getTransferQueue(), submitInfo, fence);
             //vkQueueWaitIdle(graphicsQueue);
 
             //vkFreeCommandBuffers(device, commandPool, commandBuffer);
