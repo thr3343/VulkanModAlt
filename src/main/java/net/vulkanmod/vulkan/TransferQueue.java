@@ -8,7 +8,6 @@ import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import static net.vulkanmod.vulkan.Vulkan.findQueueFamilies;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -30,11 +29,11 @@ public class TransferQueue {
 
         try(MemoryStack stack = stackPush()) {
 
-            Vulkan.QueueFamilyIndices queueFamilyIndices = findQueueFamilies(device.getPhysicalDevice());
+//            Vulkan.QueueFamilyIndices.findQueueFamilies(device.getPhysicalDevice());
 
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack);
             poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(queueFamilyIndices.graphicsFamily);
+            poolInfo.queueFamilyIndex(Vulkan.QueueFamilyIndices.graphicsFamily);
             poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 
             LongBuffer pCommandPool = stack.mallocLong(1);

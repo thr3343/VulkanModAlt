@@ -420,61 +420,41 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
-            barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
-            barrier.oldLayout(oldLayout);
-            barrier.newLayout(newLayout);
-            barrier.srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
-            barrier.dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
-            barrier.image(image);
+            final VkImageSubresourceRange a = VkImageSubresourceRange.malloc(stack)
+                    .set(0, mipLevels, 0, 1,
+                            newLayout == VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
 
-            barrier.subresourceRange().baseMipLevel(0);
-            barrier.subresourceRange().levelCount(mipLevels);
-            barrier.subresourceRange().baseArrayLayer(0);
-            barrier.subresourceRange().layerCount(1);
-
-            if(newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-
-                barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-
-                if(hasStencilComponent(format)) {
-                    barrier.subresourceRange().aspectMask(
-                            barrier.subresourceRange().aspectMask() | VK_IMAGE_ASPECT_STENCIL_BIT);
-                }
-
-            } else {
-                barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-            }
+            final VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack)
+                .sType$Default()
+                .oldLayout(oldLayout)
+                .newLayout(newLayout)
+                .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                .subresourceRange(a)
+                .image(image);
 
             int sourceStage;
             int destinationStage;
-
-            if(oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
-
-                barrier.srcAccessMask(0);
-                barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-
-                sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-
-            } else if(oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
-
-                barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
-                barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
-
-                sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-
-            } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED && newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-
-                barrier.srcAccessMask(0);
-                barrier.dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
-
-                sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-
-            } else {
-                throw new IllegalArgumentException("Unsupported layout transition");
+            switch (oldLayout + newLayout) {
+                case VK_IMAGE_LAYOUT_UNDEFINED + VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL -> {
+                    barrier.srcAccessMask(0);
+                    barrier.dstAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                    destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+                }
+                case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL + VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL -> {
+                    barrier.srcAccessMask(VK_ACCESS_TRANSFER_WRITE_BIT);
+                    barrier.dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+                    sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+                    destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+                }
+                case VK_IMAGE_LAYOUT_UNDEFINED + VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL -> {
+                    barrier.srcAccessMask(0);
+                    barrier.dstAccessMask(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+                    sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+                    destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+                }
+                default -> throw new IllegalArgumentException("Unsupported layout transition");
             }
 
             vkCmdPipelineBarrier(commandBuffer,
@@ -485,10 +465,6 @@ public class VulkanImage {
                     barrier);
 
         }
-    }
-
-    private static boolean hasStencilComponent(int format) {
-        return format == VK_FORMAT_D16_UNORM_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
     public long getId() { return id;}

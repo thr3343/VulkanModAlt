@@ -157,22 +157,17 @@ public class Drawer {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.callocStack(stack);
+            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.calloc(stack);
             beginInfo.sType$Default();
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-            VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
+            VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.calloc(stack);
             renderPassInfo.sType$Default();
-
             renderPassInfo.renderPass(getRenderPass());
+            renderPassInfo.renderArea(VkRect2D.malloc(stack).offset(VkOffset2D.malloc(stack).set(0, 0)).extent(getSwapchainExtent()));
 
-            VkRect2D renderArea = VkRect2D.callocStack(stack);
-            renderArea.offset(VkOffset2D.callocStack(stack).set(0, 0));
-            renderArea.extent(getSwapchainExtent());
-            renderPassInfo.renderArea(renderArea);
-
-            VkClearValue.Buffer clearValues = VkClearValue.callocStack(2, stack);
-            clearValues.get(0).color().float32(VRenderSystem.clearColor);
+            VkClearValue.Buffer clearValues = VkClearValue.malloc(2, stack);
+            clearValues.get(0).color(VkClearValue.ncolor(MemoryUtil.memAddress0(VRenderSystem.clearColor)));
             clearValues.get(1).depthStencil().set(1.0f, 0);
             renderPassInfo.pClearValues(clearValues);
 
@@ -222,7 +217,7 @@ public class Drawer {
         try(MemoryStack stack = stackPush()) {
 
             VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.callocStack(stack);
-            allocInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
+            allocInfo.sType$Default();
             allocInfo.commandPool(getCommandPool());
             allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
             allocInfo.commandBufferCount(commandBuffersCount);
@@ -262,10 +257,10 @@ public class Drawer {
         try(MemoryStack stack = stackPush()) {
 
             VkSemaphoreCreateInfo semaphoreInfo = VkSemaphoreCreateInfo.callocStack(stack);
-            semaphoreInfo.sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
+            semaphoreInfo.sType$Default();
 
             VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.callocStack(stack);
-            fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
+            fenceInfo.sType$Default();
             fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
 
 //            LongBuffer pImageAvailableSemaphore = stack.mallocLong(1);
@@ -336,7 +331,7 @@ public class Drawer {
             }
 
             VkPresentInfoKHR presentInfo = VkPresentInfoKHR.mallocStack(stack);
-            presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
+            presentInfo.sType$Default();
             presentInfo.pNext(NULL);
 
             memPutAddress(presentInfo.address() + VkPresentInfoKHR.PWAITSEMAPHORES, renderFinishedSemaphores.address(currentFrame));
