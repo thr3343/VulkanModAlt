@@ -490,7 +490,7 @@ public class Drawer {
 
         PushConstant pushConstant = pipeline.getPushConstant();
         pushConstant.update();
-        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstant.getBuffer());
+        vkCmdPushConstants(commandBuffer, pipeline.getLayout(), pushConstant.getShaderStage(), 0, pushConstant.getBuffer());
     }
 
     public static void setDepthBias(float units, float factor) {

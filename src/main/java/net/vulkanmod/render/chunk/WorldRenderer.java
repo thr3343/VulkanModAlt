@@ -582,6 +582,7 @@ public class WorldRenderer {
         Drawer.bindPipeline(pipeline);
 
         Drawer.uploadAndBindUBOs(pipeline);
+        Drawer.pushConstants(pipeline);
 
 //        Supplier<Boolean> checker = flag ? iterator::hasNext : iterator::hasPrevious;
 //        Supplier<RenderSection> getter = flag ? iterator::next : iterator::previous;

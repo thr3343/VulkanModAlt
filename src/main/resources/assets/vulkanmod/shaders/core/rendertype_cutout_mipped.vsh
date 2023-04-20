@@ -23,13 +23,13 @@ layout(location = 2) in vec2 UV0;
 layout(location = 3) in ivec2 UV2;
 layout(location = 4) in vec3 Normal;
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(push_constant) uniform UniformBufferObject {
    mat4 MVP;
    //mat4 ModelViewMat;
 };
 
 
-layout(binding = 3) uniform sampler2D Sampler2;
+layout(binding = 1) uniform sampler2D Sampler2;
 
 layout(location = 0) out float vertexDistance;
 layout(location = 1) out vec4 vertexColor;

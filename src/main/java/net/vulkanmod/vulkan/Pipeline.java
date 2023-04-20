@@ -15,6 +15,7 @@ import net.vulkanmod.vulkan.ShaderSPIRVUtils.ShaderKind;
 import net.vulkanmod.vulkan.memory.UniformBuffers;
 import net.vulkanmod.vulkan.shader.Field;
 import net.vulkanmod.vulkan.shader.PushConstant;
+import net.vulkanmod.vulkan.shader.Sampler;
 import net.vulkanmod.vulkan.shader.UBO;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -56,7 +57,7 @@ public class Pipeline {
     private int descriptorCount = 500;
 
     private final List<UBO> UBOs = new ArrayList<>();
-    private final List<String> samplers = new ArrayList<>();
+    private final List<Sampler> samplers = new ArrayList<>();
     private final PushConstant pushConstant = new PushConstant();
 
     private Consumer<Integer> resetDescriptorPoolFun = defaultResetDPFun();
@@ -287,13 +288,13 @@ public class Pipeline {
                 ++i;
             }
 
-            for(String s : this.samplers) {
+            for(Sampler s : this.samplers) {
                 VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(i);
-                samplerLayoutBinding.binding(i);
+                samplerLayoutBinding.binding(s.binding());
                 samplerLayoutBinding.descriptorCount(1);
                 samplerLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                 samplerLayoutBinding.pImmutableSamplers(null);
-                samplerLayoutBinding.stageFlags(VK_SHADER_STAGE_ALL_GRAPHICS);
+                samplerLayoutBinding.stageFlags(s.stage());
 
                 ++i;
             }
@@ -325,7 +326,7 @@ public class Pipeline {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.callocStack(1, stack);
                 pushConstantRange.size(pushConstant.getSize());
                 pushConstantRange.offset(0);
-                pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
+                pushConstantRange.stageFlags(pushConstant.getShaderStage());
 
                 pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
             }
@@ -513,10 +514,13 @@ public class Pipeline {
     }
 
     private void parseSamplerNode(JsonElement jsonelement) {
-        JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "UBO");
-        String name = GsonHelper.getAsString(jsonobject, "name");
+        JsonObject jsonobject = jsonelement.getAsJsonObject();
 
-        samplers.add(name);
+        String name = GsonHelper.getAsString(jsonobject, "name");
+        int binding = GsonHelper.getAsInt(jsonobject, "binding");
+        int stage = getTypeFromString(GsonHelper.getAsString(jsonobject, "stage"));
+
+        samplers.add(new Sampler(binding, stage, accessFromStage(stage)));
     }
 
     private void parsePushConstantNode(JsonArray jsonArray) {
@@ -525,20 +529,31 @@ public class Pipeline {
             JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement, "PC");
 
             String name = GsonHelper.getAsString(jsonobject2, "name");
+            String stage = GsonHelper.getAsString(jsonobject2, "stage");
             String type2 = GsonHelper.getAsString(jsonobject2, "type");
             int j = GsonHelper.getAsInt(jsonobject2, "count");
 
             pushConstant.addField(Field.createField(type2, name, j, pushConstant));
+            pushConstant.setStage(stage);
         }
 
         pushConstant.allocateBuffer();
     }
 
+    private int accessFromStage(int s) {
+        return switch (s) {
+            case VK_SHADER_STAGE_VERTEX_BIT -> VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+            case VK_SHADER_STAGE_FRAGMENT_BIT -> VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+            case VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT -> VK_PIPELINE_STAGE_VERTEX_SHADER_BIT/*|VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT*/;
+
+            default -> throw new RuntimeException("cannot identify type..");
+        };
+    }
     private int getTypeFromString(String s) {
         return switch (s) {
             case "vertex" -> VK_SHADER_STAGE_VERTEX_BIT;
             case "fragment" -> VK_SHADER_STAGE_FRAGMENT_BIT;
-            case "all" -> VK_SHADER_STAGE_ALL_GRAPHICS;
+            case "all" -> VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT;
 
             default -> throw new RuntimeException("cannot identify type..");
         };
@@ -685,7 +700,7 @@ public class Pipeline {
                 if(samplers.size() > 0) {
                     //TODO: make an auxiliary function
                     VulkanImage texture = VTextureSelector.getBoundTexture();
-                    texture.readOnlyLayout();
+                    texture.readOnlyLayout(samplers.get(0).access());
                     //VulkanImage texture = VTextureManager.getCurrentTexture();
 
                     imageInfos[0] = VkDescriptorImageInfo.callocStack(1, stack);
@@ -696,7 +711,7 @@ public class Pipeline {
 
                     VkWriteDescriptorSet samplerDescriptorWrite = descriptorWrites.get(i);
                     samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                    samplerDescriptorWrite.dstBinding(i);
+                    samplerDescriptorWrite.dstBinding(samplers.get(0).binding());
                     samplerDescriptorWrite.dstArrayElement(0);
                     samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                     samplerDescriptorWrite.descriptorCount(1);
@@ -706,7 +721,7 @@ public class Pipeline {
 
                     if (samplers.size() > 1) {
                         texture = VTextureSelector.getLightTexture();
-                        texture.readOnlyLayout();
+                        texture.readOnlyLayout(samplers.get(1).access());
 
                         imageInfos[1] = VkDescriptorImageInfo.callocStack(1, stack);
                         imageInfos[1].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -716,7 +731,7 @@ public class Pipeline {
 
                         samplerDescriptorWrite = descriptorWrites.get(i);
                         samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                        samplerDescriptorWrite.dstBinding(i);
+                        samplerDescriptorWrite.dstBinding(samplers.get(1).binding());
                         samplerDescriptorWrite.dstArrayElement(0);
                         samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                         samplerDescriptorWrite.descriptorCount(1);
@@ -726,7 +741,7 @@ public class Pipeline {
 
                         if(samplers.size() > 2) {
                             texture = VTextureSelector.getOverlayTexture();
-                            texture.readOnlyLayout();
+                            texture.readOnlyLayout(samplers.get(2).access());
 
                             imageInfos[2] = VkDescriptorImageInfo.callocStack(1, stack);
                             imageInfos[2].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
@@ -736,7 +751,7 @@ public class Pipeline {
 
                             samplerDescriptorWrite = descriptorWrites.get(i);
                             samplerDescriptorWrite.sType(VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET);
-                            samplerDescriptorWrite.dstBinding(i);
+                            samplerDescriptorWrite.dstBinding(samplers.get(2).binding());
                             samplerDescriptorWrite.dstArrayElement(0);
                             samplerDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                             samplerDescriptorWrite.descriptorCount(1);

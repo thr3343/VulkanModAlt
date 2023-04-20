@@ -99,12 +99,15 @@ public final class VirtualBuffer {
 
     private void createBuffer(MemoryStack stack, PointerBuffer pBuffer) {
 
-        VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.callocStack(stack);
-        bufferInfo.sType$Default();
-        bufferInfo.pNext(NULL);
-        bufferInfo.size(this.size_t);
-        bufferInfo.usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | this.vkBufferType);
-        bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+        VkBufferCreateInfo bufferInfo = VkBufferCreateInfo.malloc(stack)
+                .sType$Default()
+                .flags(0)
+                .pNext(NULL)
+                .size(this.size_t)
+                .usage(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | this.vkBufferType)
+                .sharingMode(VK_SHARING_MODE_EXCLUSIVE)
+                .queueFamilyIndexCount(1)
+                .pQueueFamilyIndices(stack.ints(0));
 
 
         nvkCreateBuffer(Vulkan.getDevice(), bufferInfo.address(), NULL, pBuffer.address());
@@ -112,18 +115,18 @@ public final class VirtualBuffer {
 
     private void allocMem(MemoryStack stack, PointerBuffer pBuffer, PointerBuffer pAllocation) {
 //
-        VkMemoryDedicatedAllocateInfo vkMemoryDedicatedAllocateInfo = VkMemoryDedicatedAllocateInfo.mallocStack(stack);
-        vkMemoryDedicatedAllocateInfo.buffer(pBuffer.get(0));
-        vkMemoryDedicatedAllocateInfo.image(0);
-        vkMemoryDedicatedAllocateInfo.pNext(0);
-        vkMemoryDedicatedAllocateInfo.sType$Default();
+        VkMemoryDedicatedAllocateInfo vkMemoryDedicatedAllocateInfo = VkMemoryDedicatedAllocateInfo.malloc(stack)
+                .buffer(pBuffer.get(0))
+                .image(0)
+                .pNext(0)
+                .sType$Default();
 
 
-        VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.mallocStack(stack);
-        allocInfo.sType$Default();
-        allocInfo.pNext(vkMemoryDedicatedAllocateInfo.address());
-        allocInfo.allocationSize(this.size_t);
-        allocInfo.memoryTypeIndex(0);
+        VkMemoryAllocateInfo allocInfo = VkMemoryAllocateInfo.malloc(stack)
+                .sType$Default()
+                .pNext(vkMemoryDedicatedAllocateInfo.address())
+                .allocationSize(this.size_t)
+                .memoryTypeIndex(0);
 
 //        VkAllocationFunction vkAllocationFunction = VkAllocationFunction.create(PFNALLOCATION);
 //        VkReallocationFunction vkReallocationFunction = VkReallocationFunction.create(PFNREALLOCATION);
