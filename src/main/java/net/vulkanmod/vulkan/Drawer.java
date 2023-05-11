@@ -30,7 +30,7 @@ public class Drawer {
     private static Drawer INSTANCE = new Drawer();
 
     private static VkDevice device;
-    private static List<VkCommandBuffer> commandBuffers;
+    static List<VkCommandBuffer> commandBuffers;
 
     private Set<Pipeline> usedPipelines = new HashSet<>();
 
@@ -190,8 +190,8 @@ public class Drawer {
             VkViewport.Buffer pViewport = Vulkan.viewport(stack);
             vkCmdSetViewport(commandBuffer, 0, pViewport);
 
-            VkRect2D.Buffer pScissor = Vulkan.scissor(stack);
-            vkCmdSetScissor(commandBuffer, 0, pScissor);
+            Vulkan.scissor(stack);
+
 
             vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
 
