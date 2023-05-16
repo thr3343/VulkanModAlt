@@ -13,6 +13,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
+import net.vulkanmod.render.chunk.VBOUtil;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.profiling.Profiler2;
 import org.jetbrains.annotations.Nullable;
@@ -23,6 +24,7 @@ import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Set;
@@ -92,6 +94,13 @@ public abstract class LevelRendererMixin {
         return this.worldRenderer.isChunkCompiled(blockPos);
     }
 
+    @Inject(method = "renderLevel", at=@At(value="INVOKE", ordinal =0, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V"))
+    private void renderChunkLayer1(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci)
+    {
+        final Vec3 position = camera.getPosition();
+        VBOUtil.updateCamTranslation(poseStack, position.x, position.y, position.z, matrix4f);
+
+    }
     /**
      * @author
      * @reason

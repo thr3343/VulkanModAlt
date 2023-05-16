@@ -10,6 +10,7 @@ import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 
 public class IndirectBuffer extends Buffer {
     CommandPool.CommandBuffer commandBuffer;
+//    private int a = 0;
 
     public IndirectBuffer(int size, MemoryType type) {
         super(VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT, type);
@@ -17,6 +18,10 @@ public class IndirectBuffer extends Buffer {
     }
 
     public void recordCopyCmd(ByteBuffer byteBuffer) {
+
+//        if(a==byteBuffer.remaining()) return;
+//        a=byteBuffer.remaining();
+
         int size = byteBuffer.remaining();
 
         if(size > this.bufferSize - this.usedBytes) {

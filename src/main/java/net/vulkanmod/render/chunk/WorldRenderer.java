@@ -45,6 +45,9 @@ import org.joml.Matrix4f;
 import javax.annotation.Nullable;
 import java.util.*;
 
+import static net.vulkanmod.render.chunk.VBOUtil.originX;
+import static net.vulkanmod.render.chunk.VBOUtil.originZ;
+
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
 
@@ -458,6 +461,7 @@ public class WorldRenderer {
 
     public void allChanged() {
         if (this.level != null) {
+            this.resetOrigin();
 //            this.graphicsChanged();
             this.level.clearTintCaches();
 
@@ -493,6 +497,11 @@ public class WorldRenderer {
             }
 
         }
+    }
+
+    private void resetOrigin() {
+        originX=originX-Math.floor(originX);
+        originZ=originZ-Math.floor(originZ);
     }
 
     public void setLevel(@Nullable ClientLevel level) {
@@ -566,12 +575,12 @@ public class WorldRenderer {
         boolean flag = renderType == RenderType.translucent();
         boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
-        VRenderSystem.applyMVP(poseStack.last().pose(), projection);
+        VRenderSystem.applyMVP(VBOUtil.translationOffset, projection);
 
         Drawer drawer = Drawer.getInstance();
         Pipeline pipeline = ShaderManager.getInstance().getTerrainShader();
         drawer.bindPipeline(pipeline);
-        drawer.bindAutoIndexBuffer(Drawer.getCommandBuffer(), 7);
+        if(!layerName.equals("translucent")) drawer.bindAutoIndexBuffer(Drawer.getCommandBuffer(), 7);
 
         p.push("draw batches");
 

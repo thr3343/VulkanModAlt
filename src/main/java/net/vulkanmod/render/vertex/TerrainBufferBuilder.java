@@ -19,7 +19,7 @@ import java.util.function.IntConsumer;
 
 public class TerrainBufferBuilder implements VertexConsumer {
 //    private static final float POS_CONV = 40000.0f / 20.0f;
-    private static final float POS_CONV = 1900.0f;
+    public static final float POS_CONV = 1900.0f;
 
     private static final int GROWTH_SIZE = 2097152;
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -368,22 +368,18 @@ public class TerrainBufferBuilder implements VertexConsumer {
 	}
 
 	private void compressedVertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int light) {
-		this.putShort(0, (short) (x * POS_CONV));
-		this.putShort(2, (short) (y * POS_CONV));
-		this.putShort(4, (short) (z * POS_CONV));
+		this.putFloat(0, x);
+		this.putFloat(4, y);
+		this.putFloat(8, z);
+		this.putInt(12, VertexUtil.packColor(red, green, blue, alpha));
+;
+		this.putShort(16, (short) (u * 65536.0F));
+		this.putShort(18, (short) (v * 65536.0F));
 
-		this.putByte(8, (byte)((int)(red * 255.0F)));
-		this.putByte(9, (byte)((int)(green * 255.0F)));
-		this.putByte(10, (byte)((int)(blue * 255.0F)));
-		this.putByte(11, (byte)((int)(alpha * 255.0F)));
+		this.putShort(20, (short)(light & '\uffff'));
+		this.putShort(22, (short)(light >> 16 & '\uffff'));
 
-		this.putShort(12, (short) (u * 65536.0F));
-		this.putShort(14, (short) (v * 65536.0F));
-
-		this.putShort(16, (short)(light & '\uffff'));
-		this.putShort(18, (short)(light >> 16 & '\uffff'));
-
-		this.nextElementByte += 20;
+		this.nextElementByte += 24;
 		this.endVertex();
 	}
 
@@ -425,6 +421,10 @@ public class TerrainBufferBuilder implements VertexConsumer {
 	@Override
 	public void unsetDefaultColor() {
 		throw new UnsupportedOperationException();
+	}
+
+	public void putInt(int index, int value) {
+		MemoryUtil.memPutInt(this.bufferPtr + this.nextElementByte + index, value);
 	}
 
 	public void putByte(int index, byte value) {
