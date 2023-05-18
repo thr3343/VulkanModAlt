@@ -1,8 +1,10 @@
 package net.vulkanmod.mixin.compatibility.gl;
 
 import net.vulkanmod.gl.GlTexture;
+import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL11C;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.NativeType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -10,6 +12,8 @@ import org.spongepowered.asm.mixin.Overwrite;
 import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+
+import static org.lwjgl.system.MemoryStack.stackPush;
 
 @Mixin(GL11.class)
 public class GL11M {
@@ -106,6 +110,15 @@ public class GL11M {
     @Overwrite(remap = false)
     public static void glTexParameterf(@NativeType("GLenum") int target, @NativeType("GLenum") int pname, @NativeType("GLfloat") float param) {
 
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite(remap = false)
+    public static void glScissor(@NativeType("GLint") int x, @NativeType("GLint") int y, @NativeType("GLsizei") int width, @NativeType("GLsizei") int height) {
+//        Vulkan.getSwapChain().scissor();
     }
 
     /**
