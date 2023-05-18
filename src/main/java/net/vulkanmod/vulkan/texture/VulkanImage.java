@@ -15,6 +15,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
+import java.util.Arrays;
 import java.util.Objects;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
@@ -24,7 +25,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public class VulkanImage {
     private static final int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
-    private static VkDevice device = Vulkan.getDevice();
+    private static final VkDevice device = Vulkan.getDevice();
 
     private long id;
     private long allocation;
@@ -40,8 +41,10 @@ public class VulkanImage {
     public final int formatSize;
 
     private int currentLayout;
+    private boolean isNull=true;
 
     private VulkanImage(int format, int mipLevels, int width, int height, int usage, int formatSize) {
+        if(width <=0 || height<=0) throw new IllegalStateException("bad texture Size/Res Params: "+width+"-"+height);
         this.mipLevels = mipLevels;
         this.width = width;
         this.height = height;
@@ -104,6 +107,7 @@ public class VulkanImage {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        this.isNull=false;
     }
 
     public static long createImageView(long image, int format, int aspectFlags, int mipLevels) {
@@ -337,6 +341,15 @@ public class VulkanImage {
 
     private void copyBufferToImageCmd(CommandPool.CommandBuffer commandBuffer, long buffer, long image, int mipLevel, int width, int height, int xOffset, int yOffset, int bufferOffset, int bufferRowLenght, int bufferImageHeight) {
 
+        if(this.height < height - yOffset) {
+            System.err.println("Bad Image Bounds!: "+ "height:"+height + "-" + "yOffset"+yOffset +">"+"Actual Height: "+this.height);
+            height=this.height;
+        }
+        if(this.width < width - xOffset)
+        {
+            System.err.println("Bad Image Bounds!: "+ "width:"+width + "-" + "xOffset"+xOffset +">"+"Actual Width: "+this.width);
+            width=this.width;
+        }
         try(MemoryStack stack = stackPush()) {
 
             VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
@@ -471,6 +484,10 @@ public class VulkanImage {
     }
 
     public void free() {
+        if(this.isNull) {
+            System.err.println("Invalid/Attempted Null Free!: "+ Arrays.toString(new Throwable().getStackTrace()));
+            return;
+        }
         MemoryManager.getInstance().addToFreeable(this);
     }
 
@@ -482,6 +499,7 @@ public class VulkanImage {
         for (long sampler : samplers.values()) {
             vkDestroySampler(Vulkan.getDevice(), sampler, null);
         }
+        this.isNull=true;
     }
 
     public long getId() { return id;}
