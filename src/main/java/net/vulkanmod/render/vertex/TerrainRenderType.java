@@ -9,11 +9,11 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public enum TerrainRenderType {
-    SOLID(RenderType.solid(), 0.0f),
-    CUTOUT_MIPPED(RenderType.cutoutMipped(), 0.5f),
-    CUTOUT(RenderType.cutout(), 0.1f),
-    TRANSLUCENT(RenderType.translucent(), 0.0f),
-    TRIPWIRE(RenderType.tripwire(), 0.1f);
+//    SOLID(RenderType.solid(), 0.0f),
+//    CUTOUT_MIPPED(RenderType.cutoutMipped(), 0.5f),
+    CUTOUT(RenderType.cutout(), 0.5f),
+    TRANSLUCENT(RenderType.translucent(), 0.0f);
+//    TRIPWIRE(RenderType.tripwire(), 0.1f);
 
     public static final TerrainRenderType[] VALUES = TerrainRenderType.values();
 

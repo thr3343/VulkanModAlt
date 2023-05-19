@@ -31,15 +31,7 @@ public class IndirectBuffer extends Buffer {
         if(this.type.mappable()) {
             this.type.copyToBuffer(this, size, byteBuffer);
         }
-        else {
-            if(commandBuffer == null)
-                commandBuffer = TransferQueue.getInstance().beginCommands();
-
-            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
-            stagingBuffer.copyBuffer(size, byteBuffer);
-
-            TransferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.id, stagingBuffer.offset, this.getId(), this.getUsedBytes(), size);
-        }
+        
 
         offset = usedBytes;
         usedBytes += size;

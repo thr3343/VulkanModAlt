@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan.memory;
 
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.MemoryUtil;
 
 public abstract class Buffer {
     protected long id;
@@ -13,6 +14,7 @@ public abstract class Buffer {
     protected MemoryType type;
     protected int usage;
     protected PointerBuffer data;
+    public final long hndlePtr = MemoryUtil.nmemAlignedAlloc(8, 8);
 
     protected Buffer(int usage, MemoryType type) {
         //TODO: check usage
@@ -47,7 +49,7 @@ public abstract class Buffer {
 
     protected void setBufferSize(int size) { this.bufferSize = size; }
 
-    protected void setId(long id) { this.id = id; }
+    protected void setId(long id) { MemoryUtil.memPutLong(hndlePtr, id); this.id = id; }
 
     protected void setAllocation(long allocation) {this.allocation = allocation; }
 

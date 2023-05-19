@@ -94,11 +94,28 @@ public abstract class LevelRendererMixin {
         return this.worldRenderer.isChunkCompiled(blockPos);
     }
 
-    @Inject(method = "renderLevel", at=@At(value="INVOKE", ordinal =0, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V"))
-    private void renderChunkLayer1(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci)
+    @Redirect(method = "renderLevel", at=@At(value="INVOKE", ordinal =0, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V"))
+    private void renderChunkLayer1(LevelRenderer instance, RenderType renderType, PoseStack poseStack, double d, double e, double f, Matrix4f matrix4f)
     {
-        final Vec3 position = camera.getPosition();
-        VBOUtil.updateCamTranslation(poseStack, position.x, position.y, position.z, matrix4f);
+
+        VBOUtil.updateCamTranslation(poseStack, d, e, f, matrix4f);
+
+    }
+
+    @Redirect(method = "renderLevel", at=@At(value="INVOKE", ordinal =1, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V"))
+    private void renderChunkLayer2(LevelRenderer instance, RenderType renderType, PoseStack poseStack, double d, double e, double f, Matrix4f matrix4f)
+    {
+
+    }
+
+    @Redirect(method = "renderLevel", at=@At(value="INVOKE", ordinal =6, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V"))
+    private void renderChunkLayer5(LevelRenderer instance, RenderType renderType, PoseStack poseStack, double d, double e, double f, Matrix4f matrix4f)
+    {
+
+    }
+    @Redirect(method = "renderLevel", at=@At(value="INVOKE", ordinal =4, target = "Lnet/minecraft/client/renderer/LevelRenderer;renderChunkLayer(Lnet/minecraft/client/renderer/RenderType;Lcom/mojang/blaze3d/vertex/PoseStack;DDDLorg/joml/Matrix4f;)V"))
+    private void renderChunkLayer6(LevelRenderer instance, RenderType renderType, PoseStack poseStack, double d, double e, double f, Matrix4f matrix4f)
+    {
 
     }
     /**

@@ -39,6 +39,7 @@ import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
+import org.checkerframework.checker.units.qual.C;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 
@@ -47,6 +48,8 @@ import java.util.*;
 
 import static net.vulkanmod.render.chunk.VBOUtil.originX;
 import static net.vulkanmod.render.chunk.VBOUtil.originZ;
+import static org.lwjgl.vulkan.VK10.VK_INDEX_TYPE_UINT16;
+import static org.lwjgl.vulkan.VK10.vkCmdBindIndexBuffer;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -534,30 +537,19 @@ public class WorldRenderer {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
         Profiler2 p = Profiler2.getMainProfiler();
-        RenderType solid = RenderType.solid();
-        RenderType cutout = RenderType.cutout();
-        RenderType cutoutMipped = RenderType.cutoutMipped();
-        RenderType translucent = RenderType.translucent();
-        RenderType tripwire = RenderType.tripwire();
+        //        RenderType cutoutMipped = RenderType.cutoutMipped();
 
-        String layerName;
-        if (solid.equals(renderType)) {
-            layerName = "solid";
-        } else if (cutout.equals(renderType)) {
-            layerName = "cutout";
-        } else if (cutoutMipped.equals(renderType)) {
-            layerName = "cutoutMipped";
-        } else if (tripwire.equals(renderType)) {
-            layerName = "tripwire";
-        } else if (translucent.equals(renderType)) {
-            layerName = "translucent";
-        } else layerName = "unk";
+        TerrainRenderType layerName;
+        if (renderType== RenderType.cutout()) {
+            layerName = TerrainRenderType.CUTOUT;
+        } else if (renderType== RenderType.translucent()) {
+            layerName = TerrainRenderType.TRANSLUCENT;
+        } else return;
 
 //        p.pushMilestone("layer " + layerName);
-        if(layerName.equals("solid"))
+        if(layerName.equals(TerrainRenderType.CUTOUT))
             p.push("Opaque_terrain_pass");
-        else if(layerName.equals("translucent"))
-        {
+        else {
             p.pop();
             p.push("Translucent_terrain_pass");
         }
@@ -578,34 +570,26 @@ public class WorldRenderer {
         VRenderSystem.applyMVP(VBOUtil.translationOffset, projection);
 
         Drawer drawer = Drawer.getInstance();
-        Pipeline pipeline = ShaderManager.getInstance().getTerrainShader();
-        drawer.bindPipeline(pipeline);
-        if(!layerName.equals("translucent")) drawer.bindAutoIndexBuffer(Drawer.getCommandBuffer(), 7);
+        drawer.bindPipeline(ShaderManager.getInstance().getTerrainShader());
+        drawer.bindAutoIndexBuffer(Drawer.getCommandBuffer(), 7);
 
         p.push("draw batches");
 
-        Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
+        final Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
         while(iterator.hasNext()) {
-            ChunkArea chunkArea = iterator.next();
-
+            final ChunkArea chunkArea = iterator.next();
             if(indirectDraw) {
-                chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Drawer.getCurrentFrame()], chunkArea, renderType, camX, camY, camZ);
+                chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Drawer.getCurrentFrame()], chunkArea, layerName, camX, camY, camZ);
             } else {
-                chunkArea.getDrawBuffers().buildDrawBatchesDirect(chunkArea, renderType, camX, camY, camZ);
+                chunkArea.getDrawBuffers().buildDrawBatchesDirect(chunkArea, layerName, camX, camY, camZ);
             }
         }
 
-        if(layerName.equals("cutout") || layerName.equals("tripwire")) {
-            indirectBuffers[Drawer.getCurrentFrame()].submitUploads();
+        indirectBuffers[Drawer.getCurrentFrame()].submitUploads();
 //            uniformBuffers.submitUploads();
-        }
         p.pop();
 
-        //Need to reset push constant in case the pipeline will still be used for rendering
-        if(!indirectDraw) {
-            VRenderSystem.setChunkOffset(0, 0, 0);
-            drawer.pushConstants(pipeline);
-        }
+
 
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
@@ -613,14 +597,14 @@ public class WorldRenderer {
         VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
         switch (layerName) {
-            case "cutout" -> {
+            case CUTOUT -> {
                 p.pop();
 //                p.pop();
 //                p.push("Render_level_2");
                 p.push("entities");
             }
 //            case "translucent" -> p.pop();
-            case "tripwire" -> p.pop();
+            case TRANSLUCENT -> p.pop();
         }
 
     }

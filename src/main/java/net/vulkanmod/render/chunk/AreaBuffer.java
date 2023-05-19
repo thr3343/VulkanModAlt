@@ -2,11 +2,9 @@ package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
 import net.vulkanmod.render.chunk.util.Util;
-import net.vulkanmod.vulkan.memory.Buffer;
-import net.vulkanmod.vulkan.memory.IndexBuffer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
-import net.vulkanmod.vulkan.memory.VertexBuffer;
+import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.queue.TransferQueue;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -23,7 +21,9 @@ public class AreaBuffer {
 
     private final int elementSize;
 
-    private Buffer buffer;
+    Buffer buffer;
+
+
 
     int size;
     int used;
@@ -41,15 +41,8 @@ public class AreaBuffer {
     }
 
     private Buffer allocateBuffer(int size) {
-        int bufferSize = size;
 
-        Buffer buffer;
-        if(this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT) {
-            buffer = new VertexBuffer(bufferSize, memoryType);
-        } else {
-            buffer = new IndexBuffer(bufferSize, memoryType);
-        }
-        return buffer;
+        return this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ? new VertexBuffer(size, memoryType) : new IndexBuffer(size, memoryType);
     }
 
     public synchronized void upload(ByteBuffer byteBuffer, Segment uploadSegment) {
