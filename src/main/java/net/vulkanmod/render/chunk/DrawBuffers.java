@@ -19,12 +19,22 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
 
-    private static final int VERTEX_SIZE = ShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
+    public static final int VERTEX_SIZE = ShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
 
     private boolean allocated = false;
     AreaBuffer vertexBuffer;
     AreaBuffer indexBuffer;
+
+    final int x;
+    final int y;
+    final int z;
+
+    public DrawBuffers(int x, int y, int z) {
+        this.x = x;
+        this.y = y;
+        this.z = z;
+    }
 
     public void allocateBuffers() {
         //TODO size
@@ -209,76 +219,47 @@ public class DrawBuffers {
         terrainRenderType.setCutoutUniform();
         boolean isTranslucent = terrainRenderType == TerrainRenderType.TRANSLUCENT;
 
-        try(MemoryStack stack = MemoryStack.stackPush()) {
+        VkCommandBuffer commandBuffer = Drawer.getCommandBuffer();
+        try (MemoryStack stack = MemoryStack.stackPush()) {
             LongBuffer pVertexBuffer = stack.longs(vertexBuffer.getId());
             LongBuffer pOffset = stack.longs(0);
             vkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, pVertexBuffer, pOffset);
 
+
+
+            if (isTranslucent) {
+                vkCmdBindIndexBuffer(Drawer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
+            }
+
+
+            Pipeline pipeline = ShaderManager.shaderManager.terrainDirectShader;
+            //        Drawer.getInstance().bindPipeline(pipeline);
+            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
+
+            nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, MemoryUtil.memAddress0(stack.floats((float) (chunkArea.position.x - camX), (float) (-camY), (float) (chunkArea.position.z - camZ))));
         }
-
-        if(isTranslucent) {
-            vkCmdBindIndexBuffer(Drawer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-        }
-
-        VkCommandBuffer commandBuffer = Drawer.getCommandBuffer();
-
-        Pipeline pipeline = ShaderManager.shaderManager.terrainDirectShader;
-//        Drawer.getInstance().bindPipeline(pipeline);
-        pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
-
-        ResettableQueue<RenderSection> queue = chunkArea.sectionQueue;
-
-        int drawCount = 0;
-        MemoryStack stack = MemoryStack.stackPush();
-        ByteBuffer byteBuffer = stack.calloc(24 * queue.size());
-        long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
-
-        var iterator = queue.iterator(isTranslucent);
+        var iterator =  chunkArea.sectionQueue.iterator(isTranslucent);
         while (iterator.hasNext()) {
             RenderSection section = iterator.next();
             DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
 
-//            if(drawParameters.indexCount == 0) {
-//                continue;
-//            }
-
-            long ptr = bufferPtr + (drawCount * 24L);
-            MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
-            MemoryUtil.memPutInt(ptr + 4, drawParameters.firstIndex);
-            MemoryUtil.memPutInt(ptr + 8, drawParameters.vertexOffset);
-
-            MemoryUtil.memPutFloat(ptr + 12, (float)((double) section.xOffset - camX));
-            MemoryUtil.memPutFloat(ptr + 16, (float)((double) section.yOffset - camY));
-            MemoryUtil.memPutFloat(ptr + 20, (float)((double) section.zOffset - camZ));
-
-            drawCount++;
-
-        }
-
-        if(drawCount > 0) {
-            long offset;
-            int indexCount;
-            int firstIndex;
-            int vertexOffset;
-            for(int i = 0; i < drawCount; ++i) {
-
-                offset = i * 24 + bufferPtr;
-
-                indexCount    = MemoryUtil.memGetInt(offset + 0);
-                firstIndex    = MemoryUtil.memGetInt(offset + 4);
-                vertexOffset  = MemoryUtil.memGetInt(offset + 8);
-
-                if(indexCount == 0) {
-                    continue;
-                }
-
-                nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, offset + 12);
-
-                vkCmdDrawIndexed(commandBuffer, indexCount, 1, firstIndex, vertexOffset, 0);
+            if(drawParameters.indexCount == 0) {
+                continue;
             }
+
+
+//            //this.originMemoryUtil.memPutFloat(ptr + 12, (float)((double) section.xOffset - camX));
+//            MemoryUtil.memPutFloat(ptr + 16, (float)((double) section.yOffset - camY));
+//            MemoryUtil.memPutFloat(ptr + 20, (float)((double) section.zOffset - camZ));
+
+            vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, 0);
         }
 
-        MemoryStack.stackPop();
+
+
+
+
+
     }
 
     public void releaseBuffers() {

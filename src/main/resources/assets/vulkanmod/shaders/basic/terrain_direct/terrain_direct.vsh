@@ -26,7 +26,7 @@ layout(location = 2) out vec2 texCoord0;
 
 //Compressed Vertex
 
-layout(location = 0) in ivec3 Position;
+layout(location = 0) in vec3 Position;
 layout(location = 1) in vec4 Color;
 layout(location = 2) in uvec2 UV0;
 layout(location = 3) in ivec2 UV2;
@@ -36,7 +36,7 @@ const float UV_INV = 1.0 / 65536.0;
 const float POSITION_INV = 1.0 / 1900.0;
 
 void main() {
-    vec3 pos = (Position * POSITION_INV);
+    vec3 pos = (Position);
     gl_Position = MVP * vec4(pos + ChunkOffset, 1.0);
 
     vertexDistance = length((ModelViewMat * vec4(pos + ChunkOffset, 1.0)).xyz);

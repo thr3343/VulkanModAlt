@@ -1,7 +1,9 @@
 package net.vulkanmod.render.chunk.build;
 
+import net.vulkanmod.render.chunk.DrawBuffers;
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -13,25 +15,40 @@ public class UploadBuffer {
     public final boolean indexOnly;
     private final ByteBuffer vertexBuffer;
     private final ByteBuffer indexBuffer;
+    private final int xOffset;
+    private final int yOffset;
+    private final int zOffset;
 
     //debug
     private boolean released = false;
 
-    public UploadBuffer(TerrainBufferBuilder.RenderedBuffer renderedBuffer) {
+    public UploadBuffer(int xOffset, int yOffset, int zOffset, TerrainBufferBuilder.RenderedBuffer renderedBuffer) {
+        this.xOffset = xOffset;
+        this.yOffset = yOffset;
+        this.zOffset = zOffset;
         TerrainBufferBuilder.DrawState drawState = renderedBuffer.drawState();
         this.indexCount = drawState.indexCount();
         this.autoIndices = drawState.sequentialIndex();
         this.indexOnly = drawState.indexOnly();
 
-        if(!this.indexOnly)
-            this.vertexBuffer = Util.createCopy(renderedBuffer.vertexBuffer());
-        else
-            this.vertexBuffer = null;
+        this.vertexBuffer = !this.indexOnly ? Util.createCopy(renderedBuffer.vertexBuffer()) : null;
+        this.indexBuffer = !drawState.sequentialIndex() ? Util.createCopy(renderedBuffer.indexBuffer()) : null;
+        if(!this.indexOnly) translateVBO(xOffset, yOffset, zOffset);
+    }
 
-        if(!drawState.sequentialIndex())
-            this.indexBuffer = Util.createCopy(renderedBuffer.indexBuffer());
-        else
-            this.indexBuffer = null;
+
+    private void translateVBO(int x, int y, int z) {
+        final long addr = MemoryUtil.memAddress0(vertexBuffer);
+        //Broken with Signed Integers
+        final int camX1 = x % 128;
+        final int camY1 = y % 128;
+        final int camZ1 = z % 128;
+        for(int i = 0; i< vertexBuffer.remaining(); i+= DrawBuffers.VERTEX_SIZE)
+        {
+            VUtil.UNSAFE.putFloat(addr+i,   ((VUtil.UNSAFE.getFloat(addr + i)) + camX1 ));
+            VUtil.UNSAFE.putFloat(addr+i+4, ((VUtil.UNSAFE.getFloat(addr + i + 4)) + camY1 ));
+            VUtil.UNSAFE.putFloat(addr+i+8, ((VUtil.UNSAFE.getFloat(addr + i + 8)) + camZ1));
+        }
     }
 
     public int indexCount() { return indexCount; }
