@@ -12,11 +12,11 @@ layout(binding = 0) uniform UniformBufferObject {
    mat4 ModelViewMat;
 };
 
-layout(binding = 2) uniform UniformBufferObject2 {
-    vec3 ChunkOffset[300];
+layout(push_constant) uniform pushConstant {
+    vec3 ChunkOffset;
 };
 
-layout(binding = 4) uniform sampler2D Sampler2;
+layout(binding = 3) uniform sampler2D Sampler2;
 
 layout(location = 0) out float vertexDistance;
 layout(location = 1) out vec4 vertexColor;
@@ -36,9 +36,9 @@ layout(location = 3) in ivec2 UV2;
 
 void main() {
     vec3 pos = (Position);
-    gl_Position = MVP * vec4(pos + ChunkOffset[gl_DrawID], 1.0);
+    gl_Position = MVP * vec4(pos + ChunkOffset, 1.0);
 
-    vertexDistance = length((ModelViewMat * vec4(pos + ChunkOffset[gl_DrawID], 1.0)).xyz);
+    vertexDistance = length((ModelViewMat * vec4(pos + ChunkOffset, 1.0)).xyz);
     vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0 * UV_INV;
     //    normal = MVP * vec4(Normal, 0.0);

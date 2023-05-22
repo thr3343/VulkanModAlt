@@ -39,7 +39,7 @@
             { "name": "AlphaCutout", "type": "float", "count": 1, "values": [ 1.0 ] }
         ] }
     ],
-    "ManualUBOs" : [
-        { "type":  "vertex", "binding": 2, "size": 1200 }
+    "PushConstants": [
+        { "name": "ChunkOffset", "type": "float", "count": 3, "values": [0.0, 0.0, 0.0] }
     ]
 }

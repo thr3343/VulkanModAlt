@@ -15,6 +15,9 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 
+import static org.lwjgl.system.Checks.CHECKS;
+import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class DrawBuffers {
@@ -89,10 +92,9 @@ public class DrawBuffers {
         ResettableQueue<RenderSection> queue = chunkArea.sectionQueue;
 
         MemoryStack stack = MemoryStack.stackPush();
-        ByteBuffer byteBuffer = stack.calloc(20 * queue.size());
-        ByteBuffer uboBuffer = stack.calloc(16 * queue.size());
+        ByteBuffer byteBuffer = stack.malloc(20 * queue.size());
         long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
-        long uboPtr = MemoryUtil.memAddress0(uboBuffer);
+
 
         TerrainRenderType terrainRenderType = TerrainRenderType.get(renderType);
         terrainRenderType.setCutoutUniform();
@@ -106,21 +108,6 @@ public class DrawBuffers {
         while (iterator.hasNext()) {
             RenderSection section = iterator.next();
             DrawParameters drawParameters = section.getDrawParameters(terrainRenderType);
-
-            //Debug
-//            BlockPos o = section.origin;
-////            BlockPos pos = new BlockPos(-2188, 65, -1674);
-//
-////            Vec3 cameraPos = WorldRenderer.getCameraPos();
-//            BlockPos pos = new BlockPos(Minecraft.getInstance().getCameraEntity().blockPosition());
-//            if(o.getX() <= pos.getX() && o.getY() <= pos.getY() && o.getZ() <= pos.getZ() &&
-//                    o.getX() + 16 >= pos.getX() && o.getY() + 16 >= pos.getY() && o.getZ() + 16 >= pos.getZ()) {
-//                System.nanoTime();
-//
-//                }
-//
-//            }
-
 
             if(drawParameters.indexCount == 0) {
                 continue;
@@ -139,13 +126,6 @@ public class DrawBuffers {
             MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
 //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE);
             MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
-//            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset());
-            MemoryUtil.memPutInt(ptr + 16, 0);
-
-            ptr = uboPtr + (drawCount * 16L);
-            MemoryUtil.memPutFloat(ptr, (float)((double) section.xOffset - camX));
-            MemoryUtil.memPutFloat(ptr + 4, (float)((double) section.yOffset - camY));
-            MemoryUtil.memPutFloat(ptr + 8, (float)((double) section.zOffset - camZ));
 
             drawCount++;
         }
@@ -160,14 +140,14 @@ public class DrawBuffers {
 
         indirectBuffer.recordCopyCmd(byteBuffer);
 
-        pipeline.getManualUBO().setSrc(uboPtr, 16 * drawCount);
+//        pipeline.getManualUBO().setSrc(uboPtr, 16 * drawCount);
 
-        LongBuffer pVertexBuffer = stack.longs(vertexBuffer.getId());
-        LongBuffer pOffset = stack.longs(0);
-        vkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, pVertexBuffer, pOffset);
+        nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, stack.npointer(vertexBuffer.getId()), stack.npointer(0));
 
 //            pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), WorldRenderer.getInstance().getUniformBuffers(), Drawer.getCurrentFrame());
         pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
+        nvkCmdPushConstants(Drawer.getCommandBuffer(), pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, MemoryUtil.memAddress0(stack.floats((float) (chunkArea.position.x - camX), (float) (-camY), (float) (chunkArea.position.z - camZ))));
+
         vkCmdDrawIndexedIndirect(Drawer.getCommandBuffer(), indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, stride);
 
 //            fakeIndirectCmd(Drawer.getCommandBuffer(), indirectBuffer, drawCount, uboBuffer);

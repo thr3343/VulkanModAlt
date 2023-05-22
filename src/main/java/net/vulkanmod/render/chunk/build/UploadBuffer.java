@@ -40,13 +40,12 @@ public class UploadBuffer {
     private void translateVBO(int x, int y, int z) {
         final long addr = MemoryUtil.memAddress0(vertexBuffer);
         //Broken with Signed Integers
-        final int camX1 = x % 128;
-        final int camY1 = y % 128;
-        final int camZ1 = z % 128;
+        final int camX1 = Math.floorMod(x, 128);
+        final int camZ1 = Math.floorMod(z, 128);
         for(int i = 0; i< vertexBuffer.remaining(); i+= DrawBuffers.VERTEX_SIZE)
         {
             VUtil.UNSAFE.putFloat(addr+i,   ((VUtil.UNSAFE.getFloat(addr + i)) + camX1 ));
-            VUtil.UNSAFE.putFloat(addr+i+4, ((VUtil.UNSAFE.getFloat(addr + i + 4)) + camY1 ));
+            VUtil.UNSAFE.putFloat(addr+i+4, ((VUtil.UNSAFE.getFloat(addr + i + 4)) + y));
             VUtil.UNSAFE.putFloat(addr+i+8, ((VUtil.UNSAFE.getFloat(addr + i + 8)) + camZ1));
         }
     }
