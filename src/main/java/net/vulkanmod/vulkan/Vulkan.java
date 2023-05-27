@@ -35,14 +35,16 @@ import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
 import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRPresentId.VK_KHR_PRESENT_ID_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRPresentWait.VK_KHR_PRESENT_WAIT_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class Vulkan {
 
-    public static final boolean ENABLE_VALIDATION_LAYERS = false;
-//    public static final boolean ENABLE_VALIDATION_LAYERS = true;
+//    public static final boolean ENABLE_VALIDATION_LAYERS = false;
+    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
     static {
@@ -58,7 +60,7 @@ public class Vulkan {
     }
 
     private static final Set<String> DEVICE_EXTENSIONS = Stream.of(
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, VK_KHR_PRESENT_ID_EXTENSION_NAME, VK_KHR_PRESENT_WAIT_EXTENSION_NAME)
             .collect(toSet());
 
     private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
@@ -390,33 +392,41 @@ public class Vulkan {
             deviceFeatures.sType$Default();
 
             //TODO indirect draw option disabled in case it is not supported
-            if(deviceInfo.availableFeatures.features().samplerAnisotropy())
-                deviceFeatures.features().samplerAnisotropy(true);
-            if(deviceInfo.availableFeatures.features().logicOp())
-                deviceFeatures.features().logicOp(true);
+            deviceFeatures.features().samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy());
+            deviceFeatures.features().logicOp(deviceInfo.availableFeatures.features().logicOp());
 
-            VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
-            deviceVulkan11Features.sType$Default();
+            VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack).sType$Default();
+
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack).sType$Default();
 
             if(deviceInfo.isDrawIndirectSupported()) {
                 deviceFeatures.features().multiDrawIndirect(true);
                 deviceVulkan11Features.shaderDrawParameters(true);
             }
 
-            VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.callocStack(stack);
+            deviceVulkan12Features.imagelessFramebuffer(deviceInfo.isImagelessFrameBuffersSupported());
 
-            createInfo.sType(VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);
-            createInfo.pQueueCreateInfos(queueCreateInfos);
-            // queueCreateInfoCount is automatically set
 
-            createInfo.pEnabledFeatures(deviceFeatures.features());
+            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack)
+                    .sType$Default()
+                    .dynamicRendering(true);
 
-            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
-            dynamicRenderingFeaturesKHR.sType$Default();
-            dynamicRenderingFeaturesKHR.dynamicRendering(true);
+            VkPhysicalDevicePresentIdFeaturesKHR presentIdFeaturesKHR = VkPhysicalDevicePresentIdFeaturesKHR.calloc(stack)
+                    .sType$Default()
+                    .presentId(true);
 
-            createInfo.pNext(deviceVulkan11Features);
-            deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
+            VkPhysicalDevicePresentWaitFeaturesKHR presentWaitFeaturesKHR = VkPhysicalDevicePresentWaitFeaturesKHR.calloc(stack)
+                    .sType$Default()
+                    .presentWait(true);
+
+
+            VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
+                    .sType$Default()
+                    .pQueueCreateInfos(queueCreateInfos)
+                    .pEnabledFeatures(deviceFeatures.features())
+                    .pNext(deviceVulkan11Features).pNext(presentIdFeaturesKHR).pNext(presentWaitFeaturesKHR).pNext(dynamicRenderingFeaturesKHR)
+                    .ppEnabledExtensionNames(asPointerBuffer(DEVICE_EXTENSIONS));
+
 
             //Vulkan 1.3 dynamic rendering
 //            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
@@ -428,7 +438,6 @@ public class Vulkan {
 //            createInfo.pNext(deviceVulkan13Features);
 //            deviceVulkan13Features.pNext(deviceVulkan11Features.address());
 
-            createInfo.ppEnabledExtensionNames(asPointerBuffer(DEVICE_EXTENSIONS));
 
 //            Configuration.DEBUG_FUNCTIONS.set(true);
 
@@ -436,7 +445,7 @@ public class Vulkan {
                 createInfo.ppEnabledLayerNames(asPointerBuffer(VALIDATION_LAYERS));
             }
 
-            PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
+            PointerBuffer pDevice = stack.mallocPointer(1);
 
             if(vkCreateDevice(physicalDevice, createInfo, null, pDevice) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create logical device");
@@ -444,7 +453,7 @@ public class Vulkan {
 
             device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
 
-            PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
+            PointerBuffer pQueue = stack.mallocPointer(1);
 
             vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
             graphicsQueue = new VkQueue(pQueue.get(0), device);
@@ -470,7 +479,7 @@ public class Vulkan {
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
             allocatorCreateInfo.instance(instance);
 
-            PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
+            PointerBuffer pAllocator = stack.mallocPointer(1);
 
             if (vmaCreateAllocator(allocatorCreateInfo, pAllocator) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create command pool");
