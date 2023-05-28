@@ -15,9 +15,9 @@
 
   "icon": "assets/vulkanmod/Vlogo.png",
 
-  "environment": "client",
+  "environment": "*",
   "entrypoints": {
-    "client": [
+    "main": [
       "net.vulkanmod.Initializer"
     ]
   },
