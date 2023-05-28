@@ -29,7 +29,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
-import net.vulkanmod.config.Options;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.Profiler;
@@ -588,15 +587,16 @@ public class WorldRenderer {
 
         //        int size = layer==RenderTypes.CUTOUT?UberVertexBuffer.usedBytes: transVertexBuffer.usedBytes;
         VUtil.UNSAFE.putLong(Drawer.pBuffers, UberVertexBuffer.bufferPointerSuperSet);
-        VUtil.UNSAFE.putLong(Drawer.pOffsets, 0);
-        nvkCmdBindVertexBuffers(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), 0, 1, Drawer.pBuffers, Drawer.pOffsets);
+
 
 //        int vertCount = (layer == RenderTypes.CUTOUT ? UberVertexBuffer : transVertexBuffer).vertCount;
         //todo: free based on Rlative VertSize,(Ignroing any COttatiosn re;atvie torelative VBo BOundaries;i.e.g Dynamic Batch Sizing e.g.) not VBO: as sizing is now efefctviely equal, swap it with a previous relAlloc to ensure.maintaiN Effective Contiguity
         for (int vertOffs = UberVertexBuffer.vertCount; vertOffs >=0; vertOffs-= Config.vertexStride) {
 //            if(UberVertexBuffer.vertCount+Short.MAX_VALUE+1> vertOffs)
             {
-                Drawer.test2((Config.vertexStride >> 1) *3, UberVertexBuffer.vertCount-vertOffs);
+                VUtil.UNSAFE.putLong(Drawer.pOffsets, (UberVertexBuffer.vertCount-vertOffs)*32L);
+                nvkCmdBindVertexBuffers(Drawer.commandBuffers.get(Drawer.getCurrentFrame()), 0, 1, Drawer.pBuffers, Drawer.pOffsets);
+                Drawer.test2((Config.vertexStride >> 1) *3);
 //                vertOffs+=Short.MAX_VALUE+1;
             }
         }

@@ -476,8 +476,8 @@ public class Drawer {
     }
 
 
-    public static void test2(int idxCnt, int vertOffs) {
-        vkCmdDrawIndexed(commandBuffers.get(currentFrame), idxCnt, 1, 0, vertOffs, 0);
+    public static void test2(int idxCnt) {
+        vkCmdDrawIndexed(commandBuffers.get(currentFrame), idxCnt, 1, 0, 0, 0);
     }
 
     public void bindPipeline(Pipeline pipeline) {
