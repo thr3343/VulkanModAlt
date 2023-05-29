@@ -39,6 +39,7 @@ public class Drawer {
     private static Drawer INSTANCE;
 
     final IntArrayFIFOQueue frameBufferPresentIndices = new IntArrayFIFOQueue(MAX_FRAMES_IN_FLIGHT);
+    private int imageIndex = 0;
     private int xe = 0;
 
     public static void initDrawer() { INSTANCE = new Drawer(); }
@@ -176,7 +177,9 @@ public class Drawer {
 
         if(skipRendering) return;
 
-        if(!vsync) vkWaitForFences(device, inFlightFences.address(xe), true, VUtil.UINT64_MAX);
+
+        nvkWaitForFences(device, 1, inFlightFences.address(vsync ? xe : currentFrame), 1, VUtil.UINT64_MAX);
+
 
         p.pop();
         p.start();
@@ -375,11 +378,7 @@ public class Drawer {
             int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
-            //Avoid slight FPS regression if V-Sync isn't enabled
-            if(vsync)
-            {
-                nvkWaitForFences(device, 1, inFlightFences.address(xe), 1, VUtil.UINT64_MAX);
-            }
+
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
                 shouldRecreate = false;
@@ -389,7 +388,8 @@ public class Drawer {
                 throw new RuntimeException("Cannot get image: " + vkResult);
             }
             xe = frameBufferPresentIndices.dequeueLastInt();
-            frameBufferPresentIndices.enqueue(pImageIndex.get(0));
+            frameBufferPresentIndices.enqueue(imageIndex);
+            imageIndex = pImageIndex.get(0);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
