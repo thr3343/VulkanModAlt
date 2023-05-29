@@ -176,11 +176,6 @@ public class Drawer {
 
         if(skipRendering) return;
 
-        if(vkGetFenceStatus(device, frameFences.get(oldestFrameIndex))==VK_NOT_READY)
-        {
-            nvkWaitForFences(device, 1, frameFences.address(oldestFrameIndex), 0, VUtil.UINT64_MAX);
-        }
-
 
         p.pop();
         p.start();
@@ -376,9 +371,12 @@ public class Drawer {
         try(MemoryStack stack = stackPush()) {
             IntBuffer pImageIndex = stack.mallocInt(1);
 
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
+            if(vkGetFenceStatus(device, frameFences.get(oldestFrameIndex))==VK_NOT_READY)
+            {
+                nvkWaitForFences(device, 1, frameFences.address(oldestFrameIndex), 0, VUtil.UINT64_MAX);
+            }
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), 10000, //May crash on Linux
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
-
 
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
@@ -388,9 +386,9 @@ public class Drawer {
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Cannot get image: " + vkResult);
             }
+            frameBufferPresentIndices.enqueue(pImageIndex.get(0));
             oldestFrameIndex = frameBufferPresentIndices.dequeueLastInt();
-            final int currentImageIndex = pImageIndex.get(0);
-            frameBufferPresentIndices.enqueue(currentImageIndex);
+
 
             VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
