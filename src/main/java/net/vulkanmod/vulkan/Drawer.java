@@ -29,6 +29,7 @@ import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -392,7 +393,6 @@ public class Drawer {
             frameBufferPresentIndices.enqueue(pImageIndex.get(0));
             oldestFrameIndex = frameBufferPresentIndices.dequeueLastInt();
 
-            KHRPresentWait.vkWaitForPresentKHR(device, getSwapChain().getId(), pPresentId.get(0), 10000);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -414,13 +414,10 @@ public class Drawer {
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 
-            VkPresentIdKHR vkPresentIdKHR = VkPresentIdKHR.calloc(stack)
-                    .sType$Default()
-                    .swapchainCount(1)
-                    .pPresentIds(pPresentId);
-            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.callocStack(stack)
+            KHRPresentWait.vkWaitForPresentKHR(device, getSwapChain().getId(), pPresentId.get(0), 10000);
+            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.malloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR)
-                    .pNext(vkPresentIdKHR)
+                    .pNext(VkPresentIdKHR.malloc(stack).set(KHRPresentId.VK_STRUCTURE_TYPE_PRESENT_ID_KHR, 0, 1, pPresentId))
                     .pWaitSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)))
                     .swapchainCount(1)
                     .pSwapchains(stack.longs(Vulkan.getSwapChain().getId()))
