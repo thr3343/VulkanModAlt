@@ -39,8 +39,7 @@ public class Drawer {
     private static Drawer INSTANCE;
 
     final IntArrayFIFOQueue frameBufferPresentIndices = new IntArrayFIFOQueue(MAX_FRAMES_IN_FLIGHT);
-    private int imageIndex = 0;
-    private int xe = 0;
+    private int oldestFrameIndex = 0;
 
     public static void initDrawer() { INSTANCE = new Drawer(); }
 
@@ -58,7 +57,7 @@ public class Drawer {
     private static int MAX_FRAMES_IN_FLIGHT;
     private ArrayList<Long> imageAvailableSemaphores;
     private ArrayList<Long> renderFinishedSemaphores;
-    private final PointerBuffer inFlightFences;
+    private final PointerBuffer frameFences;
 
     private Framebuffer boundFramebuffer;
 
@@ -89,7 +88,7 @@ public class Drawer {
         for (int j = 0; j < Initializer.CONFIG.frameQueueSize; j++) {
             frameBufferPresentIndices.enqueue(j);
         }
-        inFlightFences = MemoryUtil.memAllocPointer(Initializer.CONFIG.frameQueueSize);
+        frameFences = MemoryUtil.memAllocPointer(Initializer.CONFIG.frameQueueSize);
         device = Vulkan.getDevice();
         MAX_FRAMES_IN_FLIGHT = getSwapChainImages().size();
         vertexBuffers = new VertexBuffer[MAX_FRAMES_IN_FLIGHT];
@@ -177,8 +176,10 @@ public class Drawer {
 
         if(skipRendering) return;
 
-
-        nvkWaitForFences(device, 1, inFlightFences.address(vsync ? xe : currentFrame), 1, VUtil.UINT64_MAX);
+        if(vkGetFenceStatus(device, frameFences.get(oldestFrameIndex))==VK_NOT_READY)
+        {
+            nvkWaitForFences(device, 1, frameFences.address(oldestFrameIndex), 0, VUtil.UINT64_MAX);
+        }
 
 
         p.pop();
@@ -358,7 +359,7 @@ public class Drawer {
 
                 imageAvailableSemaphores.add(pImageAvailableSemaphore.get(0));
                 renderFinishedSemaphores.add(pRenderFinishedSemaphore.get(0));
-                inFlightFences.put(i, pFence.get(0));
+                frameFences.put(i, pFence.get(0));
 
             }
 
@@ -387,9 +388,9 @@ public class Drawer {
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Cannot get image: " + vkResult);
             }
-            xe = frameBufferPresentIndices.dequeueLastInt();
-            frameBufferPresentIndices.enqueue(imageIndex);
-            imageIndex = pImageIndex.get(0);
+            oldestFrameIndex = frameBufferPresentIndices.dequeueLastInt();
+            final int currentImageIndex = pImageIndex.get(0);
+            frameBufferPresentIndices.enqueue(currentImageIndex);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -402,12 +403,12 @@ public class Drawer {
 
             submitInfo.pCommandBuffers(stack.pointers(commandBuffers.get(currentFrame)));
 
-            vkResetFences(device, inFlightFences.get(xe));
+            vkResetFences(device, frameFences.get(oldestFrameIndex));
 
             Synchronization.INSTANCE.waitFences();
 
-            if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, inFlightFences.get(xe))) != VK_SUCCESS) {
-                vkResetFences(device, inFlightFences.get(xe));
+            if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, frameFences.get(oldestFrameIndex))) != VK_SUCCESS) {
+                vkResetFences(device, frameFences.get(oldestFrameIndex));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 
@@ -443,7 +444,7 @@ public class Drawer {
         vkDeviceWaitIdle(device);
 
         for(int i = 0; i < getSwapChainImages().size(); ++i) {
-            vkDestroyFence(device, inFlightFences.get(i), null);
+            vkDestroyFence(device, frameFences.get(i), null);
             vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }
@@ -488,7 +489,7 @@ public class Drawer {
             buffer = this.uniformBuffers.getUniformBuffer(i);
             memoryManager.freeBuffer(buffer.getId(), buffer.getAllocation());
 
-            vkDestroyFence(device, inFlightFences.get(i), null);
+            vkDestroyFence(device, frameFences.get(i), null);
             vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }
