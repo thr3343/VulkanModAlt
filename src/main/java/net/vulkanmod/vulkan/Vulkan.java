@@ -685,6 +685,7 @@ public class Vulkan {
     public static void setVsync(boolean b) {
         if(swapChain.isVsync() != b) {
             Drawer.shouldRecreate = true;
+            Drawer.vsync = b;
             swapChain.setVsync(b);
         }
     }
