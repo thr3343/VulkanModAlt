@@ -2,6 +2,8 @@ package net.vulkanmod.vulkan.shader;
 
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
+import org.lwjgl.util.shaderc.ShadercIncludeResolve;
+import org.lwjgl.vulkan.VK12;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,13 +11,44 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.shaderc.Shaderc.*;
 
 public class ShaderSPIRVUtils {
-    private static long compiler;
+    static final long compiler;
+
+    static final long options;
+    private static final ShaderIncluder SHADER_INCLUDER = new ShaderIncluder();
+    private static final ShaderReleaser SHADER_RELEASER = new ShaderReleaser();
+
+    private static final long pUserData = 0;
+
+    static {
+
+        compiler = shaderc_compiler_initialize();
+
+        if(compiler == NULL) {
+            throw new RuntimeException("Failed to create shader compiler");
+        }
+
+        options = shaderc_compile_options_initialize();
+
+        if(options == NULL) {
+            throw new RuntimeException("Failed to create compiler options");
+        }
+//callbacks
+//        shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
+//        shaderc_compile_options_set_target_env(options, shaderc_env_version_vulkan_1_2, VK12.VK_API_VERSION_1_2);
+        shaderc_compile_options_set_include_callbacks(options, SHADER_INCLUDER, SHADER_RELEASER, pUserData);
+//        shaderc_compile_into_preprocessed_text();
+//
+//        //        shaderc_compile_options_set_generate_debug_info(options);
+//        ShadercIncludeResolve a =ShadercIncludeResolve.create(1);
+//        a.
+    }
 
     public static SPIRV compileShaderFile(String shaderFile, ShaderKind shaderKind) {
         //TODO name out
@@ -35,21 +68,6 @@ public class ShaderSPIRVUtils {
 
     public static SPIRV compileShader(String filename, String source, ShaderKind shaderKind) {
 
-        if(compiler == 0) compiler = shaderc_compiler_initialize();
-
-        if(compiler == NULL) {
-            throw new RuntimeException("Failed to create shader compiler");
-        }
-
-        long options = shaderc_compile_options_initialize();
-
-        if(options == NULL) {
-            throw new RuntimeException("Failed to create compiler options");
-        }
-
-//        shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_performance);
-
-//        shaderc_compile_options_set_generate_debug_info(options);
 
         long result = shaderc_compile_into_spv(compiler, source, shaderKind.kind, filename, "main", options);
 
@@ -108,7 +126,7 @@ public class ShaderSPIRVUtils {
 
         @Override
         public void free() {
-//            shaderc_result_release(handle);
+            shaderc_result_release(handle);
             bytecode = null; // Help the GC
         }
     }

@@ -45,6 +45,8 @@ public class Vulkan {
 //    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
+    public static final boolean RECOMPILE_SHADERS = true;
+
     static {
         if(ENABLE_VALIDATION_LAYERS) {
             VALIDATION_LAYERS = new HashSet<>();
