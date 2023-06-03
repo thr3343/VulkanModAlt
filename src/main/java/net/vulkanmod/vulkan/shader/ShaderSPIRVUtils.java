@@ -3,11 +3,10 @@ package net.vulkanmod.vulkan.shader;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
-import org.lwjgl.util.shaderc.ShadercIncludeResolve;
-import org.lwjgl.util.shaderc.ShadercIncludeResult;
-import org.lwjgl.util.shaderc.ShadercIncludeResultRelease;
+import org.lwjgl.util.shaderc.*;
 import org.lwjgl.vulkan.VK12;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -130,23 +129,21 @@ public class ShaderSPIRVUtils {
         }
     }
 
-    private static class ShaderIncluder extends ShadercIncludeResolve {
+    private static class ShaderIncluder implements ShadercIncludeResolveI {
 
         private static final int MAX_PATH_LENGTH = 4096; //Maximum Linux/Unix Path Length
 
         @Override
         public long invoke(long user_data, long requested_source, int type, long requesting_source, long include_depth) {
+            //TODO: try to optimise this if it gets too slow/(i.e. causes too much CPU overhead, if any that is)
 
-
-            try(MemoryStack stack = MemoryStack.stackPush())
-            {
-                String s = MemoryUtil.memUTF8(requested_source);
-                String s1 = MemoryUtil.memUTF8(requesting_source+6); //Strip the "file:/" prefix from the initial string const char* Address
-
-                return ShadercIncludeResult.malloc(stack)
-                        .source_name(stack.ASCII(s))
-                        .content(stack.bytes(Files.readAllBytes(Path.of(s1.substring(0, s1.lastIndexOf("/")) + "/" + s))))
-                        .user_data(user_data).address();
+            String s = MemoryUtil.memUTF8(requested_source);
+            String s1 = MemoryUtil.memUTF8(requesting_source+6); //Strip the "file:/" prefix from the initial string const char* Address
+            try(MemoryStack stack = MemoryStack.stackPush(); FileInputStream fileInputStream = new FileInputStream(s1.substring(0, s1.lastIndexOf("/")+1) + s)) {
+                    return ShadercIncludeResult.malloc(stack)
+                            .source_name(stack.ASCII(s))
+                            .content(stack.bytes(fileInputStream.readAllBytes()))
+                            .user_data(user_data).address();
             }
             catch (IOException e) {
                     throw new RuntimeException(e);
@@ -155,7 +152,7 @@ public class ShaderSPIRVUtils {
         }
     }
 
-    private static class ShaderReleaser extends ShadercIncludeResultRelease {
+    private static class ShaderReleaser implements ShadercIncludeResultReleaseI {
         @Override
         public void invoke(long user_data, long include_result) {
             //TODO:MAybe dump Shader Compiled Binaries here to a .Misc Diretcory to allow easy caching.recompilation...
