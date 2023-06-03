@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan.shader;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
-import org.lwjgl.system.NativeType;
 import org.lwjgl.util.shaderc.ShadercIncludeResolve;
 import org.lwjgl.util.shaderc.ShadercIncludeResult;
 import org.lwjgl.util.shaderc.ShadercIncludeResultRelease;
@@ -19,9 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
-import static org.lwjgl.system.MemoryUtil.memGetAddress;
 import static org.lwjgl.util.shaderc.Shaderc.*;
-import static org.lwjgl.util.shaderc.Shaderc.shaderc_result_release;
 
 public class ShaderSPIRVUtils {
     static final long compiler;
@@ -30,7 +27,7 @@ public class ShaderSPIRVUtils {
     private static final ShaderIncluder SHADER_INCLUDER = new ShaderIncluder();
     private static final ShaderReleaser SHADER_RELEASER = new ShaderReleaser();
 
-    private static final long pUserData = 0; //Not sure if we need this TBH: may be for custom Struct//Pointers.user Callbacks (i..e to allo apssing inanddiitonal infomation/Strucvts as and we needed e.g.
+    private static final long pUserData = 0;
 
     static {
 
@@ -133,22 +130,23 @@ public class ShaderSPIRVUtils {
         }
     }
 
-    private static final class ShaderIncluder extends ShadercIncludeResolve {
+    private static class ShaderIncluder extends ShadercIncludeResolve {
 
         private static final int MAX_PATH_LENGTH = 4096; //Maximum Linux/Unix Path Length
 
         @Override
-        public long invoke(@NativeType("void *") long user_data, @NativeType("char const *") long requested_source, int type, @NativeType("char const *") long requesting_source, @NativeType("size_t") long include_depth) {
-            //TODO: try to optimise this if it gets too slow/(i.e. causes too much CPU overhead, if any that is)
+        public long invoke(long user_data, long requested_source, int type, long requesting_source, long include_depth) {
+
+
             try(MemoryStack stack = MemoryStack.stackPush())
             {
                 String s = MemoryUtil.memUTF8(requested_source);
                 String s1 = MemoryUtil.memUTF8(requesting_source+6); //Strip the "file:/" prefix from the initial string const char* Address
 
-                final ByteBuffer values = stack.bytes(Files.readAllBytes(Path.of(s1.substring(s1.lastIndexOf("/")) + "/" + s)));
                 return ShadercIncludeResult.malloc(stack)
-                        .set(stack.ASCII(s), values, user_data)
-                        .address();
+                        .source_name(stack.ASCII(s))
+                        .content(stack.bytes(Files.readAllBytes(Path.of(s1.substring(0, s1.lastIndexOf("/")) + "/" + s))))
+                        .user_data(user_data).address();
             }
             catch (IOException e) {
                     throw new RuntimeException(e);
@@ -157,11 +155,9 @@ public class ShaderSPIRVUtils {
         }
     }
 
-    private static final class ShaderReleaser extends ShadercIncludeResultRelease {
-        //Don;t need this AFAIk due to being able to exploit MemoryStack to handle this anyway
+    private static class ShaderReleaser extends ShadercIncludeResultRelease {
         @Override
-        public void invoke(@NativeType("void *") long user_data, @NativeType("shaderc_include_result *") long include_result) {
-//            shaderc_result_release(memGetAddress(include_result + ShadercIncludeResult.CONTENT));
+        public void invoke(long user_data, long include_result) {
             //TODO:MAybe dump Shader Compiled Binaries here to a .Misc Diretcory to allow easy caching.recompilation...
         }
     }
