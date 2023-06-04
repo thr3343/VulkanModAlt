@@ -1,12 +1,9 @@
 package net.vulkanmod.render.vertex;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.vulkan.VRenderSystem;
 
-import java.util.Arrays;
-import java.util.Hashtable;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public enum TerrainRenderType {
@@ -16,24 +13,16 @@ public enum TerrainRenderType {
     TRANSLUCENT(RenderType.translucent(), 0.0f),
     TRIPWIRE(RenderType.tripwire(), 0.1f);
 
-    public static final TerrainRenderType[] VALUES = TerrainRenderType.values();
-
     private static final Map<RenderType, TerrainRenderType> RENDER_TYPE_MAP = new Hashtable<>(
             Arrays.stream(TerrainRenderType.values()).collect(Collectors.toMap(
                     (terrainRenderType) -> terrainRenderType.renderType, (terrainRenderType) -> terrainRenderType)));
 
-    public static final ObjectArrayList<RenderType> COMPACT_RENDER_TYPES = new ObjectArrayList<>();
-    public static final ObjectArrayList<RenderType> SEMI_COMPACT_RENDER_TYPES = new ObjectArrayList<>();
+    public static final EnumSet<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT, CUTOUT_MIPPED, TRANSLUCENT);
+    public static final EnumSet<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
 
-    static {
-        SEMI_COMPACT_RENDER_TYPES.add(RenderType.cutout());
-        COMPACT_RENDER_TYPES.add(RenderType.cutoutMipped());
-        SEMI_COMPACT_RENDER_TYPES.add(RenderType.cutoutMipped());
-        COMPACT_RENDER_TYPES.add(RenderType.translucent());
-        SEMI_COMPACT_RENDER_TYPES.add(RenderType.translucent());
-    }
 
-    final RenderType renderType;
+
+    public final RenderType renderType;
     final float alphaCutout;
 
     TerrainRenderType(RenderType renderType, float alphaCutout) {

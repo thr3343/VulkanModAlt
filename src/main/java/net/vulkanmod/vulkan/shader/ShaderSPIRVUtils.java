@@ -13,13 +13,13 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.shaderc.Shaderc.*;
 
 public class ShaderSPIRVUtils {
+
     static final long compiler;
 
     static final long options;
@@ -48,6 +48,7 @@ public class ShaderSPIRVUtils {
 
     }
 
+
     public static SPIRV compileShaderFile(String shaderFile, ShaderKind shaderKind) {
         //TODO name out
         String path = ShaderSPIRVUtils.class.getResource("/assets/vulkanmod/shaders/" + shaderFile).toExternalForm();
@@ -67,19 +68,14 @@ public class ShaderSPIRVUtils {
     public static SPIRV compileShader(String filename, String source, ShaderKind shaderKind) {
 
 
-        long result = shaderc_compile_into_spv(compiler, source, shaderKind.kind, filename, "main", options);
+        long result = shaderc_compile_into_preprocessed_text(compiler, source, shaderKind.kind, filename, "main", options);
 
-        if(result == NULL) {
-            throw new RuntimeException("Failed to compile shader " + filename + " into SPIR-V");
-        }
 
-        if(shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
-            throw new RuntimeException("Failed to compile shader " + filename + " into SPIR-V:\n" + shaderc_result_get_error_message(result));
-        }
+
 
 //        shaderc_compiler_release(compiler);
 
-        return new SPIRV(result, shaderc_result_get_bytes(result));
+        return new SPIRV((int)shaderc_result_get_length(result), nshaderc_result_get_bytes(result));
     }
 
     private static SPIRV readFromStream(InputStream inputStream) {
@@ -89,7 +85,7 @@ public class ShaderSPIRVUtils {
             buffer.put(bytes);
             buffer.position(0);
 
-            return new SPIRV(MemoryUtil.memAddress(buffer), buffer);
+            return new SPIRV(bytes.length, MemoryUtil.memAddress0(buffer));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -108,26 +104,16 @@ public class ShaderSPIRVUtils {
         }
     }
 
-    public static final class SPIRV implements NativeResource {
+    public record SPIRV(int size, long bytecode) implements NativeResource {
 
-        private final long handle;
-        private ByteBuffer bytecode;
-
-        public SPIRV(long handle, ByteBuffer bytecode) {
-            this.handle = handle;
-            this.bytecode = bytecode;
-        }
-
-        public ByteBuffer bytecode() {
-            return bytecode;
-        }
+        //            this.handle = handle;
 
         @Override
-        public void free() {
-            shaderc_result_release(handle);
-            bytecode = null; // Help the GC
+            public void free() {
+
+            MemoryUtil.nmemFree(bytecode);
+            }
         }
-    }
 
     private static class ShaderIncluder implements ShadercIncludeResolveI {
 
@@ -137,8 +123,8 @@ public class ShaderSPIRVUtils {
         public long invoke(long user_data, long requested_source, int type, long requesting_source, long include_depth) {
             //TODO: try to optimise this if it gets too slow/(i.e. causes too much CPU overhead, if any that is)
 
-            String s = MemoryUtil.memUTF8(requested_source);
-            String s1 = MemoryUtil.memUTF8(requesting_source+6); //Strip the "file:/" prefix from the initial string const char* Address
+            String s = MemoryUtil.memASCII(requested_source);
+            String s1 = MemoryUtil.memASCII(requesting_source+6); //Strip the "file:/" prefix from the initial string const char* Address
             try(MemoryStack stack = MemoryStack.stackPush(); FileInputStream fileInputStream = new FileInputStream(s1.substring(0, s1.lastIndexOf("/")+1) + s)) {
                     return ShadercIncludeResult.malloc(stack)
                             .source_name(stack.ASCII(s))

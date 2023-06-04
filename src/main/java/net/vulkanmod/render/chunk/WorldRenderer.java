@@ -46,6 +46,8 @@ import org.joml.Matrix4f;
 import javax.annotation.Nullable;
 import java.util.*;
 
+import static net.vulkanmod.render.vertex.TerrainRenderType.*;
+
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
 
@@ -526,29 +528,24 @@ public class WorldRenderer {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
         Profiler2 p = Profiler2.getMainProfiler();
-        RenderType solid = RenderType.solid();
-        RenderType cutout = RenderType.cutout();
-        RenderType cutoutMipped = RenderType.cutoutMipped();
-        RenderType translucent = RenderType.translucent();
-        RenderType tripwire = RenderType.tripwire();
 
-        String layerName;
-        if (solid.equals(renderType)) {
-            layerName = "solid";
-        } else if (cutout.equals(renderType)) {
-            layerName = "cutout";
-        } else if (cutoutMipped.equals(renderType)) {
-            layerName = "cutoutMipped";
-        } else if (tripwire.equals(renderType)) {
-            layerName = "tripwire";
-        } else if (translucent.equals(renderType)) {
-            layerName = "translucent";
-        } else layerName = "unk";
+        final TerrainRenderType layerName;
+        if (SOLID.renderType.equals(renderType)) {
+            layerName = SOLID;
+        } else if (CUTOUT.renderType.equals(renderType)) {
+            layerName = CUTOUT;
+        } else if (CUTOUT_MIPPED.renderType.equals(renderType)) {
+            layerName = CUTOUT_MIPPED;
+        } else if (TRIPWIRE.renderType.equals(renderType)) {
+            layerName = TRIPWIRE;
+        } else if (TRANSLUCENT.renderType.equals(renderType)) {
+            layerName = TRANSLUCENT;
+        } else return;
 
 //        p.pushMilestone("layer " + layerName);
-        if(layerName.equals("solid"))
+        if(layerName.equals(SOLID))
             p.push("Opaque_terrain_pass");
-        else if(layerName.equals("translucent"))
+        else if(layerName.equals(TRANSLUCENT))
         {
             p.pop();
             p.push("Translucent_terrain_pass");
@@ -576,14 +573,14 @@ public class WorldRenderer {
 
         p.push("draw batches");
 
-        ObjectArrayList<RenderType> renderTypes;
+        EnumSet<TerrainRenderType> renderTypes;
         if(Initializer.CONFIG.uniqueOpaqueLayer) {
-            renderTypes = TerrainRenderType.COMPACT_RENDER_TYPES;
+            renderTypes = COMPACT_RENDER_TYPES;
         } else {
-            renderTypes = TerrainRenderType.SEMI_COMPACT_RENDER_TYPES;
+            renderTypes = SEMI_COMPACT_RENDER_TYPES;
         }
 
-        if(renderTypes.contains(renderType)) {
+        if(renderTypes.contains(layerName)) {
             Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
             while(iterator.hasNext()) {
                 ChunkArea chunkArea = iterator.next();
@@ -596,7 +593,7 @@ public class WorldRenderer {
             }
         }
 
-        if(layerName.equals("cutout") || layerName.equals("tripwire")) {
+        if(layerName.equals(CUTOUT) || layerName.equals(TRIPWIRE)) {
             indirectBuffers[Drawer.getCurrentFrame()].submitUploads();
 //            uniformBuffers.submitUploads();
         }
@@ -614,14 +611,14 @@ public class WorldRenderer {
         VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
 
         switch (layerName) {
-            case "cutout" -> {
+            case CUTOUT-> {
                 p.pop();
 //                p.pop();
 //                p.push("Render_level_2");
                 p.push("entities");
             }
 //            case "translucent" -> p.pop();
-            case "tripwire" -> p.pop();
+            case TRIPWIRE -> p.pop();
         }
 
     }
@@ -649,7 +646,7 @@ public class WorldRenderer {
             while(iterator.hasNext() && j < 15) {
                 RenderSection section = iterator.next();
 
-                section.resortTransparency(TerrainRenderType.TRANSLUCENT, this.taskDispatcher);
+                section.resortTransparency(TRANSLUCENT, this.taskDispatcher);
 
                 ++j;
             }

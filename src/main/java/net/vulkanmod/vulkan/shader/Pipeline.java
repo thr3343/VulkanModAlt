@@ -41,6 +41,8 @@ import static net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.compileShaderFile;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static net.vulkanmod.vulkan.shader.PipelineState.*;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.memAddress;
+import static org.lwjgl.system.MemoryUtil.memPutAddress;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Pipeline {
@@ -307,8 +309,8 @@ public class Pipeline {
     }
 
     private void createShaderModules(SPIRV vertSpirv, SPIRV fragSpirv) {
-        this.vertShaderModule = createShaderModule(vertSpirv.bytecode());
-        this.fragShaderModule = createShaderModule(fragSpirv.bytecode());
+        this.vertShaderModule = createShaderModule(vertSpirv);
+        this.fragShaderModule = createShaderModule(fragSpirv);
     }
 
     public void cleanUp() {
@@ -435,18 +437,19 @@ public class Pipeline {
         return attributeDescriptions.rewind();
     }
 
-    private static long createShaderModule(ByteBuffer spirvCode) {
+    private static long createShaderModule(SPIRV spirvCode) {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.callocStack(stack);
-
-            createInfo.sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
-            createInfo.pCode(spirvCode);
+            VkShaderModuleCreateInfo vkShaderModuleCreateInfo = VkShaderModuleCreateInfo.malloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
+            long struct = vkShaderModuleCreateInfo.address();
+            memPutAddress(struct + VkShaderModuleCreateInfo.PCODE,spirvCode.bytecode());
+            VkShaderModuleCreateInfo.ncodeSize(struct, spirvCode.size());
 
             LongBuffer pShaderModule = stack.mallocLong(1);
 
-            if(vkCreateShaderModule(DEVICE, createInfo, null, pShaderModule) != VK_SUCCESS) {
+            if(vkCreateShaderModule(DEVICE, vkShaderModuleCreateInfo, null, pShaderModule) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create shader module");
             }
 
