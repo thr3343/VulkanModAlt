@@ -10,7 +10,6 @@ import net.minecraft.util.GsonHelper;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Framebuffer;
-import net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.SPIRV;
 import net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.ShaderKind;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
@@ -23,6 +22,7 @@ import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.util.shaderc.Shaderc;
 import org.lwjgl.vulkan.*;
 
 import java.io.InputStream;
@@ -40,9 +40,11 @@ import static net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.compileShader;
 import static net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.compileShaderFile;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static net.vulkanmod.vulkan.shader.PipelineState.*;
+import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.JNI.callPPPPI;
+import static org.lwjgl.system.JNI.invokePP;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.memAddress;
-import static org.lwjgl.system.MemoryUtil.memPutAddress;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Pipeline {
@@ -68,7 +70,7 @@ public class Pipeline {
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
 
-    public Pipeline(VertexFormat vertexFormat, int colorFormat, int depthFormat, List<UBO> UBOs, ManualUBO manualUBO, List<Sampler> samplers, PushConstants pushConstants, SPIRV vertSpirv, SPIRV fragSpirv) {
+    public Pipeline(VertexFormat vertexFormat, int colorFormat, int depthFormat, List<UBO> UBOs, ManualUBO manualUBO, List<Sampler> samplers, PushConstants pushConstants, long vertSpirv, long fragSpirv) {
         this.UBOs = UBOs;
         this.manualUBO = manualUBO;
         this.samplers = samplers;
@@ -308,7 +310,7 @@ public class Pipeline {
         }
     }
 
-    private void createShaderModules(SPIRV vertSpirv, SPIRV fragSpirv) {
+    private void createShaderModules(long vertSpirv, long fragSpirv) {
         this.vertShaderModule = createShaderModule(vertSpirv);
         this.fragShaderModule = createShaderModule(fragSpirv);
     }
@@ -437,19 +439,20 @@ public class Pipeline {
         return attributeDescriptions.rewind();
     }
 
-    private static long createShaderModule(SPIRV spirvCode) {
+    private static long createShaderModule(long spirvCode) {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkShaderModuleCreateInfo vkShaderModuleCreateInfo = VkShaderModuleCreateInfo.malloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
-            long struct = vkShaderModuleCreateInfo.address();
-            memPutAddress(struct + VkShaderModuleCreateInfo.PCODE,spirvCode.bytecode());
-            VkShaderModuleCreateInfo.ncodeSize(struct, spirvCode.size());
+            VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.callocStack(stack);
+
+            createInfo.sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
+            long struct = createInfo.address();
+            memPutAddress(struct + VkShaderModuleCreateInfo.PCODE, invokePP(spirvCode, Shaderc.Functions.result_get_bytes));
+            VkShaderModuleCreateInfo.ncodeSize(struct, ShaderSPIRVUtils.shaderc_compilation_result_output_data_size(spirvCode));
 
             LongBuffer pShaderModule = stack.mallocLong(1);
 
-            if(vkCreateShaderModule(DEVICE, vkShaderModuleCreateInfo, null, pShaderModule) != VK_SUCCESS) {
+            if(nvkCreateShaderModule(DEVICE, createInfo.address(), NULL, memAddress0(pShaderModule)) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create shader module");
             }
 
@@ -728,8 +731,8 @@ public class Pipeline {
         private List<Sampler> samplers;
         private int currentBinding;
 
-        private SPIRV vertShaderSPIRV;
-        private SPIRV fragShaderSPIRV;
+        private long vertShaderSPIRV;
+        private long fragShaderSPIRV;
 
         private Framebuffer framebuffer;
 
@@ -744,7 +747,7 @@ public class Pipeline {
 
         public Pipeline createPipeline() {
             Validate.isTrue(this.samplers != null && this.UBOs != null
-                    && this.vertShaderSPIRV != null && this.fragShaderSPIRV != null,
+                    && this.vertShaderSPIRV != NULL && this.fragShaderSPIRV != NULL,
                     "Cannot create Pipeline: resources missing");
 
             if(this.framebuffer == null)
