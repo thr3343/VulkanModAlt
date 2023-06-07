@@ -172,7 +172,7 @@ public abstract class DebugHudM {
         List<String> list = this.getSystemInformation();
 
         RenderSystem.enableBlend();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
+        RenderSystem.setShader(GameRenderer::getRendertypeGuiOverlayShader);
 //        GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
 
         for (int i = 0; i < list.size(); ++i) {

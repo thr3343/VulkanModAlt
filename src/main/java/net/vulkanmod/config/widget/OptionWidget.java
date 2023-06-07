@@ -61,7 +61,7 @@ public abstract class OptionWidget
     public void renderWidget(GuiGraphics matrices, int mouseX, int mouseY, float delta) {
         Minecraft minecraftClient = Minecraft.getInstance();
         Font textRenderer = minecraftClient.font;
-        RenderSystem.setShader(GameRenderer::getRendertypeGuiShader);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, this.alpha);
 //        int i = this.getYImage(this.isHovered());

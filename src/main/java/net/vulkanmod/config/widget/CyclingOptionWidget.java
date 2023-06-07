@@ -147,7 +147,7 @@ public class CyclingOptionWidget extends OptionWidget {
 //            tessellator.draw();
 
             RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-            RenderSystem.setShader(GameRenderer::getRendertypeGuiShader);
+            RenderSystem.setShader(GameRenderer::getPositionColorShader);
         }
     }
 

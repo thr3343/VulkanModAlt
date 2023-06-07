@@ -20,7 +20,7 @@ public class LoadingOverlayM {
      */
     @Overwrite
     private void drawProgressBar(GuiGraphics guiGraphics, int i, int j, int k, int l, float f) {
-        RenderSystem.setShader(GameRenderer::getRendertypeGuiShader);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
         int m = Mth.ceil((float) (k - i - 2) * this.currentProgress);
         int n = Math.round(f * 255.0F);
         int o = FastColor.ARGB32.color(n, 255, 255, 255);
