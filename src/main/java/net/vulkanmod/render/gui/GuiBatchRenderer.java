@@ -51,7 +51,7 @@ public class GuiBatchRenderer {
     }
 
     public static void innerBlit(Matrix4f matrix4f, int x1, int x2, int y1, int y2, int z, float uv1, float uv2, float uv3, float uv4) {
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShader(GameRenderer::getRendertypeGuiShader);
         BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
 
         bufferbuilder.vertex(matrix4f, (float)x1, (float)y2, (float)z).uv(uv1, uv4).endVertex();

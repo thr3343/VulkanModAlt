@@ -14,6 +14,7 @@ import net.minecraft.util.FormattedCharSequence;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.widget.CustomButtonWidget;
 import net.vulkanmod.config.widget.OptionWidget;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -135,7 +136,7 @@ public class OptionScreenV extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics matrices, int mouseX, int mouseY, float delta) {
+    public void render(@NotNull GuiGraphics matrices, int mouseX, int mouseY, float delta) {
         this.updateStatus();
 
         this.renderBackground(matrices);
@@ -147,7 +148,7 @@ public class OptionScreenV extends Screen {
         List<FormattedCharSequence> list = getHoveredButtonTooltip(this.currentList, mouseX, mouseY);
         if (list != null) {
             //TODO --->!
-//            matrices.renderTooltip(matrices, list, mouseX, mouseY);
+            matrices.renderTooltip(this.minecraft.font, list, mouseX, mouseY);
         }
     }
 
