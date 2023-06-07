@@ -2,20 +2,24 @@ package net.vulkanmod.config;
 
 import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.util.Mth;
 import net.vulkanmod.config.widget.OptionWidget;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Optional;
+
+import static net.minecraft.client.gui.screens.Screen.BACKGROUND_LOCATION;
 
 public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry> {
 
@@ -71,7 +75,7 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
     }
 
     @Override
-    public void render(PoseStack matrices, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics matrices, int mouseX, int mouseY, float delta) {
         int o;
         int n;
         int m;
@@ -85,7 +89,7 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
 //        Object v0 = this.hoveredEntry;
 
         //Render Background
-        RenderSystem.setShaderTexture(0, GuiComponent.BACKGROUND_LOCATION);
+        RenderSystem.setShaderTexture(0, BACKGROUND_LOCATION);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
         float f = 32.0f;
         bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
@@ -106,7 +110,7 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
 
         //Render horizontal shadows
         RenderSystem.setShader(GameRenderer::getPositionTexColorShader);
-        RenderSystem.setShaderTexture(0, GuiComponent.BACKGROUND_LOCATION);
+        RenderSystem.setShaderTexture(0, BACKGROUND_LOCATION);
         RenderSystem.enableDepthTest();
         RenderSystem.depthFunc(519);
         float g = 32.0f;
@@ -186,7 +190,7 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
         return Optional.empty();
     }
 
-    protected void renderList(PoseStack matrices, int x, int y, int mouseX, int mouseY, float delta) {
+    protected void renderList(GuiGraphics matrices, int x, int y, int mouseX, int mouseY, float delta) {
         int i = this.getItemCount();
         Tesselator tesselator = Tesselator.getInstance();
         BufferBuilder bufferBuilder = tesselator.getBuilder();
@@ -241,7 +245,7 @@ public class OptionList2 extends ContainerObjectSelectionList<OptionList2.Entry>
         }
 
         @Override
-        public void render(PoseStack matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
+        public void render(GuiGraphics matrices, int index, int y, int x, int entryWidth, int entryHeight, int mouseX, int mouseY, boolean hovered, float tickDelta) {
             button.y = y;
             button.render(matrices, mouseX, mouseY, tickDelta);
         }

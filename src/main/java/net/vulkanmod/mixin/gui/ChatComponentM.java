@@ -1,20 +1,17 @@
 package net.vulkanmod.mixin.gui;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.GuiMessage;
 import net.minecraft.client.GuiMessageTag;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
-import net.vulkanmod.render.gui.GuiBatchRenderer;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -217,178 +214,180 @@ public abstract class ChatComponentM {
      * @author
      */
     @Overwrite
-    public void render(PoseStack poseStack, int i, int j, int k) {
-        if (!this.isChatHidden()) {
-            int l = this.getLinesPerPage();
-            int m = this.trimmedMessages.size();
-            if (m > 0) {
-                boolean bl = this.isChatFocused();
-                float f = (float)this.getScale();
-                int n = Mth.ceil((float)this.getWidth() / f);
-                int o = this.minecraft.getWindow().getGuiScaledHeight();
-                poseStack.pushPose();
-                poseStack.scale(f, f, 1.0F);
-                poseStack.translate(4.0F, 0.0F, 0.0F);
-                int p = Mth.floor((float)(o - 40) / f);
-                int q = this.getMessageEndIndexAt(this.screenToChatX((double)j), this.screenToChatY((double)k));
-                double d = (Double)this.minecraft.options.chatOpacity().get() * 0.8999999761581421 + 0.10000000149011612;
-                double e = (Double)this.minecraft.options.textBackgroundOpacity().get();
-                double g = (Double)this.minecraft.options.chatLineSpacing().get();
-                int r = this.getLineHeight();
-                int s = (int)Math.round(-8.0 * (g + 1.0) + 4.0 * g);
-                int t = 0;
-
-                int w;
-                int x;
-                int y;
-                int aa;
-
-                poseStack.pushPose();
-                poseStack.translate(0.0, 0.0, 50.0);
-                Matrix4f mat1 = poseStack.last().pose();
-//                poseStack.pushPose();
-                poseStack.translate(0.0, 0.0, 50.0);
-                Matrix4f mat2 = poseStack.last().pose();
-
-                GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
-                RenderSystem.setShader(GameRenderer::getPositionColorShader);
-                RenderSystem.enableBlend();
-                MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
-
-                for(int u = 0; u + this.chatScrollbarPos < this.trimmedMessages.size() && u < l; ++u) {
-                    int v = u + this.chatScrollbarPos;
-                    GuiMessage.Line line = (GuiMessage.Line)this.trimmedMessages.get(v);
-                    if (line != null) {
-                        w = i - line.addedTime();
-                        if (w < 200 || bl) {
-                            double h = bl ? 1.0 : getTimeFactor(w);
-                            x = (int)(255.0 * h * d);
-                            y = (int)(255.0 * h * e);
-                            ++t;
-                            if (x > 3) {
-                                boolean z = false;
-                                aa = p - u * r;
-                                int ab = aa + s;
-//                                poseStack.pushPose();
-//                                poseStack.translate(0.0F, 0.0F, 50.0F);
-                                GuiBatchRenderer.fill(mat1, -4, aa - r, 0 + n + 4 + 4, aa, y << 24);
-                                GuiMessageTag guiMessageTag = line.tag();
-                                if (guiMessageTag != null) {
-                                    int ac = guiMessageTag.indicatorColor() | x << 24;
-                                    GuiBatchRenderer.fill(mat1, -4, aa - r, -2, aa, ac);
-                                    if (v == q && guiMessageTag.icon() != null) {
-                                        int ad = this.getTagIconLeft(line);
-                                        Objects.requireNonNull(this.minecraft.font);
-                                        int ae = ab + 9;
-                                        this.drawTagIcon(mat1, ad, ae, guiMessageTag.icon());
-                                    }
-                                }
-
-//                                RenderSystem.enableBlend();
-//                                poseStack.translate(0.0F, 0.0F, 50.0F);
-//                                this.minecraft.font.drawShadow(poseStack, line.content(), 0.0F, (float)ab, 16777215 + (x << 24));
-//                                GuiBatchRenderer.drawShadow(this.minecraft.font, bufferSource, mat2, line.content(), 0.0F, (float)ab, 16777215 + (x << 24));
-//                                RenderSystem.disableBlend();
-//                                poseStack.popPose();
-                            }
-                        }
-                    }
-                }
-
-                GuiBatchRenderer.endBatch();
-
-                for(int u = 0; u + this.chatScrollbarPos < this.trimmedMessages.size() && u < l; ++u) {
-                    int v = u + this.chatScrollbarPos;
-                    GuiMessage.Line line = (GuiMessage.Line)this.trimmedMessages.get(v);
-                    if (line != null) {
-                        w = i - line.addedTime();
-                        if (w < 200 || bl) {
-                            double h = bl ? 1.0 : getTimeFactor(w);
-                            x = (int)(255.0 * h * d);
-                            y = (int)(255.0 * h * e);
-                            ++t;
-                            if (x > 3) {
-                                boolean z = false;
-                                aa = p - u * r;
-                                int ab = aa + s;
-//                                poseStack.pushPose();
-//                                poseStack.translate(0.0F, 0.0F, 50.0F);
-//                                GuiBatchRenderer.fill(mat1, -4, aa - r, 0 + n + 4 + 4, aa, y << 24);
+    public void render(GuiGraphics poseStack, int i, int j, int k) {
+//        if (!this.isChatHidden()) {
+//            int l = this.getLinesPerPage();
+//            int m = this.trimmedMessages.size();
+//            if (m > 0) {
+//                boolean bl = this.isChatFocused();
+//                float f = (float)this.getScale();
+//                int n = Mth.ceil((float)this.getWidth() / f);
+//                int o = this.minecraft.getWindow().getGuiScaledHeight();
+//                poseStack.pose().pushPose();
+//                poseStack.pose().scale(f, f, 1.0F);
+//                poseStack.pose().translate(4.0F, 0.0F, 0.0F);
+//                int p = Mth.floor((float)(o - 40) / f);
+//                int q = this.getMessageEndIndexAt(this.screenToChatX((double)j), this.screenToChatY((double)k));
+//                double d = (Double)this.minecraft.options.chatOpacity().get() * 0.8999999761581421 + 0.10000000149011612;
+//                double e = (Double)this.minecraft.options.textBackgroundOpacity().get();
+//                double g = (Double)this.minecraft.options.chatLineSpacing().get();
+//                int r = this.getLineHeight();
+//                int s = (int)Math.round(-8.0 * (g + 1.0) + 4.0 * g);
+//                int t = 0;
+//
+//                int w;
+//                int x;
+//                int y;
+//                int aa;
+//
+//                poseStack.pose().pushPose();
+//                poseStack.pose().translate(0.0, 0.0, 50.0);
+//                Matrix4f mat1 = poseStack.pose().last().pose();
+////                poseStack.pushPose();
+//                poseStack.pose().translate(0.0, 0.0, 50.0);
+//                Matrix4f mat2 = poseStack.pose().last().pose();
+//
+////                GuiBatchRenderer.beginBatch(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
+//
+//                //TODO --->!
+//                RenderSystem.setShader(GameRenderer::getPositionColorShader);
+//                RenderSystem.enableBlend();
+//                MultiBufferSource.BufferSource bufferSource = MultiBufferSource.immediate(Tesselator.getInstance().getBuilder());
+//
+//                for(int u = 0; u + this.chatScrollbarPos < this.trimmedMessages.size() && u < l; ++u) {
+//                    int v = u + this.chatScrollbarPos;
+//                    GuiMessage.Line line = (GuiMessage.Line)this.trimmedMessages.get(v);
+//                    if (line != null) {
+//                        w = i - line.addedTime();
+//                        if (w < 200 || bl) {
+//                            double h = bl ? 1.0 : getTimeFactor(w);
+//                            x = (int)(255.0 * h * d);
+//                            y = (int)(255.0 * h * e);
+//                            ++t;
+//                            if (x > 3) {
+//                                boolean z = false;
+//                                aa = p - u * r;
+//                                int ab = aa + s;
+////                                poseStack.pushPose();
+////                                poseStack.translate(0.0F, 0.0F, 50.0F);
+//                                poseStack.fill(-4, aa - r, 0 + n + 4 + 4, aa, y << 24);
 //                                GuiMessageTag guiMessageTag = line.tag();
 //                                if (guiMessageTag != null) {
 //                                    int ac = guiMessageTag.indicatorColor() | x << 24;
-//                                    GuiBatchRenderer.fill(mat1, -4, aa - r, -2, aa, ac);
+//                                    poseStack.fill(-4, aa - r, -2, aa, ac);
 //                                    if (v == q && guiMessageTag.icon() != null) {
 //                                        int ad = this.getTagIconLeft(line);
 //                                        Objects.requireNonNull(this.minecraft.font);
 //                                        int ae = ab + 9;
-//                                        this.drawTagIcon(mat1, ad, ae, guiMessageTag.icon());
+////TODO --->!//                                        this.drawTagIcon(mat1, ad, ae, guiMessageTag.icon());
 //                                    }
 //                                }
-
-//                                RenderSystem.enableBlend();
-//                                poseStack.translate(0.0F, 0.0F, 50.0F);
-//                                this.minecraft.font.drawShadow(poseStack, line.content(), 0.0F, (float)ab, 16777215 + (x << 24));
-                                GuiBatchRenderer.drawShadow(this.minecraft.font, bufferSource, mat2, line.content(), 0.0F, (float)ab, 16777215 + (x << 24));
-//                                RenderSystem.disableBlend();
-//                                poseStack.popPose();
-                            }
-                        }
-                    }
-                }
-
-                poseStack.popPose();
-
-                long af = this.minecraft.getChatListener().queueSize();
-                int ag;
-                if (af > 0L) {
-                    ag = (int)(128.0 * d);
-                    w = (int)(255.0 * e);
-                    poseStack.pushPose();
-                    poseStack.translate(0.0F, (float)p, 50.0F);
-                    GuiBatchRenderer.fill(poseStack, -2, 0, n + 4, 9, w << 24);
-                    RenderSystem.enableBlend();
-                    poseStack.translate(0.0F, 0.0F, 50.0F);
-//                    this.minecraft.font.drawShadow(poseStack, Component.translatable("chat.queue", new Object[]{af}), 0.0F, 1.0F, 16777215 + (ag << 24));
-                    GuiBatchRenderer.drawShadow(this.minecraft.font, bufferSource, poseStack, Component.translatable("chat.queue", af).getVisualOrderText(), 0.0F, 1.0F, 16777215 + (ag << 24));
-                    poseStack.popPose();
-//                    RenderSystem.disableBlend();
-                }
-
-                bufferSource.endBatch();
-
-                if (bl) {
-                    ag = this.getLineHeight();
-                    w = m * ag;
-                    int ah = t * ag;
-                    int ai = this.chatScrollbarPos * ah / m - p;
-                    x = ah * ah / w;
-                    if (w != ah) {
-                        y = ai > 0 ? 170 : 96;
-                        int z = this.newMessageSinceScroll ? 13382451 : 3355562;
-                        aa = n + 4;
-                        ChatComponent.fill(poseStack, aa, -ai, aa + 2, -ai - x, z + (y << 24));
-                        ChatComponent.fill(poseStack, aa + 2, -ai, aa + 1, -ai - x, 13421772 + (y << 24));
-                    }
-                }
-
-                poseStack.popPose();
-            }
-        }
+//
+////                                RenderSystem.enableBlend();
+////                                poseStack.translate(0.0F, 0.0F, 50.0F);
+////                                this.minecraft.font.drawShadow(poseStack, line.content(), 0.0F, (float)ab, 16777215 + (x << 24));
+////                                GuiBatchRenderer.drawShadow(this.minecraft.font, bufferSource, mat2, line.content(), 0.0F, (float)ab, 16777215 + (x << 24));
+////                                RenderSystem.disableBlend();
+////                                poseStack.popPose();
+//                            }
+//                        }
+//                    }
+//                }
+//
+////                poseStack.endBatch();
+//
+//                for(int u = 0; u + this.chatScrollbarPos < this.trimmedMessages.size() && u < l; ++u) {
+//                    int v = u + this.chatScrollbarPos;
+//                    GuiMessage.Line line = (GuiMessage.Line)this.trimmedMessages.get(v);
+//                    if (line != null) {
+//                        w = i - line.addedTime();
+//                        if (w < 200 || bl) {
+//                            double h = bl ? 1.0 : getTimeFactor(w);
+//                            x = (int)(255.0 * h * d);
+//                            y = (int)(255.0 * h * e);
+//                            ++t;
+//                            if (x > 3) {
+//                                boolean z = false;
+//                                aa = p - u * r;
+//                                int ab = aa + s;
+////                                poseStack.pushPose();
+////                                poseStack.translate(0.0F, 0.0F, 50.0F);
+////                                GuiBatchRenderer.fill(mat1, -4, aa - r, 0 + n + 4 + 4, aa, y << 24);
+////                                GuiMessageTag guiMessageTag = line.tag();
+////                                if (guiMessageTag != null) {
+////                                    int ac = guiMessageTag.indicatorColor() | x << 24;
+////                                    GuiBatchRenderer.fill(mat1, -4, aa - r, -2, aa, ac);
+////                                    if (v == q && guiMessageTag.icon() != null) {
+////                                        int ad = this.getTagIconLeft(line);
+////                                        Objects.requireNonNull(this.minecraft.font);
+////                                        int ae = ab + 9;
+////                                        this.drawTagIcon(mat1, ad, ae, guiMessageTag.icon());
+////                                    }
+////                                }
+//
+////                                RenderSystem.enableBlend();
+////                                poseStack.translate(0.0F, 0.0F, 50.0F);
+////                                this.minecraft.font.drawShadow(poseStack, line.content(), 0.0F, (float)ab, 16777215 + (x << 24));
+//                                poseStack.drawString(this.minecraft.font, line.content(), 0, ab, 16777215 + (x << 24));
+////                                RenderSystem.disableBlend();
+////                                poseStack.popPose();
+//                            }
+//                        }
+//                    }
+//                }
+//
+//                poseStack.pose().popPose();
+//
+//                long af = this.minecraft.getChatListener().queueSize();
+//                int ag;
+//                if (af > 0L) {
+//                    ag = (int)(128.0 * d);
+//                    w = (int)(255.0 * e);
+//                    poseStack.pose().pushPose();
+//                    poseStack.pose().translate(0.0F, (float)p, 50.0F);
+//                    poseStack.fill(-2, 0, n + 4, 9, w << 24);
+//                    RenderSystem.enableBlend();
+//                    poseStack.pose().translate(0.0F, 0.0F, 50.0F);
+////                    this.minecraft.font.drawShadow(poseStack, Component.translatable("chat.queue", new Object[]{af}), 0.0F, 1.0F, 16777215 + (ag << 24));
+//                    poseStack.drawString(this.minecraft.font, (Component)Component.translatable("chat.queue", af), 0, 1, 16777215 + (ag << 24));
+//                    poseStack.pose().popPose();
+////                    RenderSystem.disableBlend();
+//                }
+//
+//                bufferSource.endBatch();
+//
+//                if (bl) {
+//                    ag = this.getLineHeight();
+//                    w = m * ag;
+//                    int ah = t * ag;
+//                    int ai = this.chatScrollbarPos * ah / m - p;
+//                    x = ah * ah / w;
+//                    if (w != ah) {
+//                        y = ai > 0 ? 170 : 96;
+//                        int z = this.newMessageSinceScroll ? 13382451 : 3355562;
+//                        aa = n + 4;
+//                        poseStack.fill(aa, -ai, aa + 2, -ai - x, z + (y << 24));
+//                        poseStack.fill(aa + 2, -ai, aa + 1, -ai - x, 13421772 + (y << 24));
+//                    }
+//                }
+//
+//                poseStack.pose().popPose();
+//            }
+//        }
     }
 
-    private void drawTagIcon(PoseStack poseStack, int i, int j, GuiMessageTag.Icon icon) {
-        int k = j - icon.height - 1;
-        icon.draw(poseStack, i, k);
-
-    }
-
-    private void drawTagIcon(Matrix4f mat4f, int i, int j, GuiMessageTag.Icon icon) {
-        int k = j - icon.height - 1;
-        RenderSystem.setShaderTexture(0, TEXTURE_LOCATION);
-
-        GuiBatchRenderer.blit(mat4f, i, k, icon.u, icon.v, icon.width, icon.height, 32, 32);
-    }
+//    private void drawTagIcon(PoseStack poseStack, int i, int j, GuiMessageTag.Icon icon) {
+//        int k = j - icon.height - 1;
+//        icon.draw(poseStack, i, k);
+//
+//    }
+//TODO --->!
+//    private void drawTagIcon(GuiGraphics mat4f, int i, int j, GuiMessageTag.Icon icon) {
+//        int k = j - icon.height - 1;
+//        RenderSystem.setShaderTexture(0, TEXTURE_LOCATION);
+//
+//        GuiBatchRenderer.blit(mat4f, i, k, icon.u, icon.v, icon.width, icon.height, 32, 32);
+//    }
 
     private static double getTimeFactor(int i) {
         double d = (double)i / 200.0;

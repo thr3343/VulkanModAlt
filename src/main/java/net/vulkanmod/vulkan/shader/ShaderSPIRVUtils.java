@@ -63,7 +63,8 @@ public class ShaderSPIRVUtils {
 
 //        shaderc_compiler_release(compiler);
 
-        return new SPIRV(result, shaderc_result_get_bytes(result));
+        ByteBuffer bytecode = shaderc_result_get_bytes(result);
+        return new SPIRV(result, bytecode);
     }
 
     private static SPIRV readFromStream(InputStream inputStream) {

@@ -45,14 +45,14 @@ public class CustomButtonWidget extends AbstractButton {
         if(this.isHovered && this.active) color = 0xB0000000;
         else if(this.active) color = 0x90000000;
         else color = 0x70000000;
-        fill(matrices, this.x, this.y, this.x + width, this.y + this.height, color);
+//        fill(matrices, this.x, this.y, this.x + width, this.y + this.height, color);
 //        this.renderWidget(matrices, mouseX, mouseY);
 //        this.renderWidget(matrices, 0, 0, 0);
         int j = this.active ? 0xFFFFFF : 0xA0A0A0;
-        drawCenteredString(matrices, textRenderer, this.getMessage(), this.x + this.width / 2, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0f) << 24);
+//        drawCenteredString(matrices, textRenderer, this.getMessage(), this.x + this.width / 2, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0f) << 24);
 
         if(this.selected) {
-            fill(matrices, this.x, this.y + this.height - 2, this.x + this.width, this.y + this.height,  0xFFFFFFFF);
+//            fill(matrices, this.x, this.y + this.height - 2, this.x + this.width, this.y + this.height,  0xFFFFFFFF);
         }
     }
 

@@ -35,8 +35,8 @@ public abstract class GameRendererMixin {
     @Shadow private @Nullable static ShaderInstance positionColorTexShader;
     @Shadow private @Nullable static ShaderInstance positionTexShader;
     @Shadow private @Nullable static ShaderInstance positionTexColorShader;
-    @Shadow private @Nullable static ShaderInstance blockShader;
-    @Shadow private @Nullable static ShaderInstance newEntityShader;
+//    @Shadow private @Nullable static ShaderInstance blockShader;
+//    @Shadow private @Nullable static ShaderInstance newEntityShader;
     @Shadow private @Nullable static ShaderInstance particleShader;
     @Shadow private @Nullable static ShaderInstance positionColorLightmapShader;
     @Shadow private @Nullable static ShaderInstance positionColorTexLightmapShader;
@@ -86,6 +86,14 @@ public abstract class GameRendererMixin {
     @Shadow private @Nullable static ShaderInstance rendertypeLinesShader;
     @Shadow private @Nullable static ShaderInstance rendertypeCrumblingShader;
 
+    @Nullable
+    private static ShaderInstance rendertypeGuiShader;
+    @Nullable
+    private static ShaderInstance rendertypeGuiOverlayShader;
+    @Nullable
+    private static ShaderInstance rendertypeGuiTextHighlightShader;
+    @Nullable
+    private static ShaderInstance rendertypeGuiGhostRecipeOverlayShader;
 
     @Shadow protected abstract void shutdownShaders();
 
@@ -277,6 +285,19 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_crumbling", DefaultVertexFormat.BLOCK), (p_172733_) -> {
                 rendertypeCrumblingShader = p_172733_;
             }));
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_gui", DefaultVertexFormat.POSITION_COLOR), (shaderInstance) -> {
+                rendertypeGuiShader = shaderInstance;
+            }));
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_gui_overlay", DefaultVertexFormat.POSITION_COLOR), (shaderInstance) -> {
+                rendertypeGuiOverlayShader = shaderInstance;
+            }));
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_gui_text_highlight", DefaultVertexFormat.POSITION_COLOR), (shaderInstance) -> {
+                rendertypeGuiTextHighlightShader = shaderInstance;
+            }));
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_gui_ghost_recipe_overlay", DefaultVertexFormat.POSITION_COLOR), (shaderInstance) -> {
+                rendertypeGuiGhostRecipeOverlayShader = shaderInstance;
+            }));
+
         } catch (IOException ioexception) {
             list1.forEach((p_172772_) -> {
                 p_172772_.getFirst().close();

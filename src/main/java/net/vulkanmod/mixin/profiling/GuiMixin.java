@@ -22,10 +22,10 @@ public class GuiMixin {
         ProfilerOverlay.createInstance(minecraft);
     }
 
-    @Inject(method = "render", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/client/gui/Gui;renderEffects(Lcom/mojang/blaze3d/vertex/PoseStack;)V", shift = At.Shift.AFTER))
-    private void renderProfilerOverlay(PoseStack poseStack, float f, CallbackInfo ci) {
-        if(ProfilerOverlay.shouldRender && !this.minecraft.options.renderDebug)
-            ProfilerOverlay.INSTANCE.render(poseStack);
-    }
+//    @Inject(method = "render", at = @At(value = "INVOKE",
+//            target = "Lnet/minecraft/client/gui/Gui;renderEffects(Lcom/mojang/blaze3d/vertex/PoseStack;)V", shift = At.Shift.AFTER))
+//    private void renderProfilerOverlay(PoseStack poseStack, float f, CallbackInfo ci) {
+//        if(ProfilerOverlay.shouldRender && !this.minecraft.options.renderDebug)
+//            ProfilerOverlay.INSTANCE.render(poseStack);
+//    }
 }

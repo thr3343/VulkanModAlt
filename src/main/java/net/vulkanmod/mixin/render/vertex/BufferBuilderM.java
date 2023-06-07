@@ -35,9 +35,6 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
     @Shadow private VertexFormat format;
 
     @Shadow @Nullable private Vector3f[] sortingPoints;
-    @Shadow private float sortX;
-    @Shadow private float sortY;
-    @Shadow private float sortZ;
     @Shadow private VertexFormat.Mode mode;
 
     @Shadow protected abstract it.unimi.dsi.fastutil.ints.IntConsumer intConsumer(int i, VertexFormat.IndexType indexType);
@@ -205,11 +202,11 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
     private void putSortedQuadIndices(VertexFormat.IndexType indexType) {
         float[] distances = new float[this.sortingPoints.length];
         int[] is = new int[this.sortingPoints.length];
-
+//TODO: --->!
         for(int i = 0; i < this.sortingPoints.length; is[i] = i++) {
-            float f = this.sortingPoints[i].x() - this.sortX;
-            float g = this.sortingPoints[i].y() - this.sortY;
-            float h = this.sortingPoints[i].z() - this.sortZ;
+            float f = this.sortingPoints[i].x() /*- this.sortX;*/;
+            float g = this.sortingPoints[i].y() /*- this.sortY;*/;
+            float h = this.sortingPoints[i].z() /*- this.sortZ;*/;
             distances[i] = f * f + g * g + h * h;
         }
 

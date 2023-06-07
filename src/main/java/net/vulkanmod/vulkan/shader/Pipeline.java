@@ -92,6 +92,11 @@ public class Pipeline {
 
         try(MemoryStack stack = stackPush()) {
 
+            if(vertShaderModule==0 &&fragShaderModule==0)
+            {
+                System.out.println("FAIL!");
+            }
+
             ByteBuffer entryPoint = stack.UTF8("main");
 
             VkPipelineShaderStageCreateInfo.Buffer shaderStages = VkPipelineShaderStageCreateInfo.callocStack(2, stack);
@@ -480,9 +485,7 @@ public class Pipeline {
     }
 
     public long getHandle(PipelineState state) {
-        return graphicsPipelines.computeIfAbsent(state, state1 -> {
-            return createGraphicsPipeline(state1);
-        });
+        return graphicsPipelines.computeIfAbsent(state, this::createGraphicsPipeline);
     }
 
     public PushConstants getPushConstants() { return this.pushConstants; }
