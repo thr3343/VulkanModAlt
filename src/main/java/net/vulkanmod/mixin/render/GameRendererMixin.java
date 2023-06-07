@@ -112,6 +112,12 @@ public abstract class GameRendererMixin {
         List<Pair<ShaderInstance, Consumer<ShaderInstance>>> list1 = Lists.newArrayListWithCapacity(this.shaders.size());
 
         try {
+
+            if(rendertypeGuiShader!=null) rendertypeGuiShader.close();
+            if(rendertypeGuiOverlayShader!=null) rendertypeGuiOverlayShader.close();
+            if(rendertypeGuiTextHighlightShader!=null) rendertypeGuiTextHighlightShader.close();
+            if(rendertypeGuiGhostRecipeOverlayShader!=null) rendertypeGuiGhostRecipeOverlayShader.close();
+
 //         list1.add(Pair.of(new ShaderInstance(provider, "block", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), (p_172743_) -> {
 //            blockShader = p_172743_;
 //         }));

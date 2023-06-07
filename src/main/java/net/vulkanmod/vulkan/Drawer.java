@@ -113,10 +113,7 @@ public class Drawer {
         VertexBuffer vertexBuffer = this.vertexBuffers[currentFrame];
         vertexBuffer.copyToVertexBuffer(vertexFormat.getVertexSize(), vertexCount, buffer);
 
-        ShaderInstance shader = RenderSystem.getShader();
-        shader = shader== GameRenderer.getRendertypeGuiShader() ? GameRenderer.getPositionColorShader() : shader;
-        shader = shader== GameRenderer.getRendertypeGuiOverlayShader() ? GameRenderer.getPositionColorShader() : shader;
-        Pipeline pipeline = ((ShaderMixed) shader).getPipeline();
+        Pipeline pipeline = ((ShaderMixed) (RenderSystem.getShader() == null ? GameRenderer.getPositionColorShader() : RenderSystem.getShader())).getPipeline();
         bindPipeline(pipeline);
         uploadAndBindUBOs(pipeline);
 
