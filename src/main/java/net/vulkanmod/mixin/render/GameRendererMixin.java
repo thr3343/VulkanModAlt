@@ -87,13 +87,20 @@ public abstract class GameRendererMixin {
     @Shadow private @Nullable static ShaderInstance rendertypeLinesShader;
     @Shadow private @Nullable static ShaderInstance rendertypeCrumblingShader;
 
+    @Shadow @Nullable
+    private static ShaderInstance rendertypeGuiShader;
+    @Shadow @Nullable
+    private static ShaderInstance rendertypeGuiOverlayShader;
+    @Shadow @Nullable
+    private static ShaderInstance rendertypeGuiTextHighlightShader;
+    @Shadow @Nullable
+    private static ShaderInstance rendertypeGuiGhostRecipeOverlayShader;
+
     @Shadow protected abstract void shutdownShaders();
 
     @Shadow public ShaderInstance blitShader;
 
     @Shadow protected abstract ShaderInstance preloadShader(ResourceProvider resourceProvider, String string, VertexFormat vertexFormat);
-
-    @Shadow private static @Nullable ShaderInstance rendertypeGuiShader;
 
     @Inject(method = "reloadShaders", at = @At("HEAD"), cancellable = true)
     public void reloadShaders(ResourceProvider provider, CallbackInfo ci) {
@@ -334,11 +341,5 @@ public abstract class GameRendererMixin {
             positionTexColorShader = this.preloadShader(resourceProvider, "position_tex_color", DefaultVertexFormat.POSITION_TEX_COLOR);
             rendertypeTextShader = this.preloadShader(resourceProvider, "rendertype_text", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
         }
-    }
-
-    @Overwrite
-    @Nullable
-    public static ShaderInstance getRendertypeGuiShader() {
-        return positionColorShader;
     }
 }
