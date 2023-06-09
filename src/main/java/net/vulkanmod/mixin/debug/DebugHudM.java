@@ -14,6 +14,7 @@ import net.vulkanmod.render.gui.GuiBatchRenderer;
 import net.vulkanmod.vulkan.DeviceInfo;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
+import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static net.vulkanmod.Initializer.getVersion;
+import static org.lwjgl.vulkan.VK10.*;
 
 @Mixin(DebugScreenOverlay.class)
 public abstract class DebugHudM {

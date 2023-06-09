@@ -37,6 +37,7 @@ import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
 import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class Vulkan {
@@ -45,7 +46,17 @@ public class Vulkan {
 //    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
+    public static final int vkVer;
+
     static {
+
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            var a = stack.mallocInt(1);
+            vkEnumerateInstanceVersion(a);
+            vkVer=a.get(0);
+        }
+
         if(ENABLE_VALIDATION_LAYERS) {
             VALIDATION_LAYERS = new HashSet<>();
             VALIDATION_LAYERS.add("VK_LAYER_KHRONOS_validation");
