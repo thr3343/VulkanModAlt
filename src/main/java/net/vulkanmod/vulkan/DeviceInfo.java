@@ -31,6 +31,7 @@ public class DeviceInfo {
     public final String vendorId;
     public final String deviceName;
     public final String driverVersion;
+    public final String vkVersion;
 
     public GraphicsCard graphicsCard;
 
@@ -59,6 +60,7 @@ public class DeviceInfo {
         this.vendorId = decodeVendor(properties.vendorID());
         this.deviceName = properties.deviceNameString();
         this.driverVersion = decodeDvrVersion(Vulkan.deviceProperties.driverVersion(), Vulkan.deviceProperties.vendorID());
+        this.vkVersion = decDefVersion(Vulkan.vkVer);
 
         this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
         this.availableFeatures.sType$Default();
@@ -79,9 +81,6 @@ public class DeviceInfo {
 
         if(this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
                 this.drawIndirectSupported = true;
-
-        System.out.println("VkPhysicalDeviceDriverProperties.driverInfo():" + this.physicalDeviceDriverProperties.driverInfoString());
-        System.out.println("VkPhysicalDeviceDriverProperties.driverName():" + this.physicalDeviceDriverProperties.driverNameString());
 
     }
     private static String decodeVendor(int i) {
