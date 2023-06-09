@@ -7,6 +7,7 @@ import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GraphicsCard;
 
+import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.List;
@@ -18,9 +19,7 @@ import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.vkEnumerateDeviceExtensionProperties;
 import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceProperties;
-import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
-import static org.lwjgl.vulkan.VK13.VK_API_VERSION_1_3;
 
 public class DeviceInfo {
 
@@ -36,6 +35,7 @@ public class DeviceInfo {
 
     public final VkPhysicalDeviceFeatures2 availableFeatures;
     public final VkPhysicalDeviceVulkan11Features availableFeatures11;
+    public final VkPhysicalDeviceDriverProperties physicalDeviceDriverProperties;
 
 //    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
 //    public final boolean vulkan13Support;
@@ -63,9 +63,13 @@ public class DeviceInfo {
         this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
         this.availableFeatures.sType$Default();
 
+        this.physicalDeviceDriverProperties = VkPhysicalDeviceDriverProperties.malloc();
+        this.physicalDeviceDriverProperties.sType$Default();
+
         this.availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc();
         this.availableFeatures11.sType$Default();
-        this.availableFeatures.pNext(this.availableFeatures11);
+        this.availableFeatures.pNext(this.availableFeatures11.pNext(this.availableFeatures.pNext()).address());
+        this.availableFeatures.pNext(this.physicalDeviceDriverProperties.pNext(this.availableFeatures.pNext()).address());
 
         //Vulkan 1.3
 //        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
@@ -78,6 +82,9 @@ public class DeviceInfo {
 
         if(this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
                 this.drawIndirectSupported = true;
+
+        System.out.println("VkPhysicalDeviceDriverProperties.driverInfo():" + this.physicalDeviceDriverProperties.driverInfoString());
+        System.out.println("VkPhysicalDeviceDriverProperties.driverName():" + this.physicalDeviceDriverProperties.driverNameString());
 
     }
 
