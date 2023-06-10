@@ -47,8 +47,8 @@ public class Drawer {
     private ArrayList<Long> inFlightFences;
 
     private static int currentFrame = 0;
-    private final int commandBuffersCount = getSwapChainFramebuffers().size();
-    private final boolean[] activeCommandBuffers = new boolean[getSwapChainFramebuffers().size()];
+    private final int commandBuffersCount = getSwapChainImages().size();
+    private final boolean[] activeCommandBuffers = new boolean[getSwapChainImages().size()];
 
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
     public static PipelineState.BlendState currentBlendState;
@@ -151,10 +151,12 @@ public class Drawer {
             VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.callocStack(stack);
             beginInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-
+            VkRenderPassAttachmentBeginInfo vkRenderPassAttachmentBeginInfo = VkRenderPassAttachmentBeginInfo.calloc(stack)
+                    .sType$Default()
+                    .pAttachments(stack.longs(swapChainImageViews.get(currentFrame)));
             VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
             renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-
+            renderPassInfo.pNext(vkRenderPassAttachmentBeginInfo);
             renderPassInfo.renderPass(getRenderPass());
 
             VkRect2D renderArea = VkRect2D.callocStack(stack);
@@ -176,7 +178,7 @@ public class Drawer {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
 
-            renderPassInfo.framebuffer(getSwapChainFramebuffers().get(currentFrame));
+            renderPassInfo.framebuffer(getFramebuffer());
 
             vkCmdBeginRenderPass(commandBuffer, renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
