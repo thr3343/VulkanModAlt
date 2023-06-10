@@ -178,7 +178,7 @@ public class Vulkan {
 
     private static long depthImage;
     private static long depthImageMemory;
-    private static long depthImageView;
+    static long depthImageView;
 
     private static long renderPass;
 
@@ -614,8 +614,8 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkAttachmentDescription.Buffer attachments = VkAttachmentDescription.callocStack(1, stack);
-            VkAttachmentReference.Buffer attachmentRefs = VkAttachmentReference.callocStack(1, stack);
+            VkAttachmentDescription.Buffer attachments = VkAttachmentDescription.callocStack(2, stack);
+            VkAttachmentReference.Buffer attachmentRefs = VkAttachmentReference.callocStack(2, stack);
 
             // Color attachments
             VkAttachmentDescription colorAttachment = attachments.get(0);
@@ -633,26 +633,26 @@ public class Vulkan {
             colorAttachmentRef.layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
             // Depth-Stencil attachments
-//
-//            VkAttachmentDescription depthAttachment = attachments.get(1);
-//            depthAttachment.format(findDepthFormat());
-//            depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-//            depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
-//            depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-//            depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-//            depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-//            depthAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-//            depthAttachment.finalLayout(deviceInfo.depthAttachmentOptimal);
-//
-//            VkAttachmentReference depthAttachmentRef = attachmentRefs.get(1);
-//            depthAttachmentRef.attachment(1);
-//            depthAttachmentRef.layout(deviceInfo.depthAttachmentOptimal);
+
+            VkAttachmentDescription depthAttachment = attachments.get(1);
+            depthAttachment.format(findDepthFormat());
+            depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
+            depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
+            depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+            depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+            depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+            depthAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+            depthAttachment.finalLayout(deviceInfo.depthAttachmentOptimal);
+
+            VkAttachmentReference depthAttachmentRef = attachmentRefs.get(1);
+            depthAttachmentRef.attachment(1);
+            depthAttachmentRef.layout(deviceInfo.depthAttachmentOptimal);
 
             VkSubpassDescription.Buffer subpass = VkSubpassDescription.callocStack(1, stack);
             subpass.pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS);
             subpass.colorAttachmentCount(1);
             subpass.pColorAttachments(VkAttachmentReference.callocStack(1, stack).put(0, colorAttachmentRef));
-//            subpass.pDepthStencilAttachment(depthAttachmentRef);
+            subpass.pDepthStencilAttachment(depthAttachmentRef);
 
 
             VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.callocStack(stack);
@@ -853,13 +853,24 @@ public class Vulkan {
             //attachments = stack.mallocLong(1);
             LongBuffer pFramebuffer = stack.mallocLong(1);
 
-            VkFramebufferAttachmentImageInfo.Buffer vkFramebufferAttachmentImageInfo = VkFramebufferAttachmentImageInfo.calloc(1, stack)
+            VkFramebufferAttachmentImageInfo.Buffer vkFramebufferAttachmentImageInfo = VkFramebufferAttachmentImageInfo.calloc(2, stack);
+            VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos = vkFramebufferAttachmentImageInfo.get(0)
                     .sType$Default()
+                    .flags(0)
                     .width(swapChainExtent.width())
                     .height(swapChainExtent.height())
                     .pViewFormats(stack.ints(VK_FORMAT_B8G8R8A8_UNORM))
                     .layerCount(1)
-                    .usage(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+                    .usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+            VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos1 = vkFramebufferAttachmentImageInfo.get(1)
+                    .sType$Default()
+                    .flags(0)
+                    .width(swapChainExtent.width())
+                    .height(swapChainExtent.height())
+                    .pViewFormats(stack.ints(findDepthFormat()))
+                    .layerCount(1)
+                    .usage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
             VkFramebufferAttachmentsCreateInfo vkFramebufferAttachmentsCreateInfo =VkFramebufferAttachmentsCreateInfo.calloc(stack)
                     .sType$Default()
                     .pAttachmentImageInfos(vkFramebufferAttachmentImageInfo);
@@ -872,7 +883,7 @@ public class Vulkan {
             framebufferInfo.width(swapChainExtent.width());
             framebufferInfo.height(swapChainExtent.height());
             framebufferInfo.layers(1);
-            framebufferInfo.attachmentCount(1);
+            framebufferInfo.attachmentCount(2);
             framebufferInfo.pAttachments(null);
 
 

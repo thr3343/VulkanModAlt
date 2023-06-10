@@ -153,7 +153,7 @@ public class Drawer {
             beginInfo.flags(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
             VkRenderPassAttachmentBeginInfo vkRenderPassAttachmentBeginInfo = VkRenderPassAttachmentBeginInfo.calloc(stack)
                     .sType$Default()
-                    .pAttachments(stack.longs(swapChainImageViews.get(currentFrame)));
+                    .pAttachments(stack.longs(swapChainImageViews.get(currentFrame), Vulkan.depthImageView));
             VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
             renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
             renderPassInfo.pNext(vkRenderPassAttachmentBeginInfo);
