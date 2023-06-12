@@ -86,7 +86,7 @@ public class DeviceInfo {
 
         this.depthAttachmentOptimal= VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
 
-        this.hasLoadStoreOpNone= true;
+        this.hasLoadStoreOpNone= device.getCapabilities().Vulkan13;
 
         if(this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
                 this.drawIndirectSupported = true;
@@ -104,7 +104,7 @@ public class DeviceInfo {
 
     //Should Work with AMD: https://gpuopen.com/learn/decoding-radeon-vulkan-versions/
     @NotNull
-    private static String decDefVersion(int v) {
+    static String decDefVersion(int v) {
         return VK_VERSION_MAJOR(v) + "." + VK_VERSION_MINOR(v) + "." + VK_VERSION_PATCH(v);
     }
     //0x10DE = Nvidia: https://pcisig.com/membership/member-companies?combine=Nvidia
