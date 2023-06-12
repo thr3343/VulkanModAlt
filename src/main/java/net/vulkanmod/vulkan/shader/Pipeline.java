@@ -202,11 +202,6 @@ public class Pipeline {
             dynamicStates.sType(VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO);
             dynamicStates.pDynamicStates(stack.ints(VK_DYNAMIC_STATE_DEPTH_BIAS, VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR));
 
-            //dyn-rendering
-            VkPipelineRenderingCreateInfoKHR renderingInfo = VkPipelineRenderingCreateInfoKHR.calloc(stack);
-            renderingInfo.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR);
-            renderingInfo.pColorAttachmentFormats(stack.ints(this.colorFormat));
-            renderingInfo.depthAttachmentFormat(this.depthFormat);
 
             VkGraphicsPipelineCreateInfo.Buffer pipelineInfo = VkGraphicsPipelineCreateInfo.callocStack(1, stack);
             pipelineInfo.sType(VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO);
@@ -220,11 +215,10 @@ public class Pipeline {
             pipelineInfo.pColorBlendState(colorBlending);
             pipelineInfo.pDynamicState(dynamicStates);
             pipelineInfo.layout(pipelineLayout);
-//            pipelineInfo.renderPass(Vulkan.getRenderPass());
+            pipelineInfo.renderPass(Vulkan.getSwapChain().getFramebuffer().renderPass);
 //            pipelineInfo.subpass(0);
             pipelineInfo.basePipelineHandle(VK_NULL_HANDLE);
             pipelineInfo.basePipelineIndex(-1);
-            pipelineInfo.pNext(renderingInfo);
 
             LongBuffer pGraphicsPipeline = stack.mallocLong(1);
 
@@ -599,7 +593,7 @@ public class Pipeline {
             VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.callocStack(UBOs.size() + samplers.size(), stack);
             VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[UBOs.size()];
 
-            //TODO maybe ubo update is not needed everytime
+            //TODO maybe ubo update is not needed everytime!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             int i = 0;
             for(UBO ubo : UBOs) {
 
@@ -748,12 +742,12 @@ public class Pipeline {
                     "Cannot create Pipeline: resources missing");
 
             if(this.framebuffer == null)
-                this.framebuffer = Vulkan.getSwapChain();
+                this.framebuffer = Vulkan.getSwapChain().getFramebuffer();
 
             if(this.manualUBO != null)
                 this.UBOs.add(this.manualUBO);
 
-            return new Pipeline(this.vertexFormat, this.framebuffer.format, this.framebuffer.depthFormat,
+            return new Pipeline(this.vertexFormat, this.framebuffer.getFormat(), this.framebuffer.getDepthFormat(),
                     this.UBOs, this.manualUBO, this.samplers, this.pushConstants, this.vertShaderSPIRV, this.fragShaderSPIRV);
         }
 

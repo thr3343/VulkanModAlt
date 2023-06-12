@@ -3,86 +3,200 @@ package net.vulkanmod.vulkan;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
-import java.util.ArrayList;
+import java.nio.LongBuffer;
 
-import static net.vulkanmod.vulkan.Vulkan.getSwapchainExtent;
+import static net.vulkanmod.vulkan.Vulkan.*;
+import static org.lwjgl.system.Checks.CHECKS;
+import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.JNI.callPPPPI;
+import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.memAddress;
+import static org.lwjgl.system.MemoryUtil.memAddressSafe;
+import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK13.vkCmdBeginRendering;
 
 public class Framebuffer {
     public static final int DEFAULT_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
+    private long frameBuffer=VK_NULL_HANDLE;
 
-    public int format;
-    public int depthFormat;
+    private final int format;
+    private final int depthFormat = findDepthFormat();
     public int width, height;
+    public final long renderPass;
+
+    private final int attachmentCount;
 
 //    private List<VulkanImage> images;
     private VulkanImage colorAttachment;
     protected VulkanImage depthAttachment;
 
-    public Framebuffer(int width, int height, int format) {
-        this(width, height, format, false);
-    }
+//    public Framebuffer(int width, int height, int format) {
+//        this(width, height, format, false);
+//    }
+//
+//    public Framebuffer(int width, int height, int format, boolean blur) {
+//        this.format = format;
+//        this.depthFormat = Vulkan.findDepthFormat();
+//        this.width = width;
+//        this.height = height;
+//
+//        this.colorAttachment = VulkanImage.createTextureImage(format, 1, width, height, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 0, blur, true);
+//
+//        createDepthResources(blur);
+////        createFramebuffers(width, height);
+//    }
 
-    public Framebuffer(int width, int height, int format, boolean blur) {
-        this.format = format;
-        this.depthFormat = Vulkan.findDepthFormat();
-        this.width = width;
-        this.height = height;
-
-        this.colorAttachment = VulkanImage.createTextureImage(format, 1, width, height, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 0, blur, true);
-
-        createDepthResources(blur);
-//        createFramebuffers(width, height);
-    }
-
-    public Framebuffer(VulkanImage colorAttachment) {
+    public Framebuffer(VulkanImage colorAttachment, int attachmentCount) {
         this.width = colorAttachment.width;
         this.height = colorAttachment.height;
 
         this.colorAttachment = colorAttachment;
+        this.format=colorAttachment.format;
+        this.attachmentCount = attachmentCount;
 
-        this.depthFormat = Vulkan.findDepthFormat();
+        this.renderPass=createRenderPass();
+
         createDepthResources(false);
+        this.frameBuffer=createFramebuffers();
     }
 
-    protected Framebuffer() {}
+    protected Framebuffer(int swapChainFormat, VkExtent2D extent2D, int attachmentCount)
+    {
+        this.width = extent2D.width();
+        this.height = extent2D.height();
+        this.format=swapChainFormat;
+        this.attachmentCount = attachmentCount;
 
-//    private void createFramebuffers(int width, int height) {
-//
-//        //List<Long> swapChainFramebuffers = new ArrayList<Long>(Vulkan.getSwapChainImages().size());
-//        framebuffers = new ArrayList<>(imagesSize);
-//
-//        try(MemoryStack stack = stackPush()) {
-//
-//            LongBuffer attachments = stack.longs(VK_NULL_HANDLE, depthImageView);
-//            //attachments = stack.mallocLong(1);
-//            LongBuffer pFramebuffer = stack.mallocLong(1);
-//
-//            // Lets allocate the create info struct once and just update the pAttachments field each iteration
-//            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.callocStack(stack);
-//            framebufferInfo.sType(VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO);
-//            framebufferInfo.renderPass(Vulkan.getRenderPass());
-//            framebufferInfo.width(width);
-//            framebufferInfo.height(height);
-//            framebufferInfo.layers(1);
-//
-//            for(long imageView : imageViews) {
-//
-//                attachments.put(0, imageView);
-//
-//                framebufferInfo.pAttachments(attachments);
-//
-//                if(vkCreateFramebuffer(Vulkan.getDevice(), framebufferInfo, null, pFramebuffer) != VK_SUCCESS) {
-//                    throw new RuntimeException("Failed to create framebuffer");
-//                }
-//
-//                framebuffers.add(pFramebuffer.get(0));
-//            }
-//        }
-//    }
+        this.renderPass=createRenderPass();
+
+        createDepthResources(false);
+        this.frameBuffer=createFramebuffers();
+    }
+    private  long createFramebuffers() {
+        try (MemoryStack stack = stackPush()) {
+
+            if(this.frameBuffer!=VK_NULL_HANDLE) {
+                vkDestroyFramebuffer(getDevice(), this.frameBuffer, null);
+            }
+
+
+            //attachments = stack.mallocLong(1);
+            LongBuffer pFramebuffer = stack.mallocLong(1);
+
+            VkFramebufferAttachmentImageInfo.Buffer vkFramebufferAttachmentImageInfo = VkFramebufferAttachmentImageInfo.calloc(attachmentCount, stack);
+            VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos = vkFramebufferAttachmentImageInfo.get(0)
+                    .sType$Default()
+                    .flags(0)
+                    .width(width)
+                    .height(height)
+                    .pViewFormats(stack.ints(this.format))
+                    .layerCount(1)
+                    .usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+            VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos1 = vkFramebufferAttachmentImageInfo.get(1)
+                    .sType$Default()
+                    .flags(0)
+                    .width(width)
+                    .height(height)
+                    .pViewFormats(stack.ints(depthFormat))
+                    .layerCount(1)
+                    .usage(this.depthAttachment.usage);
+
+            VkFramebufferAttachmentsCreateInfo vkFramebufferAttachmentsCreateInfo = VkFramebufferAttachmentsCreateInfo.calloc(stack)
+                    .sType$Default()
+                    .pAttachmentImageInfos(vkFramebufferAttachmentImageInfo);
+            // Lets allocate the create info struct once and just update the pAttachments field each iteration
+            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.callocStack(stack)
+                    .sType$Default()
+                    .pNext(vkFramebufferAttachmentsCreateInfo)
+                    .flags(VK12.VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT)
+                    .renderPass(renderPass)
+                    .width(width)
+                    .height(height)
+                    .layers(1)
+                    .attachmentCount(this.attachmentCount)
+                    .pAttachments(null);
+
+
+            if (vkCreateFramebuffer(getDevice(), framebufferInfo, null, pFramebuffer) != VK_SUCCESS) {
+                throw new RuntimeException("Failed to create framebuffer");
+            }
+
+            return (pFramebuffer.get(0));
+
+        }
+    }
+
+    private long createRenderPass() {
+
+        try(MemoryStack stack = stackPush()) {
+
+            VkAttachmentDescription.Buffer attachments = VkAttachmentDescription.callocStack(this.attachmentCount, stack);
+            VkAttachmentReference.Buffer attachmentRefs = VkAttachmentReference.callocStack(this.attachmentCount, stack);
+
+            // Color attachments
+            VkAttachmentDescription colorAttachment = attachments.get(0);
+            colorAttachment.format(this.format);
+            colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
+            colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
+            colorAttachment.storeOp(getDeviceInfo().hasLoadStoreOpNone ? VK13.VK_ATTACHMENT_STORE_OP_NONE : VK_ATTACHMENT_STORE_OP_STORE);
+            colorAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+            colorAttachment.finalLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+
+            int y = attachments.get(0).samples();
+
+            VkAttachmentReference colorAttachmentRef = attachmentRefs.get(0)
+                    .attachment(0)
+                    .layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+            // Depth-Stencil attachments
+
+            VkAttachmentDescription depthAttachment = attachments.get(1);
+            depthAttachment.format(depthFormat);
+            depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
+            depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
+            depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+            depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+            depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+            depthAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
+            depthAttachment.finalLayout(getDeviceInfo().depthAttachmentOptimal);
+
+            VkAttachmentReference depthAttachmentRef = attachmentRefs.get(1).set(1, getDeviceInfo().depthAttachmentOptimal);
+
+            VkSubpassDescription.Buffer subpass = VkSubpassDescription.callocStack(1, stack);
+            subpass.pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS);
+            subpass.colorAttachmentCount(1);
+            subpass.pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, colorAttachmentRef));
+            subpass.pDepthStencilAttachment(depthAttachmentRef);
+
+
+            VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.callocStack(stack);
+            renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
+            renderPassInfo.pAttachments(attachments);
+            renderPassInfo.pSubpasses(subpass);
+            //renderPassInfo.pDependencies(dependency);
+
+            LongBuffer pRenderPass = stack.mallocLong(1);
+
+            if (CHECKS) {
+                check(pRenderPass, 1);
+            }
+            long pCreateInfo = renderPassInfo.address();
+            long pAllocator = memAddressSafe((VkAllocationCallbacks) null);
+            long pRenderPass1 = memAddress(pRenderPass);
+            long __functionAddress = getDevice().getCapabilities().vkCreateRenderPass;
+            if (CHECKS) {
+                VkRenderPassCreateInfo.validate(pCreateInfo);
+            }
+            if(callPPPPI(getDevice().address(), pCreateInfo, pAllocator, pRenderPass1, __functionAddress) != VK_SUCCESS) {
+                throw new RuntimeException("Failed to create render pass");
+            }
+
+            return pRenderPass.get(0);
+        }
+    }
 
     protected void createDepthResources(boolean blur) {
 
@@ -90,53 +204,46 @@ public class Framebuffer {
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                 blur, false);
 
-        VkCommandBuffer commandBuffer = Vulkan.beginImmediateCmd();
-        this.depthAttachment.transitionImageLayout(MemoryStack.stackPush(), commandBuffer, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-        Vulkan.endImmediateCmd();
+//        VkCommandBuffer commandBuffer = Vulkan.beginImmediateCmd();
+//        //Not Sure if we need this
+//        this.depthAttachment.transitionImageLayout(stackPush(), commandBuffer, VK_IMAGE_LAYOUT_UNDEFINED);
+//        Vulkan.endImmediateCmd();
 
     }
 
-    public void beginRendering(VkCommandBuffer commandBuffer, MemoryStack stack) {
-        this.colorAttachment.transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        this.depthAttachment.transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    public void beginRendering(VkCommandBuffer commandBuffer, MemoryStack stack, long colorAttachmentImageView) {
+        VkRect2D renderArea = VkRect2D.malloc(stack);
+        renderArea.offset().set(0, 0);
+        renderArea.extent(getSwapchainExtent());
 
-        VkRect2D renderArea = VkRect2D.callocStack(stack);
-        renderArea.offset(VkOffset2D.callocStack(stack).set(0, 0));
-        renderArea.extent(VkExtent2D.calloc(stack).set(this.width, this.height));
+        VkRenderPassAttachmentBeginInfo vkRenderPassAttachmentBeginInfo = VkRenderPassAttachmentBeginInfo.calloc(stack)
+                .sType$Default()
+                .pAttachments(stack.longs(colorAttachmentImageView, depthAttachment.getImageView()));
+        //Clear Color value is ignored if Load Op is Not set to Clear
+        VkClearValue.Buffer clearValues = VkClearValue.malloc(attachmentCount, stack);
 
-        VkRenderingAttachmentInfo.Buffer colorAttachment = VkRenderingAttachmentInfo.calloc(1, stack);
-        colorAttachment.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR);
-        colorAttachment.imageView(this.colorAttachment.getImageView());
-        colorAttachment.imageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-        colorAttachment.storeOp(VK_ATTACHMENT_STORE_OP_STORE);
-//        colorAttachment.clearValue(clearValues.get(0));
+        clearValues.get(0).color(VkClearValue.ncolor(MemoryUtil.memAddress0(VRenderSystem.clearColor)));
+        clearValues.get(1).depthStencil().set(1.0f, 0);
 
-        VkRenderingAttachmentInfo depthAttachment = VkRenderingAttachmentInfo.calloc(stack);
-        depthAttachment.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR);
-        depthAttachment.imageView(this.depthAttachment.getImageView());
-        depthAttachment.imageLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-        depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-        depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_STORE);
-//        depthAttachment.clearValue(clearValues.get(1));
+        VkRenderPassBeginInfo renderingInfo = VkRenderPassBeginInfo.calloc(stack)
+                .sType$Default()
+                .pNext(vkRenderPassAttachmentBeginInfo)
+                .renderPass(this.renderPass)
+                .renderArea(renderArea)
+                .framebuffer(this.frameBuffer)
+                .pClearValues(clearValues)
+                .clearValueCount(this.attachmentCount);
 
-        VkRenderingInfo renderingInfo = VkRenderingInfo.calloc(stack);
-        renderingInfo.sType(KHRDynamicRendering.VK_STRUCTURE_TYPE_RENDERING_INFO_KHR);
-        renderingInfo.renderArea(renderArea);
-        renderingInfo.layerCount(1);
-        renderingInfo.pColorAttachments(colorAttachment);
-        renderingInfo.pDepthAttachment(depthAttachment);
-
-        vkCmdBeginRendering(commandBuffer, renderingInfo);
+        vkCmdBeginRenderPass(commandBuffer, renderingInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
-    public void bindAsTexture(VkCommandBuffer commandBuffer, MemoryStack stack) {
-        this.colorAttachment.transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    public void bindAsTexture() {
+//        this.colorAttachment.transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         VTextureSelector.bindFramebufferTexture(this.colorAttachment);
     }
 
     public VkViewport.Buffer viewport(MemoryStack stack) {
-        VkViewport.Buffer viewport = VkViewport.callocStack(1, stack);
+        VkViewport.Buffer viewport = VkViewport.malloc(1, stack);
         viewport.x(0.0f);
         viewport.y(this.height);
         viewport.width(this.width);
@@ -148,15 +255,18 @@ public class Framebuffer {
     }
 
     public VkRect2D.Buffer scissor(MemoryStack stack) {
-        VkRect2D.Buffer scissor = VkRect2D.callocStack(1, stack);
-        scissor.offset(VkOffset2D.callocStack(stack).set(0, 0));
-        scissor.extent(VkExtent2D.malloc(stack).set(this.width, this.height));
+        VkRect2D.Buffer scissor = VkRect2D.malloc(1, stack);
+        scissor.offset().set(0, 0);
+        scissor.extent().set(this.width, this.height);
 
         return scissor;
     }
 
     public void cleanUp() {
-        this.colorAttachment.free();
+        vkDestroyFramebuffer(getDevice(), this.frameBuffer, null);
+        vkDestroyRenderPass(getDevice(), this.renderPass, null);
+
+        if(colorAttachment!=null) this.colorAttachment.free();
         this.depthAttachment.free();
     }
 
@@ -166,4 +276,27 @@ public class Framebuffer {
 
     public VulkanImage getColorAttachment() { return colorAttachment; }
 
+    public int getFormat() {
+        return format;
+    }
+
+//    public void setFormat(int format) {
+//        this.format = format;
+//    }
+
+    public int getDepthFormat() {
+        return depthFormat;
+    }
+
+//    public void setDepthFormat(int depthFormat) {
+//        this.depthFormat = depthFormat;
+//    }
+
+    public void recreate(VkExtent2D extent2D) {
+        this.width = extent2D.width();
+        this.height = extent2D.height();
+        this.frameBuffer = createFramebuffers();
+//        this.depthFormat = findDepthFormat();
+        createDepthResources(false);
+    }
 }

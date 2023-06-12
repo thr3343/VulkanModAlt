@@ -4,7 +4,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -211,13 +210,10 @@ public class Drawer {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
 
-            //dyn-rendering
 
-            getSwapChain().colorAttachmentLayout(stack, commandBuffer, currentFrame);
+            Framebuffer framebuffer = getSwapChain().fakeFBO;
 
-            Framebuffer framebuffer = Vulkan.getSwapChain();
-
-            framebuffer.beginRendering(commandBuffer, stack);
+            framebuffer.beginRendering(commandBuffer, stack, getSwapChain().getImageView(currentFrame));
             this.boundFramebuffer = framebuffer;
 
 //            renderPassInfo.framebuffer(getSwapChainFramebuffers().get(currentFrame));
@@ -239,14 +235,14 @@ public class Drawer {
 
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
-//        vkCmdEndRenderPass(commandBuffer);
+        vkCmdEndRenderPass(commandBuffer);
 //        vkCmdEndRendering(commandBuffer);
-        KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
+//        KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
         this.boundFramebuffer = null;
 
-        try(MemoryStack stack = MemoryStack.stackPush()) {
-            getSwapChain().presentLayout(stack, commandBuffer, currentFrame);
-        }
+//        try(MemoryStack stack = MemoryStack.stackPush()) {
+//            getSwapChain().presentLayout(stack, commandBuffer, currentFrame);
+//        }
 
         int result = vkEndCommandBuffer(commandBuffer);
         if(result != VK_SUCCESS) {
@@ -259,9 +255,9 @@ public class Drawer {
 
         if(this.boundFramebuffer != framebuffer) {
             this.endRendering();
-
+//--->
             try (MemoryStack stack = stackPush()) {
-                framebuffer.beginRendering(commandBuffers.get(currentFrame), stack);
+                framebuffer.beginRendering(commandBuffers.get(currentFrame), stack, framebuffer.getColorAttachment().getImageView());
             }
 
             this.boundFramebuffer = framebuffer;
@@ -273,9 +269,9 @@ public class Drawer {
 
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
-//        vkCmdEndRenderPass(commandBuffer);
+        vkCmdEndRenderPass(commandBuffer);
 //        vkCmdEndRendering(commandBuffer);
-        KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
+//        KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
 
         this.boundFramebuffer = null;
     }

@@ -42,8 +42,8 @@ import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
 
 public class Vulkan {
 
-    public static final boolean ENABLE_VALIDATION_LAYERS = false;
-//    public static final boolean ENABLE_VALIDATION_LAYERS = true;
+//    public static final boolean ENABLE_VALIDATION_LAYERS = false;
+    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
     public static final int vkVer;
@@ -69,7 +69,7 @@ public class Vulkan {
     }
 
     private static final Set<String> DEVICE_EXTENSIONS = Stream.of(
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME)
             .collect(toSet());
 
     private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
@@ -409,10 +409,16 @@ public class Vulkan {
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
             deviceVulkan11Features.sType$Default();
 
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
+            deviceVulkan12Features.sType$Default();
+
             if(deviceInfo.isDrawIndirectSupported()) {
                 deviceFeatures.features().multiDrawIndirect(true);
                 deviceVulkan11Features.shaderDrawParameters(true);
             }
+
+            deviceVulkan12Features.imagelessFramebuffer(true);
+            deviceVulkan12Features.separateDepthStencilLayouts(true);
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.callocStack(stack);
 
@@ -422,12 +428,8 @@ public class Vulkan {
 
             createInfo.pEnabledFeatures(deviceFeatures.features());
 
-            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
-            dynamicRenderingFeaturesKHR.sType$Default();
-            dynamicRenderingFeaturesKHR.dynamicRendering(true);
-
             createInfo.pNext(deviceVulkan11Features);
-            deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
+            createInfo.pNext(deviceVulkan12Features);
 
             //Vulkan 1.3 dynamic rendering
 //            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
