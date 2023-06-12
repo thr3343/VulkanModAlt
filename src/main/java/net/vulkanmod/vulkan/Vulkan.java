@@ -6,6 +6,8 @@ import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
+import net.vulkanmod.vulkan.util.struct2.VkExtent;
+import net.vulkanmod.vulkan.util.struct2.xVkRect2D;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -24,7 +26,9 @@ import static net.vulkanmod.vulkan.texture.VulkanImage.transitionImageLayout;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
+import static org.lwjgl.system.Checks.CHECKS;
 import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.JNI.callPPPPI;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.*;
@@ -119,8 +123,8 @@ public class Vulkan {
     static class QueueFamilyIndices {
 
         // We use Integer to use null as the empty value
-        Integer graphicsFamily;
-        Integer presentFamily;
+        static Integer graphicsFamily;
+        static Integer presentFamily;
 
         public boolean isComplete() {
             return graphicsFamily != null && presentFamily != null;
@@ -169,7 +173,7 @@ public class Vulkan {
     private static final int frameQueueSize = Initializer.CONFIG.frameQueueSize;
 
     private static long swapChain;
-    private static List<Long> swapChainImages;
+    private static long[] swapChainImages;
     private static int swapChainImageFormat;
     private static VkExtent2D swapChainExtent;
     static List<Long> swapChainImageViews;
@@ -216,7 +220,7 @@ public class Vulkan {
     }
 
     private static void createStagingBuffers() {
-        stagingBuffers = new StagingBuffer[getSwapChainImages().size()];
+        stagingBuffers = new StagingBuffer[getSwapChainImages().length];
 
         for(int i = 0; i < stagingBuffers.length; ++i) {
             stagingBuffers[i] = new StagingBuffer(30 * 1024 * 1024);
@@ -538,12 +542,8 @@ public class Vulkan {
             VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
 //            IntBuffer imageCount = stack.ints(Math.max(swapChainSupport.capabilities.minImageCount(), 2));
-            IntBuffer imageCount = stack.ints(frameQueueSize);
-//            IntBuffer imageCount = stack.ints(Math.max(swapChainSupport.capabilities.minImageCount(), frameQueueSize));
-
-            if(swapChainSupport.capabilities.maxImageCount() > 0 && imageCount.get(0) > swapChainSupport.capabilities.maxImageCount()) {
-                imageCount.put(0, swapChainSupport.capabilities.maxImageCount());
-            }
+            final int imageCount = (swapChainSupport.capabilities.maxImageCount() > 0 && frameQueueSize > swapChainSupport.capabilities.maxImageCount()) ?
+                swapChainSupport.capabilities.maxImageCount() : frameQueueSize;
 
             VkSwapchainCreateInfoKHR createInfo = VkSwapchainCreateInfoKHR.callocStack(stack);
 
@@ -554,13 +554,13 @@ public class Vulkan {
             swapChainImageFormat = surfaceFormat.format();
             swapChainExtent = VkExtent2D.create().set(extent);
 
-            createInfo.minImageCount(imageCount.get(0));
+            createInfo.minImageCount(imageCount);
 //            createInfo.imageFormat(surfaceFormat.format());
             createInfo.imageFormat(swapChainImageFormat);
             createInfo.imageColorSpace(surfaceFormat.colorSpace());
             createInfo.imageExtent(extent);
             createInfo.imageArrayLayers(1);
-            createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+            createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
 
             createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
@@ -580,30 +580,45 @@ public class Vulkan {
                 throw new RuntimeException("Failed to create swap chain");
             }
 
-            if(oldSwapchain != VK_NULL_HANDLE) {
+            boolean b = oldSwapchain != VK_NULL_HANDLE;
+            if(b) {
                 swapChainImageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
                 vkDestroySwapchainKHR(device, swapChain, null);
             }
 
             swapChain = pSwapChain.get(0);
 
-            vkGetSwapchainImagesKHR(device, swapChain, imageCount, null);
-
-            LongBuffer pSwapchainImages = stack.mallocLong(imageCount.get(0));
-
-            vkGetSwapchainImagesKHR(device, swapChain, imageCount, pSwapchainImages);
-
-            swapChainImages = new ArrayList<>(imageCount.get(0));
-
-            for(int i = 0;i < pSwapchainImages.capacity();i++) {
-                swapChainImages.add(pSwapchainImages.get(i));
-            }
+            getSwapchainImages(stack, imageCount, extent.width(), extent.height());
         }
+    }
+
+    private static void getSwapchainImages(MemoryStack stack, int imageCount, int width, int height) {
+//        VkImageCreateInfo vkImageCreateInfo = VkImageCreateInfo.calloc(stack)
+//        .sType(VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO)
+//                // .flags(VK_IMAGE_CREATE_EXTENDED_USAGE_BIT,);
+//        .imageType(VK_IMAGE_TYPE_2D)
+//        .format(VK_FORMAT_B8G8R8A8_UNORM)
+//        .extent(VkExtent3D.malloc(stack).set(width, height, 1))
+//        .mipLevels(1)
+//        .arrayLayers(1)
+//        .samples(VK_SAMPLE_COUNT_1_BIT)
+//        .tiling(VK_IMAGE_TILING_OPTIMAL)
+//        .usage(VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+//        .queueFamilyIndexCount(1)
+//        .pQueueFamilyIndices(stack.ints(QueueFamilyIndices.presentFamily))
+//        .initialLayout(VK_IMAGE_LAYOUT_PREINITIALIZED);
+//
+        swapChainImages = new long[imageCount];
+//
+//        vkCreateImage(device, vkImageCreateInfo, null, pSwapchainImages);
+        vkGetSwapchainImagesKHR(device, swapChain, new int[]{imageCount}, swapChainImages);
+
+
     }
 
     private static void createImageViews() {
 
-        swapChainImageViews = new ArrayList<>(swapChainImages.size());
+        swapChainImageViews = new ArrayList<>(swapChainImages.length);
 
         for(long swapChainImage : swapChainImages) {
             swapChainImageViews.add(createImageView(swapChainImage, swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1));
@@ -663,7 +678,17 @@ public class Vulkan {
 
             LongBuffer pRenderPass = stack.mallocLong(1);
 
-            if(vkCreateRenderPass(device, renderPassInfo, null, pRenderPass) != VK_SUCCESS) {
+            if (CHECKS) {
+                check(pRenderPass, 1);
+            }
+            long pCreateInfo = renderPassInfo.address();
+            long pAllocator = memAddressSafe((VkAllocationCallbacks) null);
+            long pRenderPass1 = memAddress(pRenderPass);
+            long __functionAddress = device.getCapabilities().vkCreateRenderPass;
+            if (CHECKS) {
+                VkRenderPassCreateInfo.validate(pCreateInfo);
+            }
+            if(callPPPPI(device.address(), pCreateInfo, pAllocator, pRenderPass1, __functionAddress) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create render pass");
             }
 
@@ -779,12 +804,12 @@ public class Vulkan {
             return capabilities.currentExtent();
         }
 
-        IntBuffer width = stackGet().ints(0);
-        IntBuffer height = stackGet().ints(0);
+        var width = new int[1];
+        var height = new int[1];
 
         glfwGetFramebufferSize(window, width, height);
 
-        VkExtent2D actualExtent = VkExtent2D.mallocStack().set(width.get(0), height.get(0));
+        VkExtent2D actualExtent = VkExtent2D.malloc().set(width[0], height[0]);
 
         VkExtent2D minExtent = capabilities.minImageExtent();
         VkExtent2D maxExtent = capabilities.maxImageExtent();
@@ -824,22 +849,29 @@ public class Vulkan {
         }
     }
 
-    public static VkViewport.Buffer viewport(MemoryStack stack) {
-        VkViewport.Buffer viewport = VkViewport.mallocStack(1, stack);
-        viewport.x(0.0f);
-        viewport.y(swapChainExtent.height());
-        viewport.width(swapChainExtent.width());
-        viewport.height(-swapChainExtent.height());
-        viewport.minDepth(0.0f);
-        viewport.maxDepth(1.0f);
+    public static int[] viewport(MemoryStack stack) {
+        int i = Float.floatToRawIntBits(swapChainExtent.width());
+        int i1 = Float.floatToRawIntBits(0.0f);
+        int[] viewport = new int[]{
+                i1,
+        (Float.floatToRawIntBits(swapChainExtent.height())),
+                i,
+        (-i),
+                i1,
+        (Float.floatToRawIntBits(1.0f))
+        };
 
         return viewport;
     }
 
-    public static VkRect2D.Buffer scissor(MemoryStack stack) {
-        VkRect2D.Buffer scissor = VkRect2D.mallocStack(1, stack);
-        scissor.offset(VkOffset2D.mallocStack(stack).set(0, 0));
-        scissor.extent(swapChainExtent);
+    public static xVkRect2D scissor(MemoryStack stack) {
+
+        VkExtent vkExtent = VkExtent.set(swapChainExtent.width(), swapChainExtent.height());
+
+
+
+        var scissor = new xVkRect2D(vkExtent);
+
 
         return scissor;
     }
@@ -861,7 +893,7 @@ public class Vulkan {
                     .height(swapChainExtent.height())
                     .pViewFormats(stack.ints(VK_FORMAT_B8G8R8A8_UNORM))
                     .layerCount(1)
-                    .usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+                    .usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
             VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos1 = vkFramebufferAttachmentImageInfo.get(1)
                     .sType$Default()
                     .flags(0)
@@ -875,16 +907,16 @@ public class Vulkan {
                     .sType$Default()
                     .pAttachmentImageInfos(vkFramebufferAttachmentImageInfo);
             // Lets allocate the create info struct once and just update the pAttachments field each iteration
-            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.callocStack(stack);
-            framebufferInfo.sType$Default();
-            framebufferInfo.pNext(vkFramebufferAttachmentsCreateInfo);
-            framebufferInfo.flags(VK12.VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT);
-            framebufferInfo.renderPass(renderPass);
-            framebufferInfo.width(swapChainExtent.width());
-            framebufferInfo.height(swapChainExtent.height());
-            framebufferInfo.layers(1);
-            framebufferInfo.attachmentCount(2);
-            framebufferInfo.pAttachments(null);
+            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.callocStack(stack)
+                    .sType$Default()
+                    .pNext(vkFramebufferAttachmentsCreateInfo)
+                    .flags(VK12.VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT)
+                    .renderPass(renderPass)
+                    .width(swapChainExtent.width())
+                    .height(swapChainExtent.height())
+                    .layers(1)
+                    .attachmentCount(2)
+                    .pAttachments(null);
 
 
 
@@ -1190,7 +1222,7 @@ public class Vulkan {
         return swapChainExtent;
     }
 
-    public static List<Long> getSwapChainImages() { return swapChainImages; }
+    public static long[] getSwapChainImages() { return swapChainImages; }
 
     public static long getRenderPass()
     {

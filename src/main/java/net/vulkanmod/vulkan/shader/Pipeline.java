@@ -40,7 +40,7 @@ public class Pipeline {
 
     private static final VkDevice device = Vulkan.getDevice();
     private static final long pipelineCache = createPipelineCache();
-    private static final int imagesSize = getSwapChainImages().size();
+    private static final int imagesSize = getSwapChainImages().length;
 
     private long descriptorSetLayout;
     private long pipelineLayout;

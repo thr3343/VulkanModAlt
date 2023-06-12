@@ -24,7 +24,7 @@ public class MemoryManager {
 
     private final VkDevice device = Vulkan.getDevice();
     private final long allocator = Vulkan.getAllocator();
-    private final int Frames = Vulkan.getSwapChainImages().size();
+    private final int Frames = Vulkan.getSwapChainImages().length;
 
     private int currentFrame = 0;
 

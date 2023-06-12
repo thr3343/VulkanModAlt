@@ -19,7 +19,7 @@ public class UniformBuffers {
     private List<UniformBuffer> uniformBuffers;
 
     private final static int minOffset = (int) deviceProperties.limits().minUniformBufferOffsetAlignment();
-    private final int imagesSize = getSwapChainImages().size();
+    private final int imagesSize = getSwapChainImages().length;
 
     public UniformBuffers(int size) {
         createUniformBuffers(size);

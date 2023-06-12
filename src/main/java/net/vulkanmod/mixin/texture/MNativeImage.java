@@ -77,7 +77,7 @@ public abstract class MNativeImage {
     public void downloadTexture(int level, boolean removeAlpha) {
         RenderSystem.assertOnRenderThread();
 
-        VulkanImage.downloadTexture(this.width, this.height, 4, this.buffer, Vulkan.getSwapChainImages().get(Drawer.getCurrentFrame()));
+        VulkanImage.downloadTexture(this.width, this.height, 4, this.buffer, Vulkan.getSwapChainImages()[(Drawer.getCurrentFrame())]);
 
         if (removeAlpha && this.format.hasAlpha()) {
             for (int i = 0; i < this.height; ++i) {

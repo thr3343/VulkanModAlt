@@ -10,6 +10,7 @@ import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.util.VUtil;
+import net.vulkanmod.vulkan.util.struct2.xVkRect2D;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -22,6 +23,7 @@ import java.util.*;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
+import static org.lwjgl.system.JNI.callPPV;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -47,8 +49,8 @@ public class Drawer {
     private ArrayList<Long> inFlightFences;
 
     private static int currentFrame = 0;
-    private final int commandBuffersCount = getSwapChainImages().size();
-    private final boolean[] activeCommandBuffers = new boolean[getSwapChainImages().size()];
+    private final int commandBuffersCount = getSwapChainImages().length;
+    private final boolean[] activeCommandBuffers = new boolean[getSwapChainImages().length];
 
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
     public static PipelineState.BlendState currentBlendState;
@@ -71,7 +73,7 @@ public class Drawer {
 
     public Drawer(int VBOSize, int UBOSize) {
         device = Vulkan.getDevice();
-        MAX_FRAMES_IN_FLIGHT = getSwapChainImages().size();
+        MAX_FRAMES_IN_FLIGHT = getSwapChainImages().length;
         vertexBuffers = new VertexBuffer[MAX_FRAMES_IN_FLIGHT];
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
             vertexBuffers[i] = new VertexBuffer(VBOSize, MemoryTypes.HOST_MEM);
@@ -154,10 +156,10 @@ public class Drawer {
             VkRenderPassAttachmentBeginInfo vkRenderPassAttachmentBeginInfo = VkRenderPassAttachmentBeginInfo.calloc(stack)
                     .sType$Default()
                     .pAttachments(stack.longs(swapChainImageViews.get(currentFrame), Vulkan.depthImageView));
-            VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
-            renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
-            renderPassInfo.pNext(vkRenderPassAttachmentBeginInfo);
-            renderPassInfo.renderPass(getRenderPass());
+            VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack)
+                    .sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
+                    .pNext(vkRenderPassAttachmentBeginInfo)
+                    .renderPass(getRenderPass());
 
             VkRect2D renderArea = VkRect2D.callocStack(stack);
             renderArea.offset(VkOffset2D.callocStack(stack).set(0, 0));
@@ -182,11 +184,14 @@ public class Drawer {
 
             vkCmdBeginRenderPass(commandBuffer, renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            VkViewport.Buffer pViewport = Vulkan.viewport(stack);
-            vkCmdSetViewport(commandBuffer, 0, pViewport);
+            int[] pViewport = viewport(stack);
 
-            VkRect2D.Buffer pScissor = Vulkan.scissor(stack);
-            vkCmdSetScissor(commandBuffer, 0, pScissor);
+            callPPV(commandBuffer.address(), 0, 1, pViewport, commandBuffer.getCapabilities().vkCmdSetViewport);
+
+            xVkRect2D pScissor = scissor(stack);
+
+
+            callPPV(commandBuffer.address(), 0, 1, pScissor.pa, commandBuffer.getCapabilities().vkCmdSetScissor);
 
             vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
 
@@ -250,7 +255,7 @@ public class Drawer {
 
     private void createSyncObjects() {
 
-        final int frameNum = getSwapChainImages().size();
+        final int frameNum = getSwapChainImages().length;
 
         imageAvailableSemaphores = new ArrayList<>(frameNum);
         renderFinishedSemaphores = new ArrayList<>(frameNum);
@@ -362,7 +367,7 @@ public class Drawer {
 
         vkDeviceWaitIdle(device);
 
-        for(int i = 0; i < getSwapChainImages().size(); ++i) {
+        for(int i = 0; i < getSwapChainImages().length; ++i) {
             vkDestroyFence(device, inFlightFences.get(i), null);
             vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
@@ -374,8 +379,8 @@ public class Drawer {
 
         createSyncObjects();
 
-        if(MAX_FRAMES_IN_FLIGHT != getSwapChainImages().size()) {
-            MAX_FRAMES_IN_FLIGHT = getSwapChainImages().size();
+        if(MAX_FRAMES_IN_FLIGHT != getSwapChainImages().length) {
+            MAX_FRAMES_IN_FLIGHT = getSwapChainImages().length;
 
             Arrays.stream(this.vertexBuffers).iterator().forEachRemaining(
                     Buffer::freeBuffer
@@ -528,7 +533,7 @@ public class Drawer {
             clearDepth.clearValue(depthValue);
 
             //Rect to clear
-            VkRect2D renderArea = VkRect2D.mallocStack(stack);
+            org.lwjgl.vulkan.VkRect2D renderArea = org.lwjgl.vulkan.VkRect2D.mallocStack(stack);
             renderArea.offset(VkOffset2D.mallocStack(stack).set(0, 0));
             renderArea.extent(getSwapchainExtent());
 
