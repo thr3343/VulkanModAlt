@@ -581,7 +581,7 @@ public class Drawer {
 
     public static void clearAttachments(int v) {
         if(skipRendering) return;
-//        if (v != GL11C.GL_DEPTH_BUFFER_BIT)  return;
+        if (v != GL11C.GL_DEPTH_BUFFER_BIT)  return;
 
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 

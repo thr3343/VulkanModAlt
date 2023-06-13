@@ -159,7 +159,7 @@ public class Framebuffer {
             VkAttachmentDescription depthAttachment = attachments.get(1);
             depthAttachment.format(depthFormat);
             depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-            depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
+            depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
             depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
             depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
             depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
