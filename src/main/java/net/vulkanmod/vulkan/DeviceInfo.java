@@ -33,6 +33,7 @@ public class DeviceInfo {
     public final String driverVersion;
     public final String vkVersion;
     final boolean hasLoadStoreOpNone;
+    public final int depthFormat = Vulkan.findDepthFormat();
 
     public GraphicsCard graphicsCard;
 
@@ -84,7 +85,7 @@ public class DeviceInfo {
 
         vkGetPhysicalDeviceFeatures2(this.device, this.availableFeatures);
 
-        this.depthAttachmentOptimal= VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+        this.depthAttachmentOptimal= hasDepthOnly() ? VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         this.hasLoadStoreOpNone= device.getCapabilities().Vulkan13;
 
@@ -92,6 +93,15 @@ public class DeviceInfo {
                 this.drawIndirectSupported = true;
 
     }
+
+    private boolean hasDepthOnly() {
+        switch (depthFormat)
+        {
+            case VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT -> {return true;}
+            default -> {return false;}
+        }
+    }
+
     private static String decodeVendor(int i) {
         return switch (i) {
             case (0x10DE) -> "Nvidia";

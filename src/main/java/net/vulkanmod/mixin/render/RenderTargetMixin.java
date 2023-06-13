@@ -32,7 +32,7 @@ public class RenderTargetMixin {
     @Overwrite
     public void resize(int i, int j, boolean bl) {
         if(this.framebuffer != null) {
-            this.framebuffer.cleanUp();
+            this.framebuffer.recreate(i, j);
         }
 
         this.viewWidth = i;
