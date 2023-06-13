@@ -31,7 +31,7 @@ public class DeviceInfo {
     public final String vendorId;
     public final String deviceName;
     public final String driverVersion;
-
+    public final String vkVersion;
     final boolean hasLoadStoreOpNone;
     public final int depthFormat = Vulkan.findDepthFormat();
 
@@ -62,7 +62,7 @@ public class DeviceInfo {
         this.device = device;
         this.vendorId = String.valueOf(properties.vendorID());
         this.deviceName = properties.deviceNameString();
-        this.driverVersion = String.valueOf(properties.driverVersion());
+        this.driverVersion = decodeDvrVersion(properties.driverVersion(), properties.vendorID());
 
         this.availableFeatures = VkPhysicalDeviceFeatures2.calloc();
         this.availableFeatures.sType$Default();
@@ -71,7 +71,7 @@ public class DeviceInfo {
         this.availableFeatures11.sType$Default();
         this.availableFeatures.pNext(this.availableFeatures11);
 
-
+        this.vkVersion=decDefVersion(Vulkan.vkVer);
         //Vulkan 1.3
 //        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
 //        this.availableFeatures13.sType$Default();
@@ -139,7 +139,7 @@ public class DeviceInfo {
 
     @NotNull
     private static String decodeNvidia(int v) {
-        return (v >>> 22 & 0x3FF) + "." + (v >>> 14 & 0xff) + "." + (v >>> 6 & 0xff) + (v & 0xff);
+        return (v >>> 22 & 0x3FF) + "." + (v >>> 14 & 0xff) + "." + (v >>> 6 & 0xff) + "." + (v & 0xff);
     }
 
     private String unsupportedExtensions(Set<String> requiredExtensions) {

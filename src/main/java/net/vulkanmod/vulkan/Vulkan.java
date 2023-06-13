@@ -40,11 +40,11 @@ import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
 
 public class Vulkan {
 
-//    public static final boolean ENABLE_VALIDATION_LAYERS = false;
-    public static final boolean ENABLE_VALIDATION_LAYERS = true;
+    public static final boolean ENABLE_VALIDATION_LAYERS = false;
+//    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
-    private static final int vkVer;
+    static final int vkVer;
 
     static {
 
