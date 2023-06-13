@@ -3,13 +3,10 @@ package net.vulkanmod.gl;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Framebuffer;
-import net.vulkanmod.vulkan.texture.VTextureSelector;
-import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.apache.commons.lang3.Validate;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL30;
 import org.lwjgl.opengl.GL30C;
-import org.lwjgl.system.NativeType;
 
 public class GlFramebuffer {
 
@@ -142,7 +139,7 @@ public class GlFramebuffer {
         this.colorAttachment = texture;
 
         if(this.framebuffer == null) {
-            this.framebuffer = new Framebuffer(this.colorAttachment.vulkanImage);
+            this.framebuffer = new Framebuffer(this.colorAttachment.vulkanImage, 2);
         }
 
         this.beginRendering();

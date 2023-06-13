@@ -37,6 +37,7 @@ public class VulkanImage {
     public final int mipLevels;
     public final int width;
     public final int height;
+    public final int usage;
     public final int formatSize;
 
     private int currentLayout;
@@ -45,6 +46,7 @@ public class VulkanImage {
         this.mipLevels = mipLevels;
         this.width = width;
         this.height = height;
+        this.usage = usage;
         this.formatSize = formatSize;
         this.format = format;
     }
@@ -380,16 +382,16 @@ public class VulkanImage {
         }
     }
 
-    public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout) {
-        transitionImageLayout(stack, commandBuffer, this.id, this.format, this.currentLayout, newLayout, this.mipLevels);
-
-        this.currentLayout = newLayout;
-    }
+//    public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout) {
+//        transitionImageLayout(stack, commandBuffer, this.id, this.format, this.currentLayout, newLayout, this.mipLevels);
+//
+//        this.currentLayout = newLayout;
+//    }
 
     public static void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, long image, int format, int oldLayout, int newLayout, int mipLevels) {
 
         if(oldLayout == newLayout) {
-//            System.out.println("new layout is equal to current layout");
+            System.out.println("new layout is equal to current layout");
             return;
         }
 

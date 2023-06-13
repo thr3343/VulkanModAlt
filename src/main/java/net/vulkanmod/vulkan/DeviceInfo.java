@@ -32,12 +32,17 @@ public class DeviceInfo {
     public final String deviceName;
     public final String driverVersion;
 
+    public final String vkVersion;
+    final boolean hasLoadStoreOpNone;
+
+
     public GraphicsCard graphicsCard;
 
     public final VkPhysicalDeviceFeatures2 availableFeatures;
     public final VkPhysicalDeviceVulkan11Features availableFeatures11;
+    public final int depthAttachmentOptimal;
 
-//    public final VkPhysicalDeviceVulkan13Features availableFeatures13;
+    public final VkPhysicalDeviceVulkan12Features availableFeatures12;
 //    public final boolean vulkan13Support;
 
     private boolean drawIndirectSupported;
@@ -67,6 +72,7 @@ public class DeviceInfo {
         this.availableFeatures11.sType$Default();
         this.availableFeatures.pNext(this.availableFeatures11);
 
+
         //Vulkan 1.3
 //        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
 //        this.availableFeatures13.sType$Default();
@@ -75,6 +81,10 @@ public class DeviceInfo {
 //        this.vulkan13Support = this.device.getCapabilities().apiVersion == VK_API_VERSION_1_3;
 
         vkGetPhysicalDeviceFeatures2(this.device, this.availableFeatures);
+
+        this.depthAttachmentOptimal= VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+
+        this.hasLoadStoreOpNone= true;
 
         if(this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
                 this.drawIndirectSupported = true;
