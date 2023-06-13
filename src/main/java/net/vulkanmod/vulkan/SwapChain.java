@@ -62,7 +62,7 @@ public class SwapChain {
             MemoryManager.createInstance(framesNum);
         }
 
-        this.fakeFBO.recreate(extent2D);
+        this.fakeFBO.recreate(extent2D.width(), extent2D.height());
     }
     private void createSwapChain(int preferredImageCount) {
 

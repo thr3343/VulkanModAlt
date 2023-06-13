@@ -19,11 +19,14 @@ import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Framebuffer {
+
+    private static final int colorID=0;
+    private static final int depthID=1;
     public static final int DEFAULT_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
-    private long frameBuffer=VK_NULL_HANDLE;
+    private long frameBuffer;
 
     private final int format;
-    private final int depthFormat = findDepthFormat();
+    private static final int depthFormat = findDepthFormat();
     public int width, height;
     public final long renderPass;
 
@@ -201,7 +204,7 @@ public class Framebuffer {
     protected void createDepthResources(boolean blur) {
 
         this.depthAttachment = VulkanImage.createDepthImage(depthFormat, this.width, this.height,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT/* | VK_IMAGE_USAGE_SAMPLED_BIT*/,
                 blur, false);
 
 //        VkCommandBuffer commandBuffer = Vulkan.beginImmediateCmd();
@@ -210,7 +213,7 @@ public class Framebuffer {
 //        Vulkan.endImmediateCmd();
 
     }
-
+    //TODO: Start Multiple Framebuffers at the same time...
     public void beginRendering(VkCommandBuffer commandBuffer, MemoryStack stack, long colorAttachmentImageView) {
         VkRect2D renderArea = VkRect2D.malloc(stack);
         renderArea.offset().set(0, 0);
@@ -220,9 +223,9 @@ public class Framebuffer {
                 .sType$Default()
                 .pAttachments(stack.longs(colorAttachmentImageView, depthAttachment.getImageView()));
         //Clear Color value is ignored if Load Op is Not set to Clear
-        VkClearValue.Buffer clearValues = VkClearValue.malloc(attachmentCount, stack);
+        VkClearValue.Buffer clearValues = VkClearValue.malloc(2, stack);
 
-        clearValues.get(0).color(VkClearValue.ncolor(MemoryUtil.memAddress0(VRenderSystem.clearColor)));
+        clearValues.get(0).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
         clearValues.get(1).depthStencil().set(1.0f, 0);
 
         VkRenderPassBeginInfo renderingInfo = VkRenderPassBeginInfo.calloc(stack)
@@ -232,7 +235,7 @@ public class Framebuffer {
                 .renderArea(renderArea)
                 .framebuffer(this.frameBuffer)
                 .pClearValues(clearValues)
-                .clearValueCount(this.attachmentCount);
+                .clearValueCount(2);
 
         vkCmdBeginRenderPass(commandBuffer, renderingInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
@@ -292,11 +295,13 @@ public class Framebuffer {
 //        this.depthFormat = depthFormat;
 //    }
 
-    public void recreate(VkExtent2D extent2D) {
-        this.width = extent2D.width();
-        this.height = extent2D.height();
+    public void recreate(int width, int height) {
+        this.width = width;
+        this.height = height;
         this.frameBuffer = createFramebuffers();
 //        this.depthFormat = findDepthFormat();
+        depthAttachment.free();
+        if(colorAttachment!=null) this.colorAttachment.free();
         createDepthResources(false);
     }
 }

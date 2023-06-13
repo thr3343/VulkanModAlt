@@ -23,6 +23,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
     private static final int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    private static final int vkFormatD32Sfloat = getDeviceInfo().depthFormat;
 
     private static VkDevice device = Vulkan.getDevice();
 
@@ -408,11 +409,7 @@ public class VulkanImage {
         barrier.subresourceRange().baseArrayLayer(0);
         barrier.subresourceRange().layerCount(1);
 
-        if(format == VK_FORMAT_D32_SFLOAT) {
-            barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-        } else {
-            barrier.subresourceRange().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-        }
+        barrier.subresourceRange().aspectMask(format == vkFormatD32Sfloat ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT);
 
         int sourceStage;
         int destinationStage;
@@ -469,9 +466,9 @@ public class VulkanImage {
                 barrier);
     }
 
-    private static boolean hasStencilComponent(int format) {
-        return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-    }
+//    private static boolean hasStencilComponent(int format) {
+//        return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+//    }
 
     public void free() {
         MemoryManager.getInstance().addToFreeable(this);
