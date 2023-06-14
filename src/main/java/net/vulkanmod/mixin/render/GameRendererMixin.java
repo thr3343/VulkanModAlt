@@ -83,7 +83,7 @@ public abstract class GameRendererMixin {
     @Shadow private @Nullable static ShaderInstance rendertypeTextSeeThroughShader;
     @Shadow private @Nullable static ShaderInstance rendertypeTextIntensitySeeThroughShader;
     @Shadow private @Nullable static ShaderInstance rendertypeLightningShader;
-    @Shadow private @Nullable static ShaderInstance rendertypeTripwireShader;
+    @Shadow private @Nullable static ShaderInstance rendertypeTripwireShader = null;
     @Shadow private @Nullable static ShaderInstance rendertypeEndPortalShader;
     @Shadow private @Nullable static ShaderInstance rendertypeEndGatewayShader;
     @Shadow private @Nullable static ShaderInstance rendertypeLinesShader;
@@ -191,7 +191,7 @@ public abstract class GameRendererMixin {
             list1.add(Pair.of(rendertypeTextShader, (shaderInstance) -> rendertypeTextIntensitySeeThroughShader = shaderInstance));
 
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_lightning", DefaultVertexFormat.POSITION_COLOR), (shaderInstance) -> rendertypeLightningShader = shaderInstance));
-            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_tripwire", DefaultVertexFormat.BLOCK), (shaderInstance) -> rendertypeTripwireShader = shaderInstance));
+//            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_tripwire", DefaultVertexFormat.BLOCK), (shaderInstance) -> rendertypeTripwireShader = shaderInstance));
             list1.add(Pair.of(endPortalShader, (shaderInstance) -> rendertypeEndPortalShader = shaderInstance));
             list1.add(Pair.of(endPortalShader, (shaderInstance) -> rendertypeEndGatewayShader = shaderInstance));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_lines", DefaultVertexFormat.POSITION_COLOR_NORMAL), (shaderInstance) -> rendertypeLinesShader = shaderInstance));
