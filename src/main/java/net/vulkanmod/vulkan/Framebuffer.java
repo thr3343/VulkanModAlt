@@ -13,8 +13,7 @@ import static org.lwjgl.system.Checks.CHECKS;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.JNI.callPPPPI;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.memAddress;
-import static org.lwjgl.system.MemoryUtil.memAddressSafe;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -89,9 +88,10 @@ public class Framebuffer {
             //attachments = stack.mallocLong(1);
             LongBuffer pFramebuffer = stack.mallocLong(1);
 
-            VkFramebufferAttachmentImageInfo.Buffer vkFramebufferAttachmentImageInfo = VkFramebufferAttachmentImageInfo.malloc(attachmentCount, stack);
+            VkFramebufferAttachmentImageInfo.Buffer vkFramebufferAttachmentImageInfo = VkFramebufferAttachmentImageInfo.calloc(attachmentCount, stack);
             VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos = vkFramebufferAttachmentImageInfo.get(0)
                     .sType$Default()
+                    .pNext(NULL)
                     .flags(0)
                     .width(width)
                     .height(height)
@@ -100,6 +100,7 @@ public class Framebuffer {
                     .usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
             VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos1 = vkFramebufferAttachmentImageInfo.get(1)
                     .sType$Default()
+                    .pNext(NULL)
                     .flags(0)
                     .width(width)
                     .height(height)
@@ -111,7 +112,7 @@ public class Framebuffer {
                     .sType$Default()
                     .pAttachmentImageInfos(vkFramebufferAttachmentImageInfo);
             // Lets allocate the create info struct once and just update the pAttachments field each iteration
-            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.callocStack(stack)
+            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.calloc(stack)
                     .sType$Default()
                     .pNext(vkFramebufferAttachmentsCreateInfo)
                     .flags(VK12.VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT)
