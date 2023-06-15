@@ -33,7 +33,7 @@ public class SwapChain {
     private List<Long> swapChainImages;
     private VkExtent2D extent2D;
     private List<Long> imageViews;
-    public boolean isBGRAformat;
+    public static boolean isBGRAformat;
     private boolean vsync = false;
 
     private final int framesNum;
@@ -46,7 +46,7 @@ public class SwapChain {
         this.framesNum = Initializer.CONFIG.frameQueueSize;
         createSwapChain(this.framesNum);
         MemoryManager.createInstance(this.swapChainImages.size());
-        this.fakeFBO=new Framebuffer(this.swapChainFormat, extent2D, true, true);
+        this.fakeFBO=new Framebuffer(this.swapChainFormat, extent2D, Framebuffer.AttachmentTypes.COLOR, Framebuffer.AttachmentTypes.DEPTH);
 
 
     }
@@ -280,7 +280,7 @@ public class SwapChain {
         return details;
     }
 
-    private VkSurfaceFormatKHR chooseSwapSurfaceFormat(VkSurfaceFormatKHR.Buffer availableFormats) {
+    private static VkSurfaceFormatKHR chooseSwapSurfaceFormat(VkSurfaceFormatKHR.Buffer availableFormats) {
         List<VkSurfaceFormatKHR> list = availableFormats.stream().toList();
 
         VkSurfaceFormatKHR format = list.get(0);

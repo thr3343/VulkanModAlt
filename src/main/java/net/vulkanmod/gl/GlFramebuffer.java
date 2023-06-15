@@ -139,7 +139,7 @@ public class GlFramebuffer {
         this.colorAttachment = texture;
 
         if(this.framebuffer == null) {
-            this.framebuffer = new Framebuffer(this.colorAttachment.vulkanImage, true, true);
+            this.framebuffer = new Framebuffer(this.colorAttachment.vulkanImage, Framebuffer.AttachmentTypes.COLOR, Framebuffer.AttachmentTypes.DEPTH);
         }
 
         this.beginRendering();
