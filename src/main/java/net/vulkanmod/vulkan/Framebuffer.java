@@ -9,7 +9,6 @@ import org.lwjgl.vulkan.*;
 import java.nio.LongBuffer;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
-import static org.lwjgl.system.Checks.CHECKS;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.JNI.callPPPPI;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -66,7 +65,7 @@ public class Framebuffer {
         this.renderPass=createRenderPass();
 
         createDepthResources(false);
-        this.frameBuffer=createFramebuffers();
+        this.frameBuffer=createFramebuffers(attachments);
     }
 
     protected Framebuffer(int swapChainFormat, VkExtent2D extent2D, int attachmentCount)
@@ -80,9 +79,9 @@ public class Framebuffer {
         this.renderPass=createRenderPass();
 
         createDepthResources(false);
-        this.frameBuffer=createFramebuffers();
+        this.frameBuffer=createFramebuffers(attachments);
     }
-    private  long createFramebuffers() {
+    private  long createFramebuffers(imageAttachmentReference[] attachments1) {
         try (MemoryStack stack = stackPush()) {
 
             if(this.frameBuffer!=VK_NULL_HANDLE) {
@@ -124,7 +123,7 @@ public class Framebuffer {
             if (vkCreateFramebuffer(getDevice(), framebufferInfo, null, pFramebuffer) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create framebuffer");
             }
-           this.framebufferInfo = new FramebufferInfo(this.renderPass, width, height, pFramebuffer.get(0), attachments);
+           this.framebufferInfo = new FramebufferInfo(width, height, pFramebuffer.get(0), attachments1);
             if(!frameBuffers.contains(this.framebufferInfo))
             {
                 frameBuffers.add(this.framebufferInfo);
@@ -202,17 +201,19 @@ public class Framebuffer {
                 throw new RuntimeException("Failed to Create FrameBuffer!: "+a);
             }
 
-            final long renderPass = pRenderPass.get(0);
-            addAttachment(renderPass, 0, colorAttachment);
-            addAttachment(renderPass, 1, depthAttachment);
+            final long renderPass1 = pRenderPass.get(0);
+            for(int attachID = 0; attachID<this.attachmentCount; attachID++)
+            {
+                addAttachment(attachID, attachments.get(attachID), attachmentRefs.get(attachID), renderPass1);
+            }
 
-            return renderPass;
+            return renderPass1;
         }
     }
 
-    private void addAttachment(long renderPass, int i, VkAttachmentDescription attachment) {
+    private void addAttachment(int i, VkAttachmentDescription attachment, VkAttachmentReference vkAttachmentReference, long renderPass) {
 
-        this.attachments[i]=new imageAttachmentReference(attachment.loadOp(), attachment.storeOp(), attachment.format());
+        this.attachments[i]=new imageAttachmentReference(renderPass, attachment.loadOp(), attachment.storeOp(), attachment.format(), vkAttachmentReference.layout(), attachment.finalLayout());
     }
 
     protected void createDepthResources(boolean blur) {
@@ -308,8 +309,11 @@ public class Framebuffer {
 //    public void setDepthFormat(int depthFormat) {
 //        this.depthFormat = depthFormat;
 //    }
-    private record imageAttachmentReference(int loadOp, int storeOp, int format/*, int usage*/){};
-    private record FramebufferInfo(long renderPass, int width, int height, long frameBuffer, imageAttachmentReference... attachments){};
+    //attachments don't care about Res, but do care about Format+LoadStoreOps+layouts afaik
+    private record imageAttachmentReference(long parentRenderPass, int loadOp, int storeOp, int format, int targetLayout, int finalLayout){};
+
+    //framebuffers can use any renderPass and any attachment count + format (as long as the res Matches)
+    private record FramebufferInfo(int width, int height, long frameBuffer, imageAttachmentReference... attachments){};
     public void recreate(int width, int height) {
         this.width = width;
         this.height = height;
@@ -329,6 +333,6 @@ public class Framebuffer {
             }
         }
         System.out.println("0FAIL!");
-        return createFramebuffers();
+        return createFramebuffers(attachments);
     }
 }
