@@ -57,13 +57,13 @@ public class Framebuffer {
 ////        createFramebuffers(width, height);
 //    }
 
-    public Framebuffer(VulkanImage colorAttachment, int attachmentCount) {
+    public Framebuffer(VulkanImage colorAttachment, boolean color, boolean depth) {
         this.width = colorAttachment.width;
         this.height = colorAttachment.height;
 
         this.colorAttachment = colorAttachment;
         this.format=colorAttachment.format;
-        this.attachmentCount = attachmentCount;
+        this.attachmentCount = getAttachmentCount(color, depth);
 
         attachments = new imageAttachmentReference[attachmentCount];
         this.renderPass=createRenderPass();
@@ -72,12 +72,18 @@ public class Framebuffer {
         this.frameBuffer=createFramebuffers();
     }
 
-    protected Framebuffer(int swapChainFormat, VkExtent2D extent2D, int attachmentCount)
+    private static int getAttachmentCount(boolean color, boolean depth) {
+        if(color&&depth) return 2;
+        if (color || depth) return 1;
+        return 0;
+    }
+
+    protected Framebuffer(int swapChainFormat, VkExtent2D extent2D, boolean color, boolean depth)
     {
         this.width = extent2D.width();
         this.height = extent2D.height();
         this.format=swapChainFormat;
-        this.attachmentCount = attachmentCount;
+        this.attachmentCount = getAttachmentCount(color, depth);
 
         attachments = new imageAttachmentReference[attachmentCount];
         this.renderPass=createRenderPass();
@@ -97,6 +103,15 @@ public class Framebuffer {
             LongBuffer pFramebuffer = stack.mallocLong(1);
 
             VkFramebufferAttachmentImageInfo.Buffer vkFramebufferAttachmentImageInfo = VkFramebufferAttachmentImageInfo.calloc(attachmentCount, stack);
+            VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos = vkFramebufferAttachmentImageInfo.get(0)
+                    .sType$Default()
+                    .pNext(NULL)
+                    .flags(0)
+                    .width(width)
+                    .height(height)
+                    .pViewFormats(stack.ints(this.format))
+                    .layerCount(1)
+                    .usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
             VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos1 = vkFramebufferAttachmentImageInfo.get(1)
                     .sType$Default()
                     .pNext(NULL)
@@ -230,7 +245,7 @@ public class Framebuffer {
                 .sType$Default()
                 .pAttachments(stack.longs(colorAttachmentImageView, depthAttachment.getImageView()));
         //Clear Color value is ignored if Load Op is Not set to Clear
-        VkClearValue.Buffer clearValues = VkClearValue.malloc(2, stack);
+        VkClearValue.Buffer clearValues = VkClearValue.malloc(this.attachmentCount, stack);
 
         clearValues.get(0).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
         clearValues.get(1).depthStencil().set(1.0f, 0);
@@ -242,7 +257,7 @@ public class Framebuffer {
                 .renderArea(renderArea)
                 .framebuffer(this.frameBuffer)
                 .pClearValues(clearValues)
-                .clearValueCount(2);
+                .clearValueCount(this.attachmentCount);
 
         vkCmdBeginRenderPass(commandBuffer, renderingInfo, VK_SUBPASS_CONTENTS_INLINE);
     }

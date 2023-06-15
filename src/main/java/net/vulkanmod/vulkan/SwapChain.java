@@ -46,7 +46,7 @@ public class SwapChain {
         this.framesNum = Initializer.CONFIG.frameQueueSize;
         createSwapChain(this.framesNum);
         MemoryManager.createInstance(this.swapChainImages.size());
-        this.fakeFBO=new Framebuffer(this.swapChainFormat, extent2D, 2);
+        this.fakeFBO=new Framebuffer(this.swapChainFormat, extent2D, true, true);
 
 
     }
