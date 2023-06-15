@@ -37,6 +37,10 @@ public class Framebuffer {
     private FramebufferInfo framebufferInfo;
     private final imageAttachmentReference[] attachments;
 
+    @Override
+    public boolean equals(Object obj) {
+       return obj instanceof Framebuffer && this.framebufferInfo == ((Framebuffer) (obj)).framebufferInfo;
+    }
 //    public Framebuffer(int width, int height, int format) {
 //        this(width, height, format, false);
 //    }
@@ -65,7 +69,7 @@ public class Framebuffer {
         this.renderPass=createRenderPass();
 
         createDepthResources(false);
-        this.frameBuffer=createFramebuffers(attachments);
+        this.frameBuffer=createFramebuffers();
     }
 
     protected Framebuffer(int swapChainFormat, VkExtent2D extent2D, int attachmentCount)
@@ -79,9 +83,9 @@ public class Framebuffer {
         this.renderPass=createRenderPass();
 
         createDepthResources(false);
-        this.frameBuffer=createFramebuffers(attachments);
+        this.frameBuffer=createFramebuffers();
     }
-    private  long createFramebuffers(imageAttachmentReference[] attachments1) {
+    private  long createFramebuffers() {
         try (MemoryStack stack = stackPush()) {
 
             if(this.frameBuffer!=VK_NULL_HANDLE) {
@@ -93,7 +97,6 @@ public class Framebuffer {
             LongBuffer pFramebuffer = stack.mallocLong(1);
 
             VkFramebufferAttachmentImageInfo.Buffer vkFramebufferAttachmentImageInfo = VkFramebufferAttachmentImageInfo.calloc(attachmentCount, stack);
-            addAttachment(stack, vkFramebufferAttachmentImageInfo);
             VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos1 = vkFramebufferAttachmentImageInfo.get(1)
                     .sType$Default()
                     .pNext(NULL)
@@ -123,7 +126,7 @@ public class Framebuffer {
             if (vkCreateFramebuffer(getDevice(), framebufferInfo, null, pFramebuffer) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create framebuffer");
             }
-           this.framebufferInfo = new FramebufferInfo(width, height, pFramebuffer.get(0), attachments1);
+           this.framebufferInfo = new FramebufferInfo(width, height, pFramebuffer.get(0), attachments);
             if(!frameBuffers.contains(this.framebufferInfo))
             {
                 frameBuffers.add(this.framebufferInfo);
@@ -131,18 +134,6 @@ public class Framebuffer {
             return (pFramebuffer.get(0));
 
         }
-    }
-
-    private void addAttachment(MemoryStack stack, VkFramebufferAttachmentImageInfo.Buffer vkFramebufferAttachmentImageInfo) {
-        VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos = vkFramebufferAttachmentImageInfo.get(0)
-                .sType$Default()
-                .pNext(NULL)
-                .flags(0)
-                .width(width)
-                .height(height)
-                .pViewFormats(stack.ints(this.format))
-                .layerCount(1)
-                .usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
     }
 
     private long createRenderPass() {
@@ -202,17 +193,18 @@ public class Framebuffer {
             }
 
             final long renderPass1 = pRenderPass.get(0);
-            for(int attachID = 0; attachID<this.attachmentCount; attachID++)
+            for(var attachRef : attachmentRefs)
             {
-                addAttachment(attachID, attachments.get(attachID), attachmentRefs.get(attachID), renderPass1);
+                addAttachment(attachments, attachRef, renderPass1);
             }
 
             return renderPass1;
         }
     }
 
-    private void addAttachment(int i, VkAttachmentDescription attachment, VkAttachmentReference vkAttachmentReference, long renderPass) {
-
+    private void addAttachment(VkAttachmentDescription.Buffer attachments, VkAttachmentReference vkAttachmentReference, long renderPass) {
+        int i = vkAttachmentReference.attachment();
+        final VkAttachmentDescription attachment = attachments.get(i);
         this.attachments[i]=new imageAttachmentReference(renderPass, attachment.loadOp(), attachment.storeOp(), attachment.format(), vkAttachmentReference.layout(), attachment.finalLayout());
     }
 
@@ -326,13 +318,13 @@ public class Framebuffer {
 
     private long checkForFrameBuffers() {
         for (final FramebufferInfo a : frameBuffers) {
-            if (a== framebufferInfo) {
+            if (a.width== framebufferInfo.width && a.height ==framebufferInfo.height) {
                 System.out.println("1OK-->!");
                 System.out.println("FrameBuffer-->:"+width+"{-->}"+height);
                 return a.frameBuffer;
             }
         }
         System.out.println("0FAIL!");
-        return createFramebuffers(attachments);
+        return createFramebuffers();
     }
 }
