@@ -526,22 +526,17 @@ public class WorldRenderer {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
         Profiler2 p = Profiler2.getMainProfiler();
-        RenderType solid = RenderType.solid();
-        RenderType cutout = RenderType.cutout();
-        RenderType cutoutMipped = RenderType.cutoutMipped();
-        RenderType translucent = RenderType.translucent();
-        RenderType tripwire = RenderType.tripwire();
 
         String layerName;
-        if (solid.equals(renderType)) {
+        if (RenderType.solid().equals(renderType)) {
             layerName = "solid";
-        } else if (cutout.equals(renderType)) {
+        } else if (RenderType.cutout().equals(renderType)) {
             layerName = "cutout";
-        } else if (cutoutMipped.equals(renderType)) {
+        } else if (RenderType.cutoutMipped().equals(renderType)) {
             layerName = "cutoutMipped";
-        } else if (tripwire.equals(renderType)) {
+        } else if (RenderType.tripwire().equals(renderType)) {
             layerName = "tripwire";
-        } else if (translucent.equals(renderType)) {
+        } else if (RenderType.translucent().equals(renderType)) {
             layerName = "translucent";
         } else layerName = "unk";
 

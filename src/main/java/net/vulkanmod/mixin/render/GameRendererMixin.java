@@ -2,6 +2,7 @@ package net.vulkanmod.mixin.render;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.mojang.blaze3d.shaders.Program;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -286,6 +287,30 @@ public abstract class GameRendererMixin {
         });
 
         ci.cancel();
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    public void preloadUiShader(ResourceProvider resourceProvider) {
+        if (this.blitShader != null) {
+            throw new RuntimeException("Blit shader already preloaded");
+        } else {
+            try {
+                this.blitShader = new ShaderInstance(resourceProvider, "blit_screen", DefaultVertexFormat.BLIT_SCREEN);
+            } catch (IOException var3) {
+                throw new RuntimeException("could not preload blit shader", var3);
+            }
+
+            positionShader = this.preloadShader(resourceProvider, "position", DefaultVertexFormat.POSITION);
+            positionColorShader = this.preloadShader(resourceProvider, "position_color", DefaultVertexFormat.POSITION_COLOR);
+            positionColorTexShader = this.preloadShader(resourceProvider, "position_color_tex", DefaultVertexFormat.POSITION_COLOR_TEX);
+            positionTexShader = this.preloadShader(resourceProvider, "position_tex", DefaultVertexFormat.POSITION_TEX);
+            positionTexColorShader = this.preloadShader(resourceProvider, "position_tex_color", DefaultVertexFormat.POSITION_TEX_COLOR);
+            rendertypeTextShader = this.preloadShader(resourceProvider, "rendertype_text", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+        }
     }
 
     @Redirect(method = "render", at = @At(value = "INVOKE", ordinal = 0, target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
