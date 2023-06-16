@@ -60,7 +60,7 @@ public class Vulkan {
     }
 
     private static final Set<String> DEVICE_EXTENSIONS = Stream.of(
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, VK_KHR_PRESENT_ID_EXTENSION_NAME, VK_KHR_PRESENT_WAIT_EXTENSION_NAME)
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
             .collect(toSet());
 
     private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
@@ -411,20 +411,20 @@ public class Vulkan {
                     .sType$Default()
                     .dynamicRendering(true);
 
-            VkPhysicalDevicePresentIdFeaturesKHR presentIdFeaturesKHR = VkPhysicalDevicePresentIdFeaturesKHR.calloc(stack)
-                    .sType$Default()
-                    .presentId(true);
-
-            VkPhysicalDevicePresentWaitFeaturesKHR presentWaitFeaturesKHR = VkPhysicalDevicePresentWaitFeaturesKHR.calloc(stack)
-                    .sType$Default()
-                    .presentWait(true);
+//            VkPhysicalDevicePresentIdFeaturesKHR presentIdFeaturesKHR = VkPhysicalDevicePresentIdFeaturesKHR.calloc(stack)
+//                    .sType$Default()
+//                    .presentId(true);
+//
+//            VkPhysicalDevicePresentWaitFeaturesKHR presentWaitFeaturesKHR = VkPhysicalDevicePresentWaitFeaturesKHR.calloc(stack)
+//                    .sType$Default()
+//                    .presentWait(true);
 
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
                     .sType$Default()
                     .pQueueCreateInfos(queueCreateInfos)
                     .pEnabledFeatures(deviceFeatures.features())
-                    .pNext(deviceVulkan11Features).pNext(presentIdFeaturesKHR).pNext(presentWaitFeaturesKHR).pNext(dynamicRenderingFeaturesKHR)
+                    .pNext(deviceVulkan11Features).pNext(dynamicRenderingFeaturesKHR)
                     .ppEnabledExtensionNames(asPointerBuffer(DEVICE_EXTENSIONS));
 
 

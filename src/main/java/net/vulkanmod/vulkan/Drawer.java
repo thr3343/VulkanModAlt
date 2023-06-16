@@ -389,17 +389,17 @@ public class Drawer {
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Cannot get image: " + vkResult);
             }
-            frameBufferPresentIndices.enqueue(pImageIndex.get(0));
-            oldestFrameIndex = frameBufferPresentIndices.dequeueLastInt();
+            frameBufferPresentIndices.enqueueFirst(pImageIndex.get(0));
+            oldestFrameIndex = frameBufferPresentIndices.dequeueInt();
 
-            KHRPresentWait.vkWaitForPresentKHR(device, getSwapChain().getId(), pPresentId.get(0), 10000);
+//            KHRPresentWait.vkWaitForPresentKHR(device, getSwapChain().getId(), pPresentId.get(0), 10000);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
 
             submitInfo.waitSemaphoreCount(1);
             submitInfo.pWaitSemaphores(stackGet().longs(imageAvailableSemaphores.get(currentFrame)));
-            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT));
+            submitInfo.pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
 
             submitInfo.pSignalSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)));
 
@@ -414,13 +414,10 @@ public class Drawer {
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 
-            VkPresentIdKHR vkPresentIdKHR = VkPresentIdKHR.calloc(stack)
-                    .sType$Default()
-                    .swapchainCount(1)
-                    .pPresentIds(pPresentId);
+
             VkPresentInfoKHR presentInfo = VkPresentInfoKHR.callocStack(stack)
                     .sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR)
-                    .pNext(vkPresentIdKHR)
+//                    .pNext(vkPresentIdKHR)
                     .pWaitSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)))
                     .swapchainCount(1)
                     .pSwapchains(stack.longs(Vulkan.getSwapChain().getId()))
@@ -445,7 +442,7 @@ public class Drawer {
 //            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
 //        }
 
-        KHRPresentWait.vkWaitForPresentKHR(device, getSwapChain().getId(), pPresentId.get(0), 10000);
+        vkDeviceWaitIdle(device);
 
         for(int i = 0; i < getSwapChainImages().size(); ++i) {
             vkDestroyFence(device, frameFences.get(i), null);
