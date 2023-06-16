@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
@@ -13,8 +14,7 @@ import static org.lwjgl.system.Checks.CHECKS;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.JNI.callPPPPI;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.memAddress;
-import static org.lwjgl.system.MemoryUtil.memAddressSafe;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -22,11 +22,13 @@ public class Framebuffer {
 
     private static final int colorID=0;
     private static final int depthID=1;
-    public static final int DEFAULT_FORMAT = VK_FORMAT_R8G8B8A8_UNORM;
+    public static final int DEFAULT_FORMAT = SwapChain.isBGRAformat ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R8G8B8A8_UNORM;
     private long frameBuffer;
 
     private final int format;
     private static final int depthFormat = findDepthFormat();
+    private static final ObjectArrayList<FramebufferInfo> frameBuffers = new ObjectArrayList<>(8);
+
     public int width, height;
     public final long renderPass;
 
@@ -35,6 +37,14 @@ public class Framebuffer {
 //    private List<VulkanImage> images;
     private VulkanImage colorAttachment;
     protected VulkanImage depthAttachment;
+    private FramebufferInfo framebufferInfo;
+    private final imageAttachmentReference[] attachments;
+
+
+    @Override
+    public boolean equals(Object obj) {
+       return obj instanceof Framebuffer && this.framebufferInfo == ((Framebuffer) (obj)).framebufferInfo;
+    }
 
 //    public Framebuffer(int width, int height, int format) {
 //        this(width, height, format, false);
@@ -52,33 +62,52 @@ public class Framebuffer {
 ////        createFramebuffers(width, height);
 //    }
 
-    public Framebuffer(VulkanImage colorAttachment, int attachmentCount) {
+
+    public enum AttachmentTypes
+    {
+        COLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
+        DEPTH(getDeviceInfo().depthAttachmentOptimal, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+        private final int layout, format, usage;
+
+        AttachmentTypes(int depthAttachmentOptimal, int depthFormat, int i) {
+
+            this.layout = depthAttachmentOptimal;
+            format = depthFormat;
+            this.usage = i;
+        }
+    }
+    public Framebuffer(VulkanImage colorAttachment, AttachmentTypes... attachmentTypes) {
         this.width = colorAttachment.width;
         this.height = colorAttachment.height;
 
         this.colorAttachment = colorAttachment;
         this.format=colorAttachment.format;
-        this.attachmentCount = attachmentCount;
 
-        this.renderPass=createRenderPass();
+        this.attachmentCount = attachmentTypes.length;
+
+        attachments = new imageAttachmentReference[attachmentCount];
+        this.renderPass=createRenderPass(attachmentTypes);
 
         createDepthResources(false);
-        this.frameBuffer=createFramebuffers();
+        this.frameBuffer=createFramebuffers(attachmentTypes);
     }
 
-    protected Framebuffer(int swapChainFormat, VkExtent2D extent2D, int attachmentCount)
+    protected Framebuffer(int swapChainFormat, VkExtent2D extent2D, AttachmentTypes... attachmentTypes)
     {
         this.width = extent2D.width();
         this.height = extent2D.height();
         this.format=swapChainFormat;
-        this.attachmentCount = attachmentCount;
+        this.attachmentCount = attachmentTypes.length;
 
-        this.renderPass=createRenderPass();
+        attachments = new imageAttachmentReference[attachmentCount];
+        this.renderPass=createRenderPass(attachmentTypes);
 
         createDepthResources(false);
-        this.frameBuffer=createFramebuffers();
+        this.frameBuffer=createFramebuffers(attachmentTypes);
     }
-    private  long createFramebuffers() {
+
+    private  long createFramebuffers(AttachmentTypes[] attachmentTypes) {
         try (MemoryStack stack = stackPush()) {
 
             if(this.frameBuffer!=VK_NULL_HANDLE) {
@@ -90,28 +119,29 @@ public class Framebuffer {
             LongBuffer pFramebuffer = stack.mallocLong(1);
 
             VkFramebufferAttachmentImageInfo.Buffer vkFramebufferAttachmentImageInfo = VkFramebufferAttachmentImageInfo.calloc(attachmentCount, stack);
-            VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos = vkFramebufferAttachmentImageInfo.get(0)
-                    .sType$Default()
-                    .flags(0)
-                    .width(width)
-                    .height(height)
-                    .pViewFormats(stack.ints(this.format))
-                    .layerCount(1)
-                    .usage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-            VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos1 = vkFramebufferAttachmentImageInfo.get(1)
-                    .sType$Default()
-                    .flags(0)
-                    .width(width)
-                    .height(height)
-                    .pViewFormats(stack.ints(depthFormat))
-                    .layerCount(1)
-                    .usage(this.depthAttachment.usage);
+
+            int i=0;
+            for(var attachmentImageInfo : attachmentTypes) {
+
+                VkFramebufferAttachmentImageInfo vkFramebufferAttachmentImageInfos = vkFramebufferAttachmentImageInfo.get(i)
+                        .sType$Default()
+                        .pNext(NULL)
+                        .flags(0)
+                        .width(width)
+                        .height(height)
+                        .pViewFormats(stack.ints(attachmentImageInfo.format))
+                        .layerCount(1)
+                        .usage(attachmentImageInfo.usage);
+                i++;
+            }
+
 
             VkFramebufferAttachmentsCreateInfo vkFramebufferAttachmentsCreateInfo = VkFramebufferAttachmentsCreateInfo.calloc(stack)
                     .sType$Default()
                     .pAttachmentImageInfos(vkFramebufferAttachmentImageInfo);
             // Lets allocate the create info struct once and just update the pAttachments field each iteration
-            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.callocStack(stack)
+
+            VkFramebufferCreateInfo framebufferInfo = VkFramebufferCreateInfo.calloc(stack)
                     .sType$Default()
                     .pNext(vkFramebufferAttachmentsCreateInfo)
                     .flags(VK12.VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT)
@@ -126,13 +156,18 @@ public class Framebuffer {
             if (vkCreateFramebuffer(getDevice(), framebufferInfo, null, pFramebuffer) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create framebuffer");
             }
-
+            this.framebufferInfo = new FramebufferInfo(width, height, pFramebuffer.get(0), attachments);
+            if(!frameBuffers.contains(this.framebufferInfo))
+            {
+                frameBuffers.add(this.framebufferInfo);
+            }
             return (pFramebuffer.get(0));
 
         }
     }
 
-    private long createRenderPass() {
+
+    private long createRenderPass(AttachmentTypes[] attachmentTypes) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -156,15 +191,16 @@ public class Framebuffer {
 
             // Depth-Stencil attachments
 
-            VkAttachmentDescription depthAttachment = attachments.get(1);
-            depthAttachment.format(depthFormat);
-            depthAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-            depthAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-            depthAttachment.storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-            depthAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
-            depthAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
-            depthAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-            depthAttachment.finalLayout(getDeviceInfo().depthAttachmentOptimal);
+
+            VkAttachmentDescription depthAttachment = attachments.get(1)
+                    .format(depthFormat)
+                    .samples(VK_SAMPLE_COUNT_1_BIT)
+                    .loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR)
+                    .storeOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+                    .stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE)
+                    .stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE)
+                    .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
+                    .finalLayout(getDeviceInfo().depthAttachmentOptimal);
 
             VkAttachmentReference depthAttachmentRef = attachmentRefs.get(1).set(1, getDeviceInfo().depthAttachmentOptimal);
 
@@ -201,6 +237,13 @@ public class Framebuffer {
         }
     }
 
+
+    private void addAttachment(VkAttachmentDescription.Buffer attachments, VkAttachmentReference vkAttachmentReference, long renderPass, AttachmentTypes[] attachmentTypes) {
+        int i = vkAttachmentReference.attachment();
+        final VkAttachmentDescription attachment = attachments.get(i);
+        this.attachments[i]=new imageAttachmentReference(renderPass, attachment.loadOp(), attachment.storeOp(), attachmentTypes[i]);
+    }
+
     protected void createDepthResources(boolean blur) {
 
         this.depthAttachment = VulkanImage.createDepthImage(depthFormat, this.width, this.height,
@@ -223,7 +266,8 @@ public class Framebuffer {
                 .sType$Default()
                 .pAttachments(stack.longs(colorAttachmentImageView, depthAttachment.getImageView()));
         //Clear Color value is ignored if Load Op is Not set to Clear
-        VkClearValue.Buffer clearValues = VkClearValue.malloc(2, stack);
+
+        VkClearValue.Buffer clearValues = VkClearValue.malloc(this.attachmentCount, stack);
 
         clearValues.get(0).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
         clearValues.get(1).depthStencil().set(1.0f, 0);
@@ -235,7 +279,8 @@ public class Framebuffer {
                 .renderArea(renderArea)
                 .framebuffer(this.frameBuffer)
                 .pClearValues(clearValues)
-                .clearValueCount(2);
+
+                .clearValueCount(this.attachmentCount);
 
         vkCmdBeginRenderPass(commandBuffer, renderingInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
@@ -295,13 +340,32 @@ public class Framebuffer {
 //        this.depthFormat = depthFormat;
 //    }
 
+    //attachments don't care about Res, but does care about the number if Images (i.e. Attachments) Format+LoadStoreOps+layouts afaik
+    private record imageAttachmentReference(long parentRenderPass, int loadOp, int storeOp, AttachmentTypes attachmentTypes){};
+
+    //framebuffers can use any renderPass, as long as the renderpass matches the AttachmentImageInfos configuration used to create the framebuffer handle: (i.e.attachment count + format (as long as the res Matches))
+    private record FramebufferInfo(int width, int height, long frameBuffer, imageAttachmentReference... attachments){};
     public void recreate(int width, int height) {
         this.width = width;
         this.height = height;
-        this.frameBuffer = createFramebuffers();
+        this.frameBuffer = checkForFrameBuffers();
+
 //        this.depthFormat = findDepthFormat();
         depthAttachment.free();
         if(colorAttachment!=null) this.colorAttachment.free();
         createDepthResources(false);
+    }
+
+
+    private long checkForFrameBuffers() {
+        for (final FramebufferInfo a : frameBuffers) {
+            if (a.width== framebufferInfo.width && a.height ==framebufferInfo.height) {
+                System.out.println("OK-->!");
+                System.out.println("FrameBuffer-->:"+width+"{-->}"+height);
+                return a.frameBuffer;
+            }
+        }
+        System.out.println("FAIL!");
+        throw new RuntimeException(""); //Not sure best way to handle this rn...
     }
 }

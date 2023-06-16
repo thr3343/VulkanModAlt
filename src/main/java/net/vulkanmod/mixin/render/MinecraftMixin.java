@@ -53,8 +53,9 @@ public class MinecraftMixin {
     @Shadow @Final private PaintingTextureManager paintingTextures;
     @Shadow public boolean noRender;
 
-    @Inject(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V", shift = At.Shift.BEFORE))
-    private void beginRender(boolean tick, CallbackInfo ci) {
+    //Don't need the clear as renderpass is cleared anyway
+    @Redirect(method = "runTick", at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/RenderSystem;clear(IZ)V"))
+    private void beginRender(int i, boolean bl) {
         Drawer drawer = Drawer.getInstance();
         drawer.initiateRenderPass();
     }

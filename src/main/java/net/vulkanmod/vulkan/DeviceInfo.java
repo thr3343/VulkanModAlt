@@ -143,7 +143,7 @@ public class DeviceInfo {
 
     @NotNull
     private static String decodeNvidia(int v) {
-        return (v >>> 22 & 0x3FF) + "." + (v >>> 14 & 0xff) + "." + (v >>> 6 & 0xff) + (v & 0xff);
+        return (v >>> 22 & 0x3FF) + "." + (v >>> 14 & 0xff) + "." + (v >>> 6 & 0xff) + "." + (v & 0xff);
     }
 
     private String unsupportedExtensions(Set<String> requiredExtensions) {

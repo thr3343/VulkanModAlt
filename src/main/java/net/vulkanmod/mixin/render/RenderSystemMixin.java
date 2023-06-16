@@ -140,9 +140,7 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite(remap = false)
-    public static void clear(int mask, boolean getError) {
-        VRenderSystem.clear(mask);
-    }
+    public static void clear(int mask, boolean getError) {}
 
     /**
      * @author
