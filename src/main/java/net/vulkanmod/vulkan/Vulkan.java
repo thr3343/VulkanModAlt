@@ -40,8 +40,8 @@ import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
 
 public class Vulkan {
 
-//    public static final boolean ENABLE_VALIDATION_LAYERS = false;
-    public static final boolean ENABLE_VALIDATION_LAYERS = true;
+    public static final boolean ENABLE_VALIDATION_LAYERS = false;
+//    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
     public static final int vkVer;
@@ -404,10 +404,8 @@ public class Vulkan {
             deviceFeatures.sType$Default();
 
             //TODO indirect draw option disabled in case it is not supported
-            if(deviceInfo.availableFeatures.features().samplerAnisotropy())
-                deviceFeatures.features().samplerAnisotropy(true);
-            if(deviceInfo.availableFeatures.features().logicOp())
-                deviceFeatures.features().logicOp(true);
+            deviceFeatures.features().samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy());
+            deviceFeatures.features().logicOp(deviceInfo.availableFeatures.features().logicOp());
 
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
             deviceVulkan11Features.sType$Default();
@@ -452,7 +450,7 @@ public class Vulkan {
                 createInfo.ppEnabledLayerNames(asPointerBuffer(VALIDATION_LAYERS));
             }
 
-            PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
+            PointerBuffer pDevice = stack.mallocPointer(1);
 
             if(vkCreateDevice(physicalDevice, createInfo, null, pDevice) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create logical device");
@@ -460,7 +458,7 @@ public class Vulkan {
 
             device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, vkVer);
 
-            PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
+            PointerBuffer pQueue = stack.mallocPointer(1);
 
             vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
             graphicsQueue = new VkQueue(pQueue.get(0), device);
@@ -487,7 +485,7 @@ public class Vulkan {
             allocatorCreateInfo.instance(instance);
             allocatorCreateInfo.vulkanApiVersion(vkVer);
 
-            PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
+            PointerBuffer pAllocator = stack.mallocPointer(1);
 
             if (vmaCreateAllocator(allocatorCreateInfo, pAllocator) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create command pool");
@@ -693,6 +691,7 @@ public class Vulkan {
     public static void setVsync(boolean b) {
         if(swapChain.isVsync() != b) {
             Drawer.shouldRecreate = true;
+            Drawer.vsync = b;
             swapChain.setVsync(b);
         }
     }
