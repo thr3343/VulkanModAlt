@@ -32,19 +32,14 @@ public class Framebuffer {
     public int width, height;
     public final long renderPass;
 
-    private final int attachmentCount;
 
 //    private List<VulkanImage> images;
     private VulkanImage colorAttachment;
     protected VulkanImage depthAttachment;
-    private FramebufferInfo framebufferInfo;
     private final imageAttachmentReference[] attachments;
+    private final AttachmentTypes[] attachmentTypes;
 
 
-    @Override
-    public boolean equals(Object obj) {
-       return obj instanceof Framebuffer && this.framebufferInfo == ((Framebuffer) (obj)).framebufferInfo;
-    }
 
 //    public Framebuffer(int width, int height, int format) {
 //        this(width, height, format, false);
@@ -83,14 +78,14 @@ public class Framebuffer {
 
         this.colorAttachment = colorAttachment;
         this.format=colorAttachment.format;
+        this.attachmentTypes = attachmentTypes;
 
-        this.attachmentCount = attachmentTypes.length;
 
-        attachments = new imageAttachmentReference[attachmentCount];
-        this.renderPass=createRenderPass(attachmentTypes);
+        attachments = new imageAttachmentReference[attachmentTypes.length];
+        this.renderPass=createRenderPass(this.attachmentTypes);
 
         createDepthResources(false);
-        this.frameBuffer=createFramebuffers(attachmentTypes);
+        this.frameBuffer=createFramebuffers(this.attachmentTypes);
     }
 
     protected Framebuffer(int swapChainFormat, VkExtent2D extent2D, AttachmentTypes... attachmentTypes)
@@ -98,9 +93,9 @@ public class Framebuffer {
         this.width = extent2D.width();
         this.height = extent2D.height();
         this.format=swapChainFormat;
-        this.attachmentCount = attachmentTypes.length;
+        this.attachmentTypes = attachmentTypes;
 
-        attachments = new imageAttachmentReference[attachmentCount];
+        attachments = new imageAttachmentReference[attachmentTypes.length];
         this.renderPass=createRenderPass(attachmentTypes);
 
         createDepthResources(false);
@@ -110,16 +105,11 @@ public class Framebuffer {
     private  long createFramebuffers(AttachmentTypes[] attachmentTypes) {
         try (MemoryStack stack = stackPush()) {
 
-            if(this.frameBuffer!=VK_NULL_HANDLE) {
-                vkDestroyFramebuffer(getDevice(), this.frameBuffer, null);
-            }
-
-
             //attachments = stack.mallocLong(1);
             LongBuffer pFramebuffer = stack.mallocLong(1);
 
-            VkFramebufferAttachmentImageInfo.Buffer vkFramebufferAttachmentImageInfo = VkFramebufferAttachmentImageInfo.calloc(attachmentCount, stack);
 
+            VkFramebufferAttachmentImageInfo.Buffer vkFramebufferAttachmentImageInfo = VkFramebufferAttachmentImageInfo.calloc(attachmentTypes.length, stack);
             int i=0;
             for(var attachmentImageInfo : attachmentTypes) {
 
@@ -149,17 +139,18 @@ public class Framebuffer {
                     .width(width)
                     .height(height)
                     .layers(1)
-                    .attachmentCount(this.attachmentCount)
+                    .attachmentCount(this.attachmentTypes.length)
                     .pAttachments(null);
 
 
             if (vkCreateFramebuffer(getDevice(), framebufferInfo, null, pFramebuffer) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create framebuffer");
             }
-            this.framebufferInfo = new FramebufferInfo(width, height, pFramebuffer.get(0), attachments);
-            if(!frameBuffers.contains(this.framebufferInfo))
+
+            FramebufferInfo framebufferInfo1 = new FramebufferInfo(width, height, pFramebuffer.get(0), attachments);
+            if(!frameBuffers.contains(framebufferInfo1))
             {
-                frameBuffers.add(this.framebufferInfo);
+                frameBuffers.add(framebufferInfo1);
             }
             return (pFramebuffer.get(0));
 
@@ -171,8 +162,8 @@ public class Framebuffer {
 
         try(MemoryStack stack = stackPush()) {
 
-            VkAttachmentDescription.Buffer attachments = VkAttachmentDescription.callocStack(this.attachmentCount, stack);
-            VkAttachmentReference.Buffer attachmentRefs = VkAttachmentReference.callocStack(this.attachmentCount, stack);
+            VkAttachmentDescription.Buffer attachments = VkAttachmentDescription.callocStack(this.attachmentTypes.length, stack);
+            VkAttachmentReference.Buffer attachmentRefs = VkAttachmentReference.callocStack(this.attachmentTypes.length, stack);
 
             // Color attachments
             VkAttachmentDescription colorAttachment = attachments.get(0);
@@ -260,14 +251,14 @@ public class Framebuffer {
     public void beginRendering(VkCommandBuffer commandBuffer, MemoryStack stack, long colorAttachmentImageView) {
         VkRect2D renderArea = VkRect2D.malloc(stack);
         renderArea.offset().set(0, 0);
-        renderArea.extent(getSwapchainExtent());
+        renderArea.extent().set(this.width, this.height);
 
         VkRenderPassAttachmentBeginInfo vkRenderPassAttachmentBeginInfo = VkRenderPassAttachmentBeginInfo.calloc(stack)
                 .sType$Default()
                 .pAttachments(stack.longs(colorAttachmentImageView, depthAttachment.getImageView()));
         //Clear Color value is ignored if Load Op is Not set to Clear
 
-        VkClearValue.Buffer clearValues = VkClearValue.malloc(this.attachmentCount, stack);
+        VkClearValue.Buffer clearValues = VkClearValue.malloc(this.attachmentTypes.length, stack);
 
         clearValues.get(0).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
         clearValues.get(1).depthStencil().set(1.0f, 0);
@@ -279,8 +270,7 @@ public class Framebuffer {
                 .renderArea(renderArea)
                 .framebuffer(this.frameBuffer)
                 .pClearValues(clearValues)
-
-                .clearValueCount(this.attachmentCount);
+                .clearValueCount(this.attachmentTypes.length);
 
         vkCmdBeginRenderPass(commandBuffer, renderingInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
@@ -311,7 +301,10 @@ public class Framebuffer {
     }
 
     public void cleanUp() {
-        vkDestroyFramebuffer(getDevice(), this.frameBuffer, null);
+
+        for (final FramebufferInfo a : frameBuffers) {
+            vkDestroyFramebuffer(getDevice(), a.frameBuffer, null);
+        }
         vkDestroyRenderPass(getDevice(), this.renderPass, null);
 
         if(colorAttachment!=null) this.colorAttachment.free();
@@ -359,13 +352,12 @@ public class Framebuffer {
 
     private long checkForFrameBuffers() {
         for (final FramebufferInfo a : frameBuffers) {
-            if (a.width== framebufferInfo.width && a.height ==framebufferInfo.height) {
-                System.out.println("OK-->!");
+            if (a.width== width && a.height ==this.height) {
                 System.out.println("FrameBuffer-->:"+width+"{-->}"+height);
                 return a.frameBuffer;
             }
         }
         System.out.println("FAIL!");
-        throw new RuntimeException(""); //Not sure best way to handle this rn...
+        return createFramebuffers(this.attachmentTypes); //Not sure best way to handle this rn...
     }
 }
