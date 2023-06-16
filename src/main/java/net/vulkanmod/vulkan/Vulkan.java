@@ -518,15 +518,15 @@ public class Vulkan {
         }
     }
 
-    private static int findSupportedFormat(IntBuffer formatCandidates, int tiling, int features) {
+    private static int findSupportedFormat(int tiling, int features, int... formatCandidates) {
 
         try(MemoryStack stack = stackPush()) {
 
             VkFormatProperties props = VkFormatProperties.callocStack(stack);
 
-            for(int i = 0; i < formatCandidates.capacity(); ++i) {
+            for(int i = 0; i < formatCandidates.length; ++i) {
 
-                int format = formatCandidates.get(i);
+                int format = formatCandidates[i];
 
                 vkGetPhysicalDeviceFormatProperties(physicalDevice, format, props);
 
@@ -544,9 +544,9 @@ public class Vulkan {
 
     public static int findDepthFormat() {
         return findSupportedFormat(
-                stackGet().ints(VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT),
                 VK_IMAGE_TILING_OPTIMAL,
-                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT);
     }
 
     private static void allocateImmediateCmdBuffer() {

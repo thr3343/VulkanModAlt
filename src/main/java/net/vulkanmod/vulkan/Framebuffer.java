@@ -62,9 +62,7 @@ public class Framebuffer {
         COLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
         DEPTH(getDeviceInfo().depthAttachmentOptimal, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-        private final int layout;
-        private final int format;
-        private final int usage;
+        private final int layout, format, usage;
 
         AttachmentTypes(int depthAttachmentOptimal, int depthFormat, int i) {
 
@@ -323,10 +321,10 @@ public class Framebuffer {
 //    public void setDepthFormat(int depthFormat) {
 //        this.depthFormat = depthFormat;
 //    }
-    //attachments don't care about Res, but do care about Format+LoadStoreOps+layouts afaik
+    //attachments don't care about Res, but does care about the number if Images (i.e. Attachments) Format+LoadStoreOps+layouts afaik
     private record imageAttachmentReference(long parentRenderPass, int loadOp, int storeOp, AttachmentTypes attachmentTypes){};
 
-    //framebuffers can use any renderPass and any attachment count + format (as long as the res Matches)
+    //framebuffers can use any renderPass, as long as the renderpass matches the AttachmentImageInfos configuration used to create the framebuffer handle: (i.e.attachment count + format (as long as the res Matches))
     private record FramebufferInfo(int width, int height, long frameBuffer, imageAttachmentReference... attachments){};
     public void recreate(int width, int height) {
         this.width = width;
