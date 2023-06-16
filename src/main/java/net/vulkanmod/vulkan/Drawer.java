@@ -378,7 +378,7 @@ public class Drawer {
 
 
 
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), 10000, //May crash on Linux
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
 
