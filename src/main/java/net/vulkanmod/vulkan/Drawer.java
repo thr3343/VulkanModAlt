@@ -59,7 +59,7 @@ public class Drawer {
     private static int MAX_FRAMES_IN_FLIGHT;
     private ArrayList<Long> imageAvailableSemaphores;
     private ArrayList<Long> renderFinishedSemaphores;
-    private final PointerBuffer frameFences;
+    private PointerBuffer frameFences;
     private final LongBuffer pPresentId;
 
     private Framebuffer boundFramebuffer;
@@ -91,7 +91,6 @@ public class Drawer {
         for (int j = 0; j < Initializer.CONFIG.frameQueueSize; j++) {
             frameBufferPresentIndices.enqueue(j);
         }
-        frameFences = MemoryUtil.memAllocPointer(Initializer.CONFIG.frameQueueSize);
         pPresentId = MemoryUtil.memAllocLong(1);
         device = Vulkan.getDevice();
         MAX_FRAMES_IN_FLIGHT = getSwapChainImages().size();
@@ -333,6 +332,7 @@ public class Drawer {
         imageAvailableSemaphores = new ArrayList<>(frameNum);
         renderFinishedSemaphores = new ArrayList<>(frameNum);
 
+        frameFences = MemoryUtil.memAllocPointer(frameNum);
 
         try(MemoryStack stack = stackPush()) {
 
