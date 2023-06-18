@@ -107,17 +107,21 @@ public class SwapChain {
             createInfo.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
             createInfo.presentMode(presentMode);
             createInfo.clipped(true);
-            long oldSwapChain = getOldSwapChain();
+            long oldSwapChain = swapChain;
+            if(presentMode==VK_PRESENT_MODE_MAILBOX_KHR)
+            {
+               if(!retiredSwapChains.isEmpty()) vkDestroySwapchainKHR(device, retiredSwapChains.removeLong(0), null);
+            }
 
-//            final long oldSwapChain = swapChain;
-            createInfo.oldSwapchain(presentMode==VK_PRESENT_MODE_MAILBOX_KHR?VK_NULL_HANDLE:oldSwapChain);
+            //Nvidia bug: With MAILBOX: SwapChain is considered retired, even if vkCreateSwapchainKHR has not been called yet
+            createInfo.oldSwapchain(presentMode==VK_PRESENT_MODE_MAILBOX_KHR?VK_NULL_HANDLE:swapChain);
 
             LongBuffer pSwapChain = stack.longs(VK_NULL_HANDLE);
 
             final int i1 = vkCreateSwapchainKHR(device, createInfo, null, pSwapChain);
-//            if(i1 != VK_SUCCESS) {
-//                throw new RuntimeException("Failed to create swap chain "+i1);
-//            }
+            if(i1 != VK_SUCCESS) {
+                throw new RuntimeException("Failed to create swap chain "+i1);
+            }
 
 
 
@@ -143,7 +147,7 @@ public class SwapChain {
             if(oldSwapChain != VK_NULL_HANDLE && oldSwapChain!=swapChain) {
                 this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
                 if(presentMode!=VK_PRESENT_MODE_MAILBOX_KHR) vkDestroySwapchainKHR(device, oldSwapChain, null);
-                retiredSwapChains.add(oldSwapChain);
+                else retiredSwapChains.add(oldSwapChain);
             }
 ////                this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
 //               if(presentMode!=VK_PRESENT_MODE_MAILBOX_KHR) vkDestroySwapchainKHR(device, oldSwapChain, null);
@@ -239,9 +243,9 @@ public class SwapChain {
 
     public void cleanUp() {
         VkDevice device = Vulkan.getDevice();
-        System.out.println("Size: "+ reusableSwapChains.size());
-        for (int i = 0; i < reusableSwapChains.size(); i++) {
-            long a = reusableSwapChains.getLong(i);
+        System.out.println("Size: "+ retiredSwapChains.size());
+        for (int i = 0; i < retiredSwapChains.size(); i++) {
+            long a = retiredSwapChains.getLong(i);
             System.out.println(i +" "+a);
             vkDestroySwapchainKHR(device, a, null);
         }
