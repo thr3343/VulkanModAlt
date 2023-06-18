@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.minecraft.util.Mth;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.render.chunk.util.AreaSetQueue;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
@@ -41,8 +40,8 @@ public class SwapChain {
 
     private int[] currentLayout;
     private int swapChainFormat;
-    private final LongArrayList reusableSwapChains =new LongArrayList();
     private final LongArrayList retiredSwapChains = new LongArrayList();
+    private boolean modeChange=false;
 
     public SwapChain() {
 
@@ -108,13 +107,13 @@ public class SwapChain {
             createInfo.presentMode(presentMode);
             createInfo.clipped(true);
             long oldSwapChain = swapChain;
-            if(presentMode==VK_PRESENT_MODE_MAILBOX_KHR)
+            if(!modeChange)
             {
                if(!retiredSwapChains.isEmpty()) vkDestroySwapchainKHR(device, retiredSwapChains.removeLong(0), null);
             }
 
-            //Nvidia bug: With MAILBOX: SwapChain is considered retired, even if vkCreateSwapchainKHR has not been called yet
-            createInfo.oldSwapchain(presentMode==VK_PRESENT_MODE_MAILBOX_KHR?VK_NULL_HANDLE:swapChain);
+            //Nvidia bug: With MAILBOX: if prior SwapChain was created with FIFO, it is considered retired, even if vkCreateSwapchainKHR has not been called yet
+            createInfo.oldSwapchain(!modeChange ? swapChain : VK_NULL_HANDLE);
 
             LongBuffer pSwapChain = stack.longs(VK_NULL_HANDLE);
 
@@ -130,7 +129,7 @@ public class SwapChain {
 //                swapChain=oldSwapChain;
 //                oldSwapChain=VK_NULL_HANDLE;
 //            }
-//            vkGetSwapchainImagesKHR(device, swapChain, imageCount, null);
+//TODO:--->!            vkGetSwapchainImagesKHR(device, swapChain, imageCount, null);
 
             LongBuffer pSwapchainImages = stack.mallocLong(imageCount.get(0));
 
@@ -141,12 +140,10 @@ public class SwapChain {
             for(int i = 0;i < pSwapchainImages.capacity();i++) {
                 swapChainImages.add(pSwapchainImages.get(i));
             }
-            if(swapChain != VK_NULL_HANDLE) {
-                reusableSwapChains.add(swapChain);
-            }
+
             if(oldSwapChain != VK_NULL_HANDLE && oldSwapChain!=swapChain) {
                 this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
-                if(presentMode!=VK_PRESENT_MODE_MAILBOX_KHR) vkDestroySwapchainKHR(device, oldSwapChain, null);
+                if(!modeChange) vkDestroySwapchainKHR(device, oldSwapChain, null);
                 else retiredSwapChains.add(oldSwapChain);
             }
 ////                this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
@@ -162,24 +159,13 @@ public class SwapChain {
             createImageViews(this.swapChainFormat);
 
             currentLayout = new int[this.swapChainImages.size()];
+            
+            modeChange=false;
 
         }
     }
 
-    private long getOldSwapChain() {
-        for (int i = 0; i < reusableSwapChains.size(); i++) {
-            long a = reusableSwapChains.getLong(i);
-            if (a == swapChain) {
-                System.out.println("ReUse Swapchain: !"+a);
-                return reusableSwapChains.removeLong(i);
-            }
-
-        }
-        System.out.println("NulLreuse!");
-        return VK_NULL_HANDLE;
-    }
-
-//    public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout, int frame) {
+    //    public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout, int frame) {
 //        VulkanImage.transitionImageLayout(stack, commandBuffer, this.getImageId(frame), this.fakeFBO.getFormat(), this.currentLayout[frame], newLayout, 1);
 //        this.currentLayout[frame] = newLayout;
 //    }
@@ -389,6 +375,7 @@ public class SwapChain {
     }
 
     public void setVsync(boolean vsync) {
+        this.modeChange=true;
         this.vsync = vsync;
     }
 }
