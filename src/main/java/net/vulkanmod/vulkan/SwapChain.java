@@ -1,9 +1,10 @@
 package net.vulkanmod.vulkan;
 
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.minecraft.util.Mth;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.util.AreaSetQueue;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -40,6 +41,8 @@ public class SwapChain {
 
     private int[] currentLayout;
     private int swapChainFormat;
+    private final LongArrayList reusableSwapChains =new LongArrayList();
+    private final LongArrayList retiredSwapChains = new LongArrayList();
 
     public SwapChain() {
 
@@ -79,9 +82,7 @@ public class SwapChain {
             IntBuffer imageCount = stack.ints(preferredImageCount);
 //            IntBuffer imageCount = stack.ints(Math.max(swapChainSupport.capabilities.minImageCount(), preferredImageCount));
 
-            if(swapChainSupport.capabilities.maxImageCount() > 0 && imageCount.get(0) > swapChainSupport.capabilities.maxImageCount()) {
-                imageCount.put(0, swapChainSupport.capabilities.maxImageCount());
-            }
+
             this.swapChainFormat = surfaceFormat.format();
             this.extent2D = VkExtent2D.create().set(extent);
 
@@ -106,21 +107,26 @@ public class SwapChain {
             createInfo.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
             createInfo.presentMode(presentMode);
             createInfo.clipped(true);
+            long oldSwapChain = getOldSwapChain();
 
-            final long oldSwapChain = swapChain;
-            createInfo.oldSwapchain(oldSwapChain);
+//            final long oldSwapChain = swapChain;
+            createInfo.oldSwapchain(presentMode==VK_PRESENT_MODE_MAILBOX_KHR?VK_NULL_HANDLE:oldSwapChain);
 
             LongBuffer pSwapChain = stack.longs(VK_NULL_HANDLE);
 
-            if(vkCreateSwapchainKHR(device, createInfo, null, pSwapChain) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create swap chain");
-            }
+            final int i1 = vkCreateSwapchainKHR(device, createInfo, null, pSwapChain);
+//            if(i1 != VK_SUCCESS) {
+//                throw new RuntimeException("Failed to create swap chain "+i1);
+//            }
 
 
 
             swapChain = pSwapChain.get(0);
-
-            vkGetSwapchainImagesKHR(device, swapChain, imageCount, null);
+//            if(swapChain==VK_NULL_HANDLE) {
+//                swapChain=oldSwapChain;
+//                oldSwapChain=VK_NULL_HANDLE;
+//            }
+//            vkGetSwapchainImagesKHR(device, swapChain, imageCount, null);
 
             LongBuffer pSwapchainImages = stack.mallocLong(imageCount.get(0));
 
@@ -131,16 +137,42 @@ public class SwapChain {
             for(int i = 0;i < pSwapchainImages.capacity();i++) {
                 swapChainImages.add(pSwapchainImages.get(i));
             }
-            if(oldSwapChain != VK_NULL_HANDLE) {
-                this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
-                vkDestroySwapchainKHR(device, oldSwapChain, null);
-
+            if(swapChain != VK_NULL_HANDLE) {
+                reusableSwapChains.add(swapChain);
             }
+            if(oldSwapChain != VK_NULL_HANDLE && oldSwapChain!=swapChain) {
+                this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
+                if(presentMode!=VK_PRESENT_MODE_MAILBOX_KHR) vkDestroySwapchainKHR(device, oldSwapChain, null);
+                retiredSwapChains.add(oldSwapChain);
+            }
+////                this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
+//               if(presentMode!=VK_PRESENT_MODE_MAILBOX_KHR) vkDestroySwapchainKHR(device, oldSwapChain, null);
+//               else
+//               {
+//                   oldSwapChains.add(oldSwapChain);
+////                   final Drawer instance = Drawer.getInstance();
+////                   instance.vkQueuePresent(stack, stack.ints(instance.oldestFrameIndex));
+//               }
+//
+//            }
             createImageViews(this.swapChainFormat);
 
             currentLayout = new int[this.swapChainImages.size()];
 
         }
+    }
+
+    private long getOldSwapChain() {
+        for (int i = 0; i < reusableSwapChains.size(); i++) {
+            long a = reusableSwapChains.getLong(i);
+            if (a == swapChain) {
+                System.out.println("ReUse Swapchain: !"+a);
+                return reusableSwapChains.removeLong(i);
+            }
+
+        }
+        System.out.println("NulLreuse!");
+        return VK_NULL_HANDLE;
     }
 
 //    public void transitionImageLayout(MemoryStack stack, VkCommandBuffer commandBuffer, int newLayout, int frame) {
@@ -207,8 +239,12 @@ public class SwapChain {
 
     public void cleanUp() {
         VkDevice device = Vulkan.getDevice();
-
-//        framebuffers.forEach(framebuffer -> vkDestroyFramebuffer(device, framebuffer, null));
+        System.out.println("Size: "+ reusableSwapChains.size());
+        for (int i = 0; i < reusableSwapChains.size(); i++) {
+            long a = reusableSwapChains.getLong(i);
+            System.out.println(i +" "+a);
+            vkDestroySwapchainKHR(device, a, null);
+        }
         vkDestroySwapchainKHR(device, this.swapChain, null);
         imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
 
