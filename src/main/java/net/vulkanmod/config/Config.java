@@ -12,7 +12,7 @@ import java.util.Collections;
 
 public class Config {
 
-    public int frameQueueSize = 2;
+    public final int frameQueueSize = 4;
     public VideoResolution resolution = VideoResolution.getFirstAvailable();
     public boolean windowedFullscreen = false;
     public boolean guiOptimizations = false;

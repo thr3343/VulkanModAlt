@@ -98,7 +98,7 @@ public class SwapChain {
             createInfo.imageColorSpace(surfaceFormat.colorSpace());
             createInfo.imageExtent(extent);
             createInfo.imageArrayLayers(1);
-            createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+            createInfo.imageUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
             createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
 
@@ -107,7 +107,8 @@ public class SwapChain {
             createInfo.presentMode(presentMode);
             createInfo.clipped(true);
 
-            createInfo.oldSwapchain(swapChain);
+            final long oldSwapChain = swapChain;
+            createInfo.oldSwapchain(oldSwapChain);
 
             LongBuffer pSwapChain = stack.longs(VK_NULL_HANDLE);
 
@@ -115,10 +116,7 @@ public class SwapChain {
                 throw new RuntimeException("Failed to create swap chain");
             }
 
-            if(swapChain != VK_NULL_HANDLE) {
-                this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
-                vkDestroySwapchainKHR(device, swapChain, null);
-            }
+
 
             swapChain = pSwapChain.get(0);
 
@@ -133,10 +131,15 @@ public class SwapChain {
             for(int i = 0;i < pSwapchainImages.capacity();i++) {
                 swapChainImages.add(pSwapchainImages.get(i));
             }
+            if(oldSwapChain != VK_NULL_HANDLE) {
+                this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
+                vkDestroySwapchainKHR(device, oldSwapChain, null);
 
+            }
             createImageViews(this.swapChainFormat);
 
             currentLayout = new int[this.swapChainImages.size()];
+
         }
     }
 
@@ -295,7 +298,7 @@ public class SwapChain {
     }
 
     private int chooseSwapPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
 
         //fifo mode is the only mode that has to be supported
         if(requestedMode == VK_PRESENT_MODE_FIFO_KHR) return VK_PRESENT_MODE_FIFO_KHR;

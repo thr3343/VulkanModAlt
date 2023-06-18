@@ -88,6 +88,7 @@ public class Drawer {
     }
 
     public Drawer(int VBOSize, int UBOSize) {
+        frameBufferPresentIndices.clear();
         for (int j = 0; j < Initializer.CONFIG.frameQueueSize; j++) {
             frameBufferPresentIndices.enqueue(j);
         }
