@@ -34,14 +34,14 @@ public class SwapChain {
     private VkExtent2D extent2D;
     private List<Long> imageViews;
     public static boolean isBGRAformat;
-    private boolean vsync = false;
+    private boolean vsync;
 
     private final int framesNum;
 
     private int[] currentLayout;
     private int swapChainFormat;
     private final LongArrayList retiredSwapChains = new LongArrayList();
-    private boolean modeChange=false;
+    private boolean modeChange;
 
     public SwapChain() {
 
@@ -107,7 +107,7 @@ public class SwapChain {
             createInfo.presentMode(presentMode);
             createInfo.clipped(true);
             long oldSwapChain = swapChain;
-            if(!modeChange)
+            if(modeChange)
             {
                if(!retiredSwapChains.isEmpty()) vkDestroySwapchainKHR(device, retiredSwapChains.removeLong(0), null);
             }
