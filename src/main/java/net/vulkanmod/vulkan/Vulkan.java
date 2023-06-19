@@ -11,6 +11,7 @@ import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.system.Library;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
 import org.lwjgl.util.vma.VmaVulkanFunctions;

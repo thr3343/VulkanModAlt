@@ -45,7 +45,7 @@ public class SwapChain {
 
     public SwapChain() {
 
-        this.framesNum = Initializer.CONFIG.frameQueueSize;
+        this.framesNum = Initializer.CONFIG.frameQueueSize-1;
         createSwapChain(this.framesNum);
         MemoryManager.createInstance(this.swapChainImages.size());
 
@@ -107,10 +107,7 @@ public class SwapChain {
             createInfo.presentMode(presentMode);
             createInfo.clipped(true);
             long oldSwapChain = swapChain;
-            if(modeChange)
-            {
-               if(!retiredSwapChains.isEmpty()) vkDestroySwapchainKHR(device, retiredSwapChains.removeLong(0), null);
-            }
+
 
             //Nvidia bug: With MAILBOX: if prior SwapChain was created with FIFO, it is considered retired, even if vkCreateSwapchainKHR has not been called yet
             createInfo.oldSwapchain(!modeChange ? swapChain : VK_NULL_HANDLE);
@@ -143,8 +140,7 @@ public class SwapChain {
 
             if(oldSwapChain != VK_NULL_HANDLE && oldSwapChain!=swapChain) {
                 this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
-                if(!modeChange) vkDestroySwapchainKHR(device, oldSwapChain, null);
-                else retiredSwapChains.add(oldSwapChain);
+//                if(modeChange) retiredSwapChains.add(oldSwapChain);
             }
 ////                this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
 //               if(presentMode!=VK_PRESENT_MODE_MAILBOX_KHR) vkDestroySwapchainKHR(device, oldSwapChain, null);
@@ -324,19 +320,19 @@ public class SwapChain {
     }
 
     private int chooseSwapPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
-
-        //fifo mode is the only mode that has to be supported
-        if(requestedMode == VK_PRESENT_MODE_FIFO_KHR) return VK_PRESENT_MODE_FIFO_KHR;
-
-        for(int i = 0;i < availablePresentModes.capacity();i++) {
-            if(availablePresentModes.get(i) == requestedMode) {
-                return requestedMode;
-            }
-        }
-
-        Initializer.LOGGER.warn("Requested mode not supported: using fallback VK_PRESENT_MODE_FIFO_KHR");
-        return VK_PRESENT_MODE_FIFO_KHR;
+        return vsync ? VK_PRESENT_MODE_MAILBOX_KHR|VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+//
+//        //fifo mode is the only mode that has to be supported
+//        if(requestedMode == VK_PRESENT_MODE_FIFO_KHR) return VK_PRESENT_MODE_FIFO_KHR;
+//
+//        for(int i = 0;i < availablePresentModes.capacity();i++) {
+//            if(availablePresentModes.get(i) == requestedMode) {
+//                return requestedMode;
+//            }
+//        }
+//
+//        Initializer.LOGGER.warn("Requested mode not supported: using fallback VK_PRESENT_MODE_FIFO_KHR");
+//        return VK_PRESENT_MODE_FIFO_KHR;
 
     }
 

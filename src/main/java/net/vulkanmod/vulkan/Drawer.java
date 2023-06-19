@@ -40,7 +40,7 @@ public class Drawer {
     public static boolean vsync;
     private static Drawer INSTANCE;
 
-    final IntArrayFIFOQueue frameBufferPresentIndices = new IntArrayFIFOQueue(MAX_FRAMES_IN_FLIGHT);
+    final IntArrayFIFOQueue frameBufferPresentIndices = new IntArrayFIFOQueue(Initializer.CONFIG.frameQueueSize-1);
     private int oldestFrameIndex = 0;
 
     public static void initDrawer() { INSTANCE = new Drawer(); }
@@ -89,7 +89,7 @@ public class Drawer {
 
     public Drawer(int VBOSize, int UBOSize) {
         frameBufferPresentIndices.clear();
-        for (int j = 0; j < Initializer.CONFIG.frameQueueSize; j++) {
+        for (int j = 0; j < Initializer.CONFIG.frameQueueSize-1; j++) {
             frameBufferPresentIndices.enqueue(j);
         }
         pPresentId = MemoryUtil.memAllocLong(1);
