@@ -11,8 +11,13 @@ import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.Library;
+
+import org.lwjgl.glfw.GLFWNativeWayland;
+import org.lwjgl.glfw.GLFWNativeWin32;
+import org.lwjgl.glfw.GLFWNativeX11;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.windows.WinBase;
 import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
 import org.lwjgl.util.vma.VmaVulkanFunctions;
 import org.lwjgl.vulkan.*;
@@ -27,7 +32,6 @@ import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
 import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
 import static net.vulkanmod.vulkan.queue.Queue.getQueueFamilies;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
-import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -124,6 +128,7 @@ public class Vulkan {
         return allocator;
     }
 
+    public static String surfaceExt;
     public static long window;
 
     private static VkInstance instance;
@@ -312,13 +317,50 @@ public class Vulkan {
         try(MemoryStack stack = stackPush()) {
 
             LongBuffer pSurface = stack.longs(VK_NULL_HANDLE);
-
-            if(glfwCreateWindowSurface(instance, window, null, pSurface) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create window surface");
+            switch (surfaceExt)
+            {
+                case "VK_KHR_win32_surface" -> KHRWin32Handle(handle, stack, pSurface);
+                case "VK_KHR_wayland_surface" -> KHRWaylandHandle(handle, stack, pSurface);
+                case "VK_KHR_xlib_surface" -> KHRX11Handle(handle, stack, pSurface);
+                default -> throw new IllegalStateException("Unrecognised Platform-Surface Specific Ext: "+surfaceExt);
             }
 
             surface = pSurface.get(0);
         }
+    }
+
+    private static void KHRX11Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
+        VkXlibSurfaceCreateInfoKHR createSurfaceInfo = VkXlibSurfaceCreateInfoKHR.calloc(stack)
+                .sType(KHRXlibSurface.VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR)
+                .pNext(VK_NULL_HANDLE)
+                .flags(0)
+                .dpy(GLFWNativeX11.glfwGetX11Display())
+                .window(GLFWNativeX11.glfwGetX11Window(handle));
+
+
+        KHRXlibSurface.vkCreateXlibSurfaceKHR( instance, createSurfaceInfo, null, pSurface);
+    }
+    private static void KHRWaylandHandle(long handle, MemoryStack stack, LongBuffer pSurface) {
+        VkWaylandSurfaceCreateInfoKHR createSurfaceInfo = VkWaylandSurfaceCreateInfoKHR.calloc(stack)
+                .sType(KHRWaylandSurface.VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR)
+                .pNext(VK_NULL_HANDLE)
+                .flags(0)
+                .surface(GLFWNativeWayland.glfwGetWaylandWindow(handle))
+                .display(GLFWNativeWayland.glfwGetWaylandDisplay());
+
+
+        KHRWaylandSurface.vkCreateWaylandSurfaceKHR( instance, createSurfaceInfo, null, pSurface);
+    }
+
+    private static void KHRWin32Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
+        VkWin32SurfaceCreateInfoKHR createSurfaceInfo = VkWin32SurfaceCreateInfoKHR.calloc(stack)
+                .sType(KHRWin32Surface.VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR)
+                .pNext(VK_NULL_HANDLE)
+                .flags(0)
+                .hinstance(WinBase.nGetModuleHandle(NULL))
+                .hwnd(GLFWNativeWin32.glfwGetWin32Window(handle));
+
+        KHRWin32Surface.vkCreateWin32SurfaceKHR( instance, createSurfaceInfo, null, pSurface);
     }
 
     private static void pickPhysicalDevice() {
@@ -603,6 +645,8 @@ public class Vulkan {
     private static PointerBuffer getRequiredExtensions() {
 
         PointerBuffer glfwExtensions = glfwGetRequiredInstanceExtensions();
+
+        surfaceExt = MemoryUtil.memUTF8(glfwExtensions.get(1));
 
         if(ENABLE_VALIDATION_LAYERS) {
 
