@@ -29,7 +29,7 @@ public class VulkanImage {
 
     private long id;
     private long allocation;
-    private long imageView;
+    public long imageView;
 
     private final Byte2LongMap samplers = new Byte2LongArrayMap();
     private Sampler textureSampler;
@@ -43,7 +43,7 @@ public class VulkanImage {
 
     private int currentLayout;
 
-    private VulkanImage(int format, int mipLevels, int width, int height, int usage, int formatSize) {
+    public VulkanImage(int format, int mipLevels, int width, int height, int usage, int formatSize) {
         this.mipLevels = mipLevels;
         this.width = width;
         this.height = height;
@@ -85,7 +85,7 @@ public class VulkanImage {
         }
     }
 
-    private void createImage(int mipLevels, int width, int height, int format, int usage) {
+    public void createImage(int mipLevels, int width, int height, int format, int usage) {
 
         try(MemoryStack stack = stackPush()) {
 

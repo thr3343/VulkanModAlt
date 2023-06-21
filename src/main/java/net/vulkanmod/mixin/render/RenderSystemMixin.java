@@ -157,7 +157,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void viewport(int x, int y, int width, int height) {
-        Drawer.setViewport(x, y, width, height);
+//        Drawer.setViewport(x, y, width, height);
     }
 
     /**
@@ -165,7 +165,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void enableScissor(int x, int y, int width, int height) {
-        Drawer.setScissor(x, y, width, height);
+//        Drawer.setScissor(x, y, width, height);
     }
 
     /**

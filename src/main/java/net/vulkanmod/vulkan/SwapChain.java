@@ -49,7 +49,7 @@ public class SwapChain {
         createSwapChain(this.framesNum);
         MemoryManager.createInstance(this.swapChainImages.size());
 
-        this.fakeFBO=new Framebuffer(this.swapChainFormat, extent2D, Framebuffer.AttachmentTypes.COLOR, Framebuffer.AttachmentTypes.DEPTH);
+        this.fakeFBO=new Framebuffer(this.swapChainFormat, extent2D.width(), extent2D.height(), true, Framebuffer.AttachmentTypes.COLOR, Framebuffer.AttachmentTypes.DEPTH);
 
 
     }
@@ -110,7 +110,7 @@ public class SwapChain {
 
 
             //Nvidia bug: With MAILBOX: if prior SwapChain was created with FIFO, it is considered retired, even if vkCreateSwapchainKHR has not been called yet
-            createInfo.oldSwapchain(!modeChange ? swapChain : VK_NULL_HANDLE);
+            createInfo.oldSwapchain(swapChain);
 
             LongBuffer pSwapChain = stack.longs(VK_NULL_HANDLE);
 

@@ -4,12 +4,13 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
 
+import static net.vulkanmod.vulkan.Framebuffer.AttachmentTypes.COLOR;
 import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.texture.VulkanImage.createImageView;
 import static org.lwjgl.system.Checks.CHECKS;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.JNI.callPPPPI;
@@ -34,9 +35,10 @@ public class Framebuffer {
 
 
 //    private List<VulkanImage> images;
-    private VulkanImage colorAttachment;
+    private final VulkanImage colorAttachment;
     protected VulkanImage depthAttachment;
     private final imageAttachmentReference[] attachments;
+    private final boolean isSwapChainMode;
     private final AttachmentTypes[] attachmentTypes;
 
 
@@ -75,7 +77,7 @@ public class Framebuffer {
     public Framebuffer(VulkanImage colorAttachment, AttachmentTypes... attachmentTypes) {
         this.width = colorAttachment.width;
         this.height = colorAttachment.height;
-
+        this.isSwapChainMode = false;
         this.colorAttachment = colorAttachment;
         this.format=colorAttachment.format;
         this.attachmentTypes = attachmentTypes;
@@ -88,16 +90,21 @@ public class Framebuffer {
         this.frameBuffer=createFramebuffers(this.attachmentTypes);
     }
 
-    protected Framebuffer(int swapChainFormat, VkExtent2D extent2D, AttachmentTypes... attachmentTypes)
+    protected Framebuffer(int swapChainFormat, int width, int height, boolean isSwapChain, AttachmentTypes... attachmentTypes)
     {
-        this.width = extent2D.width();
-        this.height = extent2D.height();
+        this.width = width;
+        this.height = height;
         this.format=swapChainFormat;
+        this.isSwapChainMode = isSwapChain;
         this.attachmentTypes = attachmentTypes;
 
         attachments = new imageAttachmentReference[attachmentTypes.length];
         this.renderPass=createRenderPass(attachmentTypes);
-
+        this.colorAttachment = (isSwapChain) ? null : new VulkanImage(this.format, 1, width, height, COLOR.usage, 0);
+       if(!isSwapChain) {
+           colorAttachment.createImage(1, width, height, format,  COLOR.usage);
+           colorAttachment.imageView = createImageView(colorAttachment.getId(), format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+       }
         createDepthResources(false);
         this.frameBuffer=createFramebuffers(attachmentTypes);
     }
@@ -248,14 +255,14 @@ public class Framebuffer {
 
     }
     //TODO: Start Multiple Framebuffers at the same time...
-    public void beginRendering(VkCommandBuffer commandBuffer, MemoryStack stack, long colorAttachmentImageView) {
+    public void beginRendering(VkCommandBuffer commandBuffer, MemoryStack stack) {
         VkRect2D renderArea = VkRect2D.malloc(stack);
         renderArea.offset().set(0, 0);
         renderArea.extent().set(this.width, this.height);
 
         VkRenderPassAttachmentBeginInfo vkRenderPassAttachmentBeginInfo = VkRenderPassAttachmentBeginInfo.calloc(stack)
                 .sType$Default()
-                .pAttachments(stack.longs(colorAttachmentImageView, depthAttachment.getImageView()));
+                .pAttachments(stack.longs(colorAttachment.getImageView(), depthAttachment.getImageView()));
         //Clear Color value is ignored if Load Op is Not set to Clear
 
         VkClearValue.Buffer clearValues = VkClearValue.malloc(this.attachmentTypes.length, stack);

@@ -215,7 +215,7 @@ public class Pipeline {
             pipelineInfo.pColorBlendState(colorBlending);
             pipelineInfo.pDynamicState(dynamicStates);
             pipelineInfo.layout(pipelineLayout);
-            pipelineInfo.renderPass(Vulkan.getSwapChain().getFramebuffer().renderPass);
+            pipelineInfo.renderPass(Drawer.tstFrameBuffer2.renderPass); //Can render to a different renderPass, even if !begin
 //            pipelineInfo.subpass(0);
             pipelineInfo.basePipelineHandle(VK_NULL_HANDLE);
             pipelineInfo.basePipelineIndex(-1);

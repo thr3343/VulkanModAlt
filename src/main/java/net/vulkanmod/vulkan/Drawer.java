@@ -27,7 +27,9 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.*;
 
+import static net.vulkanmod.vulkan.Framebuffer.*;
 import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -41,6 +43,7 @@ public class Drawer {
     private static Drawer INSTANCE;
 
     final IntArrayFIFOQueue frameBufferPresentIndices = new IntArrayFIFOQueue(Initializer.CONFIG.frameQueueSize-1);
+    public static final Framebuffer tstFrameBuffer2;
     private int oldestFrameIndex = 0;
 
     public static void initDrawer() { INSTANCE = new Drawer(); }
@@ -87,7 +90,15 @@ public class Drawer {
         this(2000000, 200000);
     }
 
+    static
+    {
+        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, 15360, 8640, false, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
+
+    }
     public Drawer(int VBOSize, int UBOSize) {
+
+
+
         frameBufferPresentIndices.clear();
         for (int j = 0; j < Initializer.CONFIG.frameQueueSize-1; j++) {
             frameBufferPresentIndices.enqueue(j);
@@ -224,10 +235,12 @@ public class Drawer {
             }
 
 
-            Framebuffer framebuffer = getSwapChain().fakeFBO;
+            Framebuffer framebuffer = tstFrameBuffer2;
 
-            framebuffer.beginRendering(commandBuffer, stack, getSwapChain().getImageView(currentFrame));
+            framebuffer.beginRendering(commandBuffer, stack);
             this.boundFramebuffer = framebuffer;
+
+//            tstFrameBuffer2.beginRendering(commandBuffer, stack);
 
 //            renderPassInfo.framebuffer(getSwapChainFramebuffers().get(currentFrame));
 //
@@ -270,7 +283,7 @@ public class Drawer {
             this.endRendering();
 //--->
             try (MemoryStack stack = stackPush()) {
-                framebuffer.beginRendering(commandBuffers.get(currentFrame), stack, framebuffer.getColorAttachment().getImageView());
+                framebuffer.beginRendering(commandBuffers.get(currentFrame), stack);
             }
 
             this.boundFramebuffer = framebuffer;
