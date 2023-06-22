@@ -24,7 +24,7 @@ public class GraphicsQueue extends Queue {
     private static CommandPool.CommandBuffer currentCmdBuffer;
 
     protected GraphicsQueue() {
-        this.commandPool = new CommandPool(getQueueFamilies().graphicsFamily);
+        this.commandPool = new CommandPool(QueueFamilyIndices.graphicsFamily);
     }
 
     public void startRecording() {

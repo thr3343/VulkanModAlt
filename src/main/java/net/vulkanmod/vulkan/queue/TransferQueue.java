@@ -25,7 +25,7 @@ public class TransferQueue extends Queue {
     }
 
     protected TransferQueue() {
-        commandPool = new CommandPool(getQueueFamilies().transferFamily);
+        commandPool = new CommandPool(QueueFamilyIndices.transferFamily);
     }
 
     public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {

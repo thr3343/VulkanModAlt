@@ -95,11 +95,9 @@ public class SwapChain extends Framebuffer {
             createInfo.imageArrayLayers(1);
             createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
-            Queue.QueueFamilyIndices indices = Queue.getQueueFamilies();
-
-            if(!indices.graphicsFamily.equals(indices.presentFamily)) {
+            if(Queue.QueueFamilyIndices.graphicsFamily != Queue.QueueFamilyIndices.presentFamily) {
                 createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
-                createInfo.pQueueFamilyIndices(stack.ints(indices.graphicsFamily, indices.presentFamily));
+                createInfo.pQueueFamilyIndices(stack.ints(Queue.QueueFamilyIndices.graphicsFamily, Queue.QueueFamilyIndices.presentFamily));
             } else {
                 createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             }

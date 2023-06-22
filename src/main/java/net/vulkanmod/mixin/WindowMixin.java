@@ -3,15 +3,20 @@ package net.vulkanmod.mixin;
 import com.mojang.blaze3d.platform.*;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
+import net.minecraft.server.packs.resources.IoSupplier;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.config.Options;
 import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
+import org.jetbrains.annotations.Nullable;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GLCapabilities;
+import org.lwjgl.stb.STBImage;
+import org.lwjgl.system.MemoryStack;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,6 +26,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -45,6 +55,8 @@ public abstract class WindowMixin {
     @Shadow private int width;
     @Shadow private int height;
 
+    @Shadow @Nullable protected abstract ByteBuffer readIconPixels(IoSupplier<InputStream> ioSupplier, IntBuffer intBuffer, IntBuffer intBuffer2, IntBuffer intBuffer3) throws IOException;
+
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V"))
     private void redirect(int hint, int value) { }
 
@@ -64,6 +76,16 @@ public abstract class WindowMixin {
     @Inject(method = "<init>", at = @At(value = "RETURN"))
     private void getHandle(WindowEventHandler windowEventHandler, ScreenManager screenManager, DisplayData displayData, String string, String string2, CallbackInfo ci) {
         VRenderSystem.setWindow(this.window);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    public void setIcon(IoSupplier<InputStream> ioSupplier, IoSupplier<InputStream> ioSupplier2) {
+
+
     }
 
     /**
