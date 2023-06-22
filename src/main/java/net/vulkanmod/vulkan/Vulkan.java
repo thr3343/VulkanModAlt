@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan;
 
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
@@ -8,12 +9,14 @@ import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWNativeWayland;
 import org.lwjgl.glfw.GLFWNativeWin32;
 import org.lwjgl.glfw.GLFWNativeX11;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.windows.WinBase;
 import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
 import org.lwjgl.util.vma.VmaVulkanFunctions;
@@ -28,6 +31,9 @@ import static java.util.stream.Collectors.toSet;
 
 import static net.vulkanmod.vulkan.queue.Queues.*;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
+import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
+import static org.lwjgl.glfw.GLFW.*;
+
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -125,8 +131,7 @@ public class Vulkan {
     public static long getAllocator() {
         return allocator;
     }
-
-    public static String surfaceExt;
+    public static final String surfaceExt = getSurfaceKhr();
     public static long window;
 
     private static VkInstance instance;
@@ -254,7 +259,31 @@ public class Vulkan {
             createInfo.sType(VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO);
             createInfo.pApplicationInfo(appInfo);
             // enabledExtensionCount is implicitly set when you call ppEnabledExtensionNames
-            createInfo.ppEnabledExtensionNames(getRequiredExtensions());
+            PointerBuffer result;
+            System.out.println("Selecting Platform (Via GLFW): "+ getPlat());
+
+            PointerBuffer glfwExtensions = glfwGetRequiredInstanceExtensions();
+
+
+
+            glfwExtensions.put(1, stack.UTF8(surfaceExt));
+
+            if(ENABLE_VALIDATION_LAYERS) {
+
+                MemoryStack stack1 = stackGet();
+
+                PointerBuffer extensions = stack1.mallocPointer(glfwExtensions.capacity() + 1);
+
+                extensions.put(glfwExtensions);
+                extensions.put(stack1.UTF8(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
+
+                // Rewind the buffer before returning it to reset its position back to 0
+                result = extensions.rewind();
+            } else {
+                result = glfwExtensions;
+            }
+
+            createInfo.ppEnabledExtensionNames(result);
 
             if(ENABLE_VALIDATION_LAYERS) {
 
@@ -274,6 +303,26 @@ public class Vulkan {
 
             instance = new VkInstance(instancePtr.get(0), createInfo);
         }
+    }
+
+    @NotNull
+    private static String getSurfaceKhr() {
+        return switch (VideoResolution.activePlat)
+        {
+            case GLFW_PLATFORM_WIN32 -> "VK_KHR_win32_surface";
+//            case GLFW_PLATFORM_COCOA -> KHR
+            case GLFW_PLATFORM_WAYLAND -> "VK_KHR_wayland_surface";
+            default -> throw new IllegalStateException("Unexpected value: " + glfwGetPlatform());
+        };
+    }
+
+    private static String getPlat() {
+        return switch (VideoResolution.activePlat)
+        {
+                    case GLFW_PLATFORM_WIN32 -> "GLFW_PLATFORM_WIN32";
+                    case GLFW_PLATFORM_WAYLAND -> "GLFW_PLATFORM_WAYLAND";
+                    default -> throw new IllegalStateException("Unexpected value: " + glfwGetPlatform());
+        };
     }
 
     private static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo) {
@@ -313,13 +362,14 @@ public class Vulkan {
         try(MemoryStack stack = stackPush()) {
 
             LongBuffer pSurface = stack.longs(VK_NULL_HANDLE);
-            switch (surfaceExt)
+
+            boolean isSupported = switch (surfaceExt)
             {
                 case "VK_KHR_win32_surface" -> KHRWin32Handle(handle, stack, pSurface);
                 case "VK_KHR_wayland_surface" -> KHRWaylandHandle(handle, stack, pSurface);
-//                case "VK_KHR_xlib_surface" -> KHRX11Handle(handle, stack, pSurface);
-                default -> throw new IllegalStateException("Unrecognised Platform-Surface Specific Ext: "+surfaceExt);
-            }
+                default -> throw new IllegalStateException("Unrecognised Platform: "+getPlat());
+            };
+            if(!isSupported) throw new RuntimeException("Unable to Use Platform: "+getPlat()+" Not Supported!");
 
             surface = pSurface.get(0);
         }
@@ -345,6 +395,7 @@ public class Vulkan {
                     .pNext(VK_NULL_HANDLE)
                     .flags(0)
                     .surface(GLFWNativeWayland.glfwGetWaylandWindow(handle))
+
                     .display(wlDisplay);
 
 
@@ -358,6 +409,7 @@ public class Vulkan {
 
     private static boolean KHRWin32Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
         boolean Supported = KHRWin32Surface.vkGetPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, QueueFamilyIndices.graphicsFamily);
+
         if(Supported) {
             VkWin32SurfaceCreateInfoKHR createSurfaceInfo = VkWin32SurfaceCreateInfoKHR.calloc(stack)
                     .sType(KHRWin32Surface.VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR)
@@ -365,6 +417,7 @@ public class Vulkan {
                     .flags(0)
                     .hinstance(WinBase.nGetModuleHandle(NULL))
                     .hwnd(GLFWNativeWin32.glfwGetWin32Window(handle));
+
 
             KHRWin32Surface.vkCreateWin32SurfaceKHR(instance, createSurfaceInfo, null, pSurface);
         }
@@ -440,6 +493,7 @@ public class Vulkan {
 
             int[] uniqueQueueFamilies = QueueFamilyIndices.unique();
 
+
             VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.callocStack(uniqueQueueFamilies.length, stack);
 
             for(int i = 0;i < uniqueQueueFamilies.length;i++) {
@@ -507,7 +561,6 @@ public class Vulkan {
             }
 
             device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, vkVer);
-
 
         }
     }
@@ -618,29 +671,9 @@ public class Vulkan {
 //
 //    }
 
-    private static PointerBuffer getRequiredExtensions() {
-
-        PointerBuffer glfwExtensions = glfwGetRequiredInstanceExtensions();
-
-        surfaceExt = MemoryUtil.memUTF8(glfwExtensions.get(1));
-
-        if(ENABLE_VALIDATION_LAYERS) {
-
-            MemoryStack stack = stackGet();
-
-            PointerBuffer extensions = stack.mallocPointer(glfwExtensions.capacity() + 1);
-
-            extensions.put(glfwExtensions);
-            extensions.put(stack.UTF8(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
-
-            // Rewind the buffer before returning it to reset its position back to 0
-            return extensions.rewind();
-        }
-
-        return glfwExtensions;
-    }
 
     private static boolean isDeviceSuitable(VkPhysicalDevice device) {
+
 
         boolean extensionsSupported = checkDeviceExtensionSupport(device);
 //        boolean swapChainAdequate = false;
@@ -661,6 +694,7 @@ public class Vulkan {
 
 
         return QueueFamilyIndices.findQueueFamilies(device) && extensionsSupported;
+
     }
 
     private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device) {
