@@ -307,7 +307,7 @@ public class Vulkan {
 
     @NotNull
     private static String getSurfaceKhr() {
-        return switch (VideoResolution.activePlat)
+        return switch (VideoResolution.getActivePlat())
         {
             case GLFW_PLATFORM_WIN32 -> "VK_KHR_win32_surface";
 //            case GLFW_PLATFORM_COCOA -> KHR
@@ -317,7 +317,7 @@ public class Vulkan {
     }
 
     private static String getPlat() {
-        return switch (VideoResolution.activePlat)
+        return switch (VideoResolution.getActivePlat())
         {
                     case GLFW_PLATFORM_WIN32 -> "GLFW_PLATFORM_WIN32";
                     case GLFW_PLATFORM_WAYLAND -> "GLFW_PLATFORM_WAYLAND";
