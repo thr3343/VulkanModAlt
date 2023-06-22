@@ -350,7 +350,7 @@ public class Vulkan {
                 case "VK_KHR_wayland_surface" -> KHRWaylandHandle(handle, stack, pSurface);
                 default -> throw new IllegalStateException("Unrecognised Platform: "+getPlat());
             };
-            if(!isSupported) throw new RuntimeException("Unable to Use Platform: "+getPlat()+" Not Supported!");
+            if(!isSupported) throw new RuntimeException("Unable to Use Platform: "+getPlat()+" Presentation Not Supported!");
 
             surface = pSurface.get(0);
         }
@@ -676,7 +676,7 @@ public class Vulkan {
 
     private static boolean isDeviceSuitable(VkPhysicalDevice device) {
 
-        Queue.QueueFamilyIndices.findQueueFamilies(device);
+//        Queue.QueueFamilyIndices.findQueueFamilies(device);
 
         boolean extensionsSupported = checkDeviceExtensionSupport(device);
 //        boolean swapChainAdequate = false;
@@ -695,7 +695,7 @@ public class Vulkan {
             anisotropicFilterSuppoted = supportedFeatures.samplerAnisotropy();
         }
 
-        return Queue.QueueFamilyIndices.isSuitable() && extensionsSupported;
+        return Queue.QueueFamilyIndices.findQueueFamilies(device) && extensionsSupported;
     }
 
     private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device) {

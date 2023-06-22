@@ -47,7 +47,7 @@ public abstract class Queue {
         public static int transferFamily = -1;
         public static int computeFamily = -1;
 
-        public static void findQueueFamilies(VkPhysicalDevice device) {
+        public static boolean findQueueFamilies(VkPhysicalDevice device) {
 
 
             try(MemoryStack stack = stackPush()) {
@@ -136,6 +136,7 @@ public abstract class Queue {
                     throw new RuntimeException("Unable to find queue family with compute support.");
 
             }
+            return isSuitable();
         }
 
         public static boolean isComplete() {
