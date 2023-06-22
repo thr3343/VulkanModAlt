@@ -368,15 +368,15 @@ public class Vulkan {
 //    }
     private static boolean KHRWaylandHandle(long handle, MemoryStack stack, LongBuffer pSurface) {
 
-        final long value = GLFWNativeWayland.glfwGetWaylandDisplay();
-        boolean Supported = KHRWaylandSurface.vkGetPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice, Queue.QueueFamilyIndices.presentFamily, value);
+        final long wlDisplay = GLFWNativeWayland.glfwGetWaylandDisplay();
+        boolean Supported = KHRWaylandSurface.vkGetPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice, Queue.QueueFamilyIndices.presentFamily, wlDisplay);
         if(Supported) {
             VkWaylandSurfaceCreateInfoKHR createSurfaceInfo = VkWaylandSurfaceCreateInfoKHR.calloc(stack)
                     .sType(KHRWaylandSurface.VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR)
                     .pNext(VK_NULL_HANDLE)
                     .flags(0)
                     .surface(GLFWNativeWayland.glfwGetWaylandWindow(handle))
-                    .display(value);
+                    .display(wlDisplay);
 
 
             KHRWaylandSurface.vkCreateWaylandSurfaceKHR(instance, createSurfaceInfo, null, pSurface);
