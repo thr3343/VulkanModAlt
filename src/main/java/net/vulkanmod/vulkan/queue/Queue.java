@@ -43,6 +43,7 @@ public abstract class Queue {
                this.Queue = new VkQueue(pQueue.get(0), device);
            }
 
+
         }
 
         public CommandPool.CommandBuffer beginCommands() {
@@ -75,6 +76,7 @@ public abstract class Queue {
 
                 return commandBuffer.fence;
             }
+
         }
 
 //        public void uploadBufferImmediate(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
