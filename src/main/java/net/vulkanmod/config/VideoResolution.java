@@ -16,7 +16,7 @@ public class VideoResolution {
             GLFW_PLATFORM_WIN32  ,
             GLFW_PLATFORM_WAYLAND,
             GLFW_PLATFORM_X11};
-    public static final int activePlat = getSupportedPlat();
+    private static final int activePlat = getSupportedPlat();
     private static VideoResolution[] videoResolutions;
 
     int width;
@@ -77,6 +77,8 @@ public class VideoResolution {
         }
         throw new RuntimeException("No Supported Platforms Present!");
     }
+
+    public static int getActivePlat() { return activePlat; }
 
     public static VideoResolution[] getVideoResolutions() {
         return videoResolutions;
