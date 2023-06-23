@@ -378,7 +378,7 @@ public class Drawer {
 
 
 
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), 10000,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
 
@@ -392,7 +392,7 @@ public class Drawer {
             frameBufferPresentIndices.enqueueFirst(pImageIndex.get(0));
             oldestFrameIndex = frameBufferPresentIndices.dequeueInt();
 
-//            KHRPresentWait.vkWaitForPresentKHR(device, getSwapChain().getId(), pPresentId.get(0), 10000);
+            KHRPresentWait.vkWaitForPresentKHR(device, getSwapChain().getId(), pPresentId.get(0), 10000);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -414,10 +414,13 @@ public class Drawer {
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 
-
+            VkPresentIdKHR vkPresentIdKHR = VkPresentIdKHR.calloc(stack)
+                    .sType$Default()
+                    .swapchainCount(1)
+                    .pPresentIds(pPresentId);
             VkPresentInfoKHR presentInfo = VkPresentInfoKHR.callocStack(stack)
                     .sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR)
-//                    .pNext(vkPresentIdKHR)
+                    .pNext(vkPresentIdKHR)
                     .pWaitSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)))
                     .swapchainCount(1)
                     .pSwapchains(stack.longs(Vulkan.getSwapChain().getId()))
@@ -442,7 +445,7 @@ public class Drawer {
 //            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
 //        }
 
-        vkDeviceWaitIdle(device);
+        KHRPresentWait.vkWaitForPresentKHR(device, getSwapChain().getId(), pPresentId.get(0), 10000);
 
         for(int i = 0; i < getSwapChainImages().size(); ++i) {
             vkDestroyFence(device, frameFences.get(i), null);
