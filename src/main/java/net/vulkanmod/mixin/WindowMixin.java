@@ -3,6 +3,7 @@ package net.vulkanmod.mixin;
 import com.mojang.blaze3d.platform.*;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
+import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.resources.IoSupplier;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
@@ -55,7 +56,7 @@ public abstract class WindowMixin {
     @Shadow private int width;
     @Shadow private int height;
 
-    @Shadow @Nullable protected abstract ByteBuffer readIconPixels(IoSupplier<InputStream> ioSupplier, IntBuffer intBuffer, IntBuffer intBuffer2, IntBuffer intBuffer3) throws IOException;
+//    @Shadow @Nullable protected abstract ByteBuffer readIconPixels(IoSupplier<InputStream> ioSupplier, IntBuffer intBuffer, IntBuffer intBuffer2, IntBuffer intBuffer3) throws IOException;
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V"))
     private void redirect(int hint, int value) { }
@@ -83,7 +84,7 @@ public abstract class WindowMixin {
      * @reason
      */
     @Overwrite
-    public void setIcon(IoSupplier<InputStream> ioSupplier, IoSupplier<InputStream> ioSupplier2) {
+    public void setIcon(PackResources packResources, IconSet iconSe) {
 
 
     }
