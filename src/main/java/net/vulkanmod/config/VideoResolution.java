@@ -19,6 +19,8 @@ public class VideoResolution {
     private static final int activePlat = getSupportedPlat();
     private static VideoResolution[] videoResolutions;
 
+    private static final boolean isWayLand = activePlat == GLFW_PLATFORM_WAYLAND;
+
     int width;
     int height;
     int refreshRate;
@@ -79,6 +81,8 @@ public class VideoResolution {
     }
 
     public static int getActivePlat() { return activePlat; }
+
+    public static boolean isWayLand() { return isWayLand; }
 
     public static VideoResolution[] getVideoResolutions() {
         return videoResolutions;
