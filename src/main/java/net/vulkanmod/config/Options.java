@@ -6,6 +6,8 @@ import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.VRenderSystem;
 
+import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WAYLAND;
+
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
@@ -168,9 +170,9 @@ public class Options {
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
                 new RangeOption("RenderFrameQueue", 2,
-                        5, 1,
+                        VideoResolution.isWayLand() ? 2 : 5, 1,
                         value -> {
-                            config.frameQueueSize = value;
+                            config.frameQueueSize = VideoResolution.isWayLand() ? 2 : value;
                         }, () -> config.frameQueueSize)
                         .setTooltip(Component.nullToEmpty("Restart is needed to take effect")),
                 new SwitchOption("Gui Optimizations",
