@@ -100,7 +100,13 @@ public class SwapChain {
             createInfo.imageArrayLayers(1);
             createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
-            createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
+
+            if(Queue.QueueFamilyIndices.graphicsFamily != Queue.QueueFamilyIndices.presentFamily) {
+                createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
+                createInfo.pQueueFamilyIndices(stack.ints(Queue.QueueFamilyIndices.graphicsFamily, Queue.QueueFamilyIndices.presentFamily));
+            } else {
+                createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
+            }
 
             createInfo.preTransform(swapChainSupport.capabilities.currentTransform());
             createInfo.compositeAlpha(VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
@@ -295,18 +301,7 @@ public class SwapChain {
     }
 
     private int chooseSwapPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
 
-        //fifo mode is the only mode that has to be supported
-        if(requestedMode == VK_PRESENT_MODE_FIFO_KHR) return VK_PRESENT_MODE_FIFO_KHR;
-
-        for(int i = 0;i < availablePresentModes.capacity();i++) {
-            if(availablePresentModes.get(i) == requestedMode) {
-                return requestedMode;
-            }
-        }
-
-        Initializer.LOGGER.warn("Requested mode not supported: using fallback VK_PRESENT_MODE_FIFO_KHR");
         return VK_PRESENT_MODE_FIFO_KHR;
 
     }

@@ -49,9 +49,9 @@ public class Options {
                         () -> minecraftOptions.framerateLimit().get()),
                 new SwitchOption("VSync",
                         value -> {
-                            minecraftOptions.enableVsync().set(value);
+                            minecraftOptions.enableVsync().set(true);
                             if (Minecraft.getInstance().getWindow() != null) {
-                                Minecraft.getInstance().getWindow().updateVsync(value);
+                                Minecraft.getInstance().getWindow().updateVsync(true);
                             }
                         },
                         () -> minecraftOptions.enableVsync().get()),

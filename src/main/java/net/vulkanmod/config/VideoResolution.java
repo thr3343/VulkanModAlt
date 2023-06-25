@@ -9,7 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.lwjgl.glfw.GLFW.*;
+
 public class VideoResolution {
+    private static final int[] plats = new int[]{
+            GLFW_PLATFORM_WIN32  ,
+            GLFW_PLATFORM_WAYLAND,
+            GLFW_PLATFORM_X11};
+    private static final int activePlat = getSupportedPlat();
     private static VideoResolution[] videoResolutions;
 
     int width;
@@ -49,12 +56,29 @@ public class VideoResolution {
 
         return arr;
     }
+    //Prioritise Wayland over X11 if xWayland (if correct) is present
+
 
     public static void init() {
         RenderSystem.assertOnRenderThread();
+
+        GLFW.glfwInitHint(GLFW_PLATFORM, activePlat);
         GLFW.glfwInit();
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
     }
+
+    private static int getSupportedPlat() {
+
+        for (int plat : plats) {
+            if(GLFW.glfwPlatformSupported(plat))
+            {
+                return plat;
+            }
+        }
+        throw new RuntimeException("No Supported Platforms Present!");
+    }
+
+    public static int getActivePlat() { return activePlat; }
 
     public static VideoResolution[] getVideoResolutions() {
         return videoResolutions;
