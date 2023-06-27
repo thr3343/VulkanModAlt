@@ -392,7 +392,7 @@ public class Drawer {
 
 
 
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), 10000,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
 
@@ -403,8 +403,8 @@ public class Drawer {
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Cannot get image: " + vkResult);
             }
-            frameBufferPresentIndices.enqueueFirst(pImageIndex.get(0));
-            oldestFrameIndex = frameBufferPresentIndices.dequeueInt();
+//            frameBufferPresentIndices.enqueueFirst(pImageIndex.get(0));
+            oldestFrameIndex = currentFrame;
 
 //            KHRPresentWait.vkWaitForPresentKHR(device, getSwapChain().getId(), pPresentId.get(0), 10000);
 

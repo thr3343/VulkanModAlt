@@ -169,6 +169,10 @@ public class Options {
 
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
+                new RangeOption("RenderFrameQueue", 2, 5, 1,
+                        value -> config.frameQueueSize = value,
+                        () -> config.frameQueueSize)
+                        .setTooltip(Component.nullToEmpty("Restart is needed to take effect")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)

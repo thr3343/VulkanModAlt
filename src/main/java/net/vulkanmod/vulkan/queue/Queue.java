@@ -1,6 +1,8 @@
 package net.vulkanmod.vulkan.queue;
 
+import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -30,9 +32,148 @@ public abstract class Queue {
     }
 
     public enum Family {
-        Graphics,
-        Transfer,
-        Compute
+
+        GraphicsQueue(Constants.graphicsFamily),
+        TransferQueue(Constants.transferFamily),
+        ComputeQueue(Constants.computeFamily);
+
+        private static final VkDevice DEVICE = Vulkan.getDevice();
+
+        private final CommandPool commandPool;
+        private final VkQueue Queue;
+        private CommandPool.CommandBuffer currentCmdBuffer;
+        Family(Constants computeFamily) {
+
+            commandPool = new CommandPool(computeFamily.graphicsFamily1);
+
+            this.Queue=switch (computeFamily)
+            {
+                case graphicsFamily -> Vulkan.getGraphicsQueue();
+                case transferFamily -> Vulkan.getTransferQueue();
+                case computeFamily -> Vulkan.getPresentQueue();
+            };
+
+        }
+
+        public CommandPool.CommandBuffer beginCommands() {
+
+            return commandPool.beginCommands();
+        }
+
+//    public abstract long submitCommands(CommandPool.CommandBuffer commandBuffer);
+
+        public void cleanUp() {
+            commandPool.cleanUp();
+        }
+
+
+        public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+
+            try(MemoryStack stack = stackPush()) {
+
+                CommandPool.CommandBuffer commandBuffer = beginCommands();
+
+                VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+                copyRegion.size(size);
+                copyRegion.srcOffset(srcOffset);
+                copyRegion.dstOffset(dstOffset);
+
+                vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
+
+                submitCommands(commandBuffer);
+                Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+
+                return commandBuffer.fence;
+            }
+        }
+
+        public void uploadBufferImmediate(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+
+            try(MemoryStack stack = stackPush()) {
+                CommandPool.CommandBuffer commandBuffer = beginCommands();
+
+                VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+                copyRegion.size(size);
+                copyRegion.srcOffset(srcOffset);
+                copyRegion.dstOffset(dstOffset);
+
+                vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
+
+                submitCommands(commandBuffer);
+                vkWaitForFences(DEVICE, commandBuffer.fence, true, VUtil.UINT64_MAX);
+                commandBuffer.reset();
+            }
+        }
+
+
+
+        public static void uploadBufferCmd(CommandPool.CommandBuffer commandBuffer, long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+
+            try(MemoryStack stack = stackPush()) {
+
+                VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+                copyRegion.size(size);
+                copyRegion.srcOffset(srcOffset);
+                copyRegion.dstOffset(dstOffset);
+
+                vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
+            }
+        }
+
+
+
+//    public abstract long submitCommands(CommandPool.CommandBuffer commandBuffer);
+
+
+        public void startRecording() {
+            currentCmdBuffer = beginCommands();
+        }
+
+        public void endRecordingAndSubmit() {
+            long fence = submitCommands(currentCmdBuffer);
+            Synchronization.INSTANCE.addCommandBuffer(currentCmdBuffer);
+
+            currentCmdBuffer = null;
+        }
+
+        public CommandPool.CommandBuffer getCommandBuffer() {
+            if (currentCmdBuffer != null) {
+                return currentCmdBuffer;
+            } else {
+                return beginCommands();
+            }
+        }
+
+        public long endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
+            if (currentCmdBuffer != null) {
+                return VK_NULL_HANDLE;
+            } else {
+                return submitCommands(commandBuffer);
+            }
+        }
+
+        public long submitCommands(CommandPool.CommandBuffer commandBuffer) {
+
+            return commandPool.submitCommands(commandBuffer, this.Queue);
+        }
+
+        public void waitIdle() {
+            vkQueueWaitIdle(Vulkan.getTransferQueue());
+        }
+
+        private enum Constants {
+            graphicsFamily(QueueFamilyIndices.graphicsFamily),
+            transferFamily(QueueFamilyIndices.transferFamily),
+            computeFamily(QueueFamilyIndices.presentFamily);
+
+            private final int graphicsFamily1;
+
+            Constants(int graphicsFamily) {
+
+                graphicsFamily1 = graphicsFamily;
+            }
+        }
+
     }
 
     public static void initQueues() {
