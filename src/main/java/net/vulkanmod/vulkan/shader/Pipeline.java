@@ -742,7 +742,7 @@ public class Pipeline {
                     "Cannot create Pipeline: resources missing");
 
             if(this.framebuffer == null)
-                this.framebuffer = Vulkan.getSwapChain().getFramebuffer();
+                this.framebuffer = Drawer.tstFrameBuffer2;
 
             if(this.manualUBO != null)
                 this.UBOs.add(this.manualUBO);

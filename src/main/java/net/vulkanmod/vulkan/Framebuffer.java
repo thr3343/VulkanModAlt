@@ -262,7 +262,7 @@ public class Framebuffer {
 
         VkRenderPassAttachmentBeginInfo vkRenderPassAttachmentBeginInfo = VkRenderPassAttachmentBeginInfo.calloc(stack)
                 .sType$Default()
-                .pAttachments(stack.longs(colorAttachment.getImageView(), depthAttachment.getImageView()));
+                .pAttachments(stack.longs(isSwapChainMode ? Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame()) : colorAttachment.getImageView(), depthAttachment.getImageView()));
         //Clear Color value is ignored if Load Op is Not set to Clear
 
         VkClearValue.Buffer clearValues = VkClearValue.malloc(this.attachmentTypes.length, stack);

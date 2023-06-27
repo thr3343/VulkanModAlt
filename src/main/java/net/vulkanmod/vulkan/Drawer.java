@@ -92,7 +92,7 @@ public class Drawer {
 
     static
     {
-        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, 15360, 8640, false, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
+        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
 
     }
     public Drawer(int VBOSize, int UBOSize) {
