@@ -5,9 +5,7 @@ import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
 import net.vulkanmod.vulkan.queue.Queue;
-import net.vulkanmod.vulkan.queue.TransferQueue;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
@@ -23,6 +21,8 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
+import static net.vulkanmod.vulkan.queue.Queue.Family.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.Family.TransferQueue;
 import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
 import static net.vulkanmod.vulkan.queue.Queue.getQueueFamilies;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
@@ -148,7 +148,7 @@ public class Vulkan {
         createVma();
         MemoryTypes.createMemoryTypes();
 
-        Queue.initQueues();
+//        Queue.initQueues();
         createCommandPool();
         allocateImmediateCmdBuffer();
 
@@ -187,8 +187,8 @@ public class Vulkan {
         vkDestroyCommandPool(device, commandPool, null);
         vkDestroyFence(device, immediateFence, null);
 
-        GraphicsQueue.INSTANCE.cleanUp();
-        TransferQueue.INSTANCE.cleanUp();
+        GraphicsQueue.cleanUp();
+        TransferQueue.cleanUp();
 
         Pipeline.destroyPipelineCache();
         swapChain.cleanUp();

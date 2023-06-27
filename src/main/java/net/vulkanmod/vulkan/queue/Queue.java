@@ -1,11 +1,12 @@
 package net.vulkanmod.vulkan.queue;
 
+import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
-import java.util.ArrayDeque;
 import java.util.stream.IntStream;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -16,29 +17,130 @@ public abstract class Queue {
     private static VkDevice DEVICE;
 
     private static QueueFamilyIndices queueFamilyIndices;
-    protected CommandPool commandPool;
 
-    public synchronized CommandPool.CommandBuffer beginCommands() {
-
-        return this.commandPool.beginCommands();
-    }
-
-    public abstract long submitCommands(CommandPool.CommandBuffer commandBuffer);
-
-    public void cleanUp() {
-        commandPool.cleanUp();
-    }
 
     public enum Family {
-        Graphics,
-        Transfer,
-        Compute
+        GraphicsQueue(getQueueFamilies().graphicsFamily),
+        TransferQueue(getQueueFamilies().transferFamily),
+        ComputeQueue(getQueueFamilies().computeFamily);
+
+        private static final VkDevice DEVICE = Vulkan.getDevice();
+
+        private final CommandPool commandPool;
+        private CommandPool.CommandBuffer currentCmdBuffer;
+        Family(int computeFamily) {
+
+            commandPool = new CommandPool(computeFamily
+            );
+        }
+
+        public CommandPool.CommandBuffer beginCommands() {
+
+            return commandPool.beginCommands();
+        }
+
+//    public abstract long submitCommands(CommandPool.CommandBuffer commandBuffer);
+
+        public void cleanUp() {
+            commandPool.cleanUp();
+        }
+
+
+        public long copyBufferCmd(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+
+            try(MemoryStack stack = stackPush()) {
+
+                CommandPool.CommandBuffer commandBuffer = beginCommands();
+
+                VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+                copyRegion.size(size);
+                copyRegion.srcOffset(srcOffset);
+                copyRegion.dstOffset(dstOffset);
+
+                vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
+
+                submitCommands(commandBuffer);
+                Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
+
+                return commandBuffer.fence;
+            }
+        }
+
+        public void uploadBufferImmediate(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+
+            try(MemoryStack stack = stackPush()) {
+                CommandPool.CommandBuffer commandBuffer = beginCommands();
+
+                VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+                copyRegion.size(size);
+                copyRegion.srcOffset(srcOffset);
+                copyRegion.dstOffset(dstOffset);
+
+                vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
+
+                submitCommands(commandBuffer);
+                vkWaitForFences(DEVICE, commandBuffer.fence, true, VUtil.UINT64_MAX);
+                commandBuffer.reset();
+            }
+        }
+
+
+
+        public static void uploadBufferCmd(CommandPool.CommandBuffer commandBuffer, long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+
+            try(MemoryStack stack = stackPush()) {
+
+                VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+                copyRegion.size(size);
+                copyRegion.srcOffset(srcOffset);
+                copyRegion.dstOffset(dstOffset);
+
+                vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
+            }
+        }
+
+
+
+//    public abstract long submitCommands(CommandPool.CommandBuffer commandBuffer);
+
+
+        public void startRecording() {
+            currentCmdBuffer = beginCommands();
+        }
+
+        public void endRecordingAndSubmit() {
+            long fence = submitCommands(currentCmdBuffer);
+            Synchronization.INSTANCE.addCommandBuffer(currentCmdBuffer);
+
+            currentCmdBuffer = null;
+        }
+
+        public CommandPool.CommandBuffer getCommandBuffer() {
+            if (currentCmdBuffer != null) {
+                return currentCmdBuffer;
+            } else {
+                return beginCommands();
+            }
+        }
+
+        public long endIfNeeded(CommandPool.CommandBuffer commandBuffer) {
+            if (currentCmdBuffer != null) {
+                return VK_NULL_HANDLE;
+            } else {
+                return submitCommands(commandBuffer);
+            }
+        }
+
+        public long submitCommands(CommandPool.CommandBuffer commandBuffer) {
+
+            return commandPool.submitCommands(commandBuffer, Vulkan.getGraphicsQueue());
+        }
+
+        public void waitIdle() {
+            vkQueueWaitIdle(Vulkan.getTransferQueue());
+        }
     }
 
-    public static void initQueues() {
-        GraphicsQueue.createInstance();
-        TransferQueue.createInstance();
-    }
 
     public static QueueFamilyIndices getQueueFamilies() {
         if(DEVICE == null)
@@ -75,7 +177,7 @@ public abstract class Queue {
 
                     vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
 
-                    if(presentSupport.get(0) == VK_TRUE) {
+                    if((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
                         indices.presentFamily = i;
                     }
                 } else if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0
@@ -86,10 +188,10 @@ public abstract class Queue {
                     indices.transferFamily = i;
                 }
 
-                if(indices.presentFamily == null) {
+                if(indices.presentFamily == -1) {
                     vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
 
-                    if(presentSupport.get(0) == VK_TRUE) {
+                    if((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
                         indices.presentFamily = i;
                     }
                 }
@@ -97,7 +199,7 @@ public abstract class Queue {
                 if(indices.isComplete()) break;
             }
 
-            if(indices.transferFamily == null) {
+            if(indices.transferFamily == -1) {
 
                 int fallback = -1;
                 for(int i = 0; i < queueFamilies.capacity(); i++) {
@@ -123,7 +225,7 @@ public abstract class Queue {
                 }
             }
             
-            if(indices.computeFamily == null) {
+            if(indices.computeFamily == -1) {
                 for(int i = 0; i < queueFamilies.capacity(); i++) {
                     int queueFlags = queueFamilies.get(i).queueFlags();
 
@@ -134,11 +236,11 @@ public abstract class Queue {
                 }
             }
 
-            if (indices.graphicsFamily == null)
+            if (indices.graphicsFamily == -1)
                 throw new RuntimeException("Unable to find queue family with graphics support.");
-            if (indices.presentFamily == null)
+            if (indices.presentFamily == -1)
                 throw new RuntimeException("Unable to find queue family with present support.");
-            if (indices.computeFamily == null)
+            if (indices.computeFamily == -1)
                 throw new RuntimeException("Unable to find queue family with compute support.");
 
             return indices;
@@ -148,17 +250,14 @@ public abstract class Queue {
     public static class QueueFamilyIndices {
 
         // We use Integer to use null as the empty value
-        public Integer graphicsFamily;
-        public Integer presentFamily;
-        public Integer transferFamily;
-        public Integer computeFamily;
+        public int graphicsFamily,presentFamily,transferFamily,computeFamily=-1;
 
         public boolean isComplete() {
-            return graphicsFamily != null && presentFamily != null && transferFamily != null && computeFamily != null;
+            return graphicsFamily != -1 && presentFamily != -1 && transferFamily != -1 && computeFamily != -1;
         }
 
         public boolean isSuitable() {
-            return graphicsFamily != null && presentFamily != null;
+            return graphicsFamily != -1 && presentFamily != -1;
         }
 
         public int[] unique() {

@@ -5,6 +5,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.system.NativeResource;
 import org.lwjgl.util.shaderc.*;
+import org.lwjgl.util.spvc.Spvc;
 import org.lwjgl.vulkan.VK12;
 
 import java.io.FileInputStream;
@@ -27,6 +28,7 @@ public class ShaderSPIRVUtils {
     private static final ShaderReleaser SHADER_RELEASER = new ShaderReleaser();
 
     private static final long pUserData = 0;
+    private static final boolean skipCompilation = !Vulkan.ENABLE_VALIDATION_LAYERS;
 
     static {
 
@@ -67,12 +69,12 @@ public class ShaderSPIRVUtils {
     public static long compileShader(String filename, String source, ShaderKind shaderKind) {
 
 
-        final long shaderc_compilation_result_t = Vulkan.ENABLE_VALIDATION_LAYERS ? shaderc_compile_into_spv(compiler, source, shaderKind.kind, filename, "main", options) : shaderc_compile_into_preprocessed_text(compiler, source, shaderKind.kind, filename, "main", options);
+        final long shaderc_compilation_result_t = skipCompilation ? shaderc_compile_into_preprocessed_text(compiler, source, shaderKind.kind, filename, "main", options) : shaderc_compile_into_spv(compiler, source, shaderKind.kind, filename, "main", options);
 
         if(shaderc_compilation_result_t == NULL) {
             throw new RuntimeException("Failed to compile shader " + filename + " into SPIR-V");
         }
-
+        //Spvc.spvc_compiler_get_decoration()
         if(shaderc_compilation_result_compilation_status(shaderc_compilation_result_t) != shaderc_compilation_status_success) {
             throw new RuntimeException("Failed to compile shader " + filename + " into SPIR-V:\n" + shaderc_result_get_error_message(shaderc_compilation_result_t));
         }

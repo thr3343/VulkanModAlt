@@ -7,7 +7,6 @@ import net.vulkanmod.vulkan.*;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.queue.GraphicsQueue;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -18,13 +17,14 @@ import java.nio.LongBuffer;
 import java.util.Objects;
 
 import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.queue.Queue.Family.GraphicsQueue;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
     private static final int DefaultFormat = VK_FORMAT_R8G8B8A8_UNORM;
 
-    private static VkDevice device = Vulkan.getDevice();
+    private static final VkDevice device = Vulkan.getDevice();
 
     private long id;
     private long allocation;
@@ -134,7 +134,7 @@ public class VulkanImage {
     public void uploadSubTextureAsync(int mipLevel, int width, int height, int xOffset, int yOffset, int formatSize, int unpackSkipRows, int unpackSkipPixels, int unpackRowLength, ByteBuffer buffer) {
         long imageSize = buffer.limit();
 
-        CommandPool.CommandBuffer commandBuffer = GraphicsQueue.getInstance().getCommandBuffer();
+        CommandPool.CommandBuffer commandBuffer = GraphicsQueue.getCommandBuffer();
         transferDstLayout(commandBuffer);
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
@@ -145,7 +145,7 @@ public class VulkanImage {
         copyBufferToImageCmd(commandBuffer, stagingBuffer.getId(), id, mipLevel, width, height, xOffset, yOffset,
                 (int) (stagingBuffer.getOffset() + (unpackRowLength * unpackSkipRows + unpackSkipPixels) * formatSize), unpackRowLength, height);
 
-        long fence = GraphicsQueue.getInstance().endIfNeeded(commandBuffer);
+        long fence = GraphicsQueue.endIfNeeded(commandBuffer);
         if (fence != VK_NULL_HANDLE)
 //            Synchronization.INSTANCE.addFence(fence);
             Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
@@ -153,7 +153,7 @@ public class VulkanImage {
 
     public static void downloadTexture(int width, int height, int formatSize, ByteBuffer buffer, long image) {
         try(MemoryStack stack = stackPush()) {
-            long imageSize = width * height * formatSize;
+            long imageSize = (long) width * height * formatSize;
 
             LongBuffer pStagingBuffer = stack.mallocLong(1);
             PointerBuffer pStagingAllocation = stack.pointers(0L);
@@ -222,9 +222,9 @@ public class VulkanImage {
         if (this.currentLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
             return;
 
-        CommandPool.CommandBuffer commandBuffer = GraphicsQueue.getInstance().getCommandBuffer();
+        CommandPool.CommandBuffer commandBuffer = GraphicsQueue.getCommandBuffer();
         readOnlyLayout(commandBuffer);
-        GraphicsQueue.getInstance().submitCommands(commandBuffer);
+        GraphicsQueue.submitCommands(commandBuffer);
         Synchronization.INSTANCE.addCommandBuffer(commandBuffer);
     }
 
@@ -358,7 +358,7 @@ public class VulkanImage {
 
         try(MemoryStack stack = stackPush()) {
 
-            CommandPool.CommandBuffer commandBuffer = GraphicsQueue.getInstance().beginCommands();
+            CommandPool.CommandBuffer commandBuffer = GraphicsQueue.beginCommands();
 
             VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
             region.bufferOffset(bufferOffset);
@@ -373,7 +373,7 @@ public class VulkanImage {
 
             vkCmdCopyImageToBuffer(commandBuffer.getHandle(), image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer, region);
 
-            long fence = GraphicsQueue.getInstance().submitCommands(commandBuffer);
+            long fence = GraphicsQueue.submitCommands(commandBuffer);
 
             vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
         }
