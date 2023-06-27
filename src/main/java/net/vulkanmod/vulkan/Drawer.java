@@ -191,7 +191,7 @@ public class Drawer {
             xVkRect2D pScissor = scissor(stack);
 
 
-            callPPV(commandBuffer.address(), 0, 1, pScissor.pa, commandBuffer.getCapabilities().vkCmdSetScissor);
+            callPPV(commandBuffer.address(), 0, 1, pScissor.ref(), commandBuffer.getCapabilities().vkCmdSetScissor);
 
             vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
 

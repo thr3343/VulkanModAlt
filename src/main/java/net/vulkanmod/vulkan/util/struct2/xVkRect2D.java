@@ -1,23 +1,14 @@
 package net.vulkanmod.vulkan.util.struct2;
 
-public class xVkRect2D
+public record xVkRect2D(int a, int b, int c, int d)
 {
-    //TODO: record pls...
-     public final int[] pa = new int[6];
-    public xVkRect2D(int a, int b, int c, int d) {
 
-        this.pa[0] = a;
-        this.pa[1] = b;
-        this.pa[2] = c;
-        this.pa[3] = d;
+    public static xVkRect2D set(VkExtent vkExtent) {
+
+
+        return new xVkRect2D(0,0,vkExtent.a(), vkExtent.b());
     }
-    public xVkRect2D(VkExtent vkExtent) {
-
-
-        this.pa[2] = vkExtent.width();
-        this.pa[3] = vkExtent.height();
-    }
-
-    xVkRect2D offset(int a, int b) { this.pa[0]=a; this.pa[b]=b; return this; }
-    xVkRect2D extent(int c, int d) { this.pa[2]=c; this.pa[3]=d; return this; }
+    public int[] ref() { return new int[]{a,b,c,d};};
+//    xVkRect2D offset(int a, int b) { this.pa[0]=a; this.pa[b]=b; return this; }
+//    xVkRect2D extent(int c, int d) { this.pa[2]=c; this.pa[3]=d; return this; }
 }

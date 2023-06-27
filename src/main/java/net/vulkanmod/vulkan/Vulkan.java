@@ -870,7 +870,7 @@ public class Vulkan {
 
 
 
-        var scissor = new xVkRect2D(vkExtent);
+        var scissor = xVkRect2D.set(vkExtent);
 
 
         return scissor;
