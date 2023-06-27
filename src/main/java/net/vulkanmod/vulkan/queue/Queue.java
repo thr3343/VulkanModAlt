@@ -20,18 +20,26 @@ public abstract class Queue {
 
 
     public enum Family {
-        GraphicsQueue(getQueueFamilies().graphicsFamily),
-        TransferQueue(getQueueFamilies().transferFamily),
-        ComputeQueue(getQueueFamilies().computeFamily);
+        GraphicsQueue(Constants.graphicsFamily),
+        TransferQueue(Constants.transferFamily),
+        ComputeQueue(Constants.computeFamily);
 
         private static final VkDevice DEVICE = Vulkan.getDevice();
 
         private final CommandPool commandPool;
+        private final VkQueue Queue;
         private CommandPool.CommandBuffer currentCmdBuffer;
-        Family(int computeFamily) {
+        Family(Constants computeFamily) {
 
-            commandPool = new CommandPool(computeFamily
-            );
+            commandPool = new CommandPool(computeFamily.graphicsFamily1);
+
+            this.Queue=switch (computeFamily)
+            {
+                case graphicsFamily -> Vulkan.getGraphicsQueue();
+                case transferFamily -> Vulkan.getTransferQueue();
+                case computeFamily -> Vulkan.getPresentQueue();
+            };
+
         }
 
         public CommandPool.CommandBuffer beginCommands() {
@@ -133,11 +141,24 @@ public abstract class Queue {
 
         public long submitCommands(CommandPool.CommandBuffer commandBuffer) {
 
-            return commandPool.submitCommands(commandBuffer, Vulkan.getGraphicsQueue());
+            return commandPool.submitCommands(commandBuffer, this.Queue);
         }
 
         public void waitIdle() {
             vkQueueWaitIdle(Vulkan.getTransferQueue());
+        }
+
+        private enum Constants {
+            graphicsFamily(getQueueFamilies().graphicsFamily),
+            transferFamily(getQueueFamilies().transferFamily),
+            computeFamily(getQueueFamilies().presentFamily);
+
+            private final int graphicsFamily1;
+
+            Constants(int graphicsFamily) {
+
+                graphicsFamily1 = graphicsFamily;
+            }
         }
     }
 

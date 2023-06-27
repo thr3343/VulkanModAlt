@@ -42,7 +42,7 @@ public class Drawer {
     public static boolean vsync;
     private static Drawer INSTANCE;
 
-    final IntArrayFIFOQueue frameBufferPresentIndices = new IntArrayFIFOQueue(Initializer.CONFIG.frameQueueSize-1);
+//    final IntArrayFIFOQueue frameBufferPresentIndices = new IntArrayFIFOQueue(Initializer.CONFIG.frameQueueSize-1);
     public static final Framebuffer tstFrameBuffer2;
     private int oldestFrameIndex = 0;
 
@@ -99,10 +99,7 @@ public class Drawer {
 
 
 
-        frameBufferPresentIndices.clear();
-        for (int j = 0; j < Initializer.CONFIG.frameQueueSize-1; j++) {
-            frameBufferPresentIndices.enqueue(j);
-        }
+
         pPresentId = MemoryUtil.memAllocLong(1);
         device = Vulkan.getDevice();
         MAX_FRAMES_IN_FLIGHT = getSwapChainImages().size();
@@ -392,7 +389,7 @@ public class Drawer {
 
 
 
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), 10000,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
 
@@ -403,8 +400,8 @@ public class Drawer {
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Cannot get image: " + vkResult);
             }
-            frameBufferPresentIndices.enqueueFirst(pImageIndex.get(0));
-            oldestFrameIndex = frameBufferPresentIndices.dequeueInt();
+//            frameBufferPresentIndices.enqueueFirst(pImageIndex.get(0));
+            oldestFrameIndex = currentFrame;
 
 //            KHRPresentWait.vkWaitForPresentKHR(device, getSwapChain().getId(), pPresentId.get(0), 10000);
 
