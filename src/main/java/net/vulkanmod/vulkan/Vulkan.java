@@ -9,7 +9,6 @@ import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
-
 import org.lwjgl.glfw.GLFWNativeWayland;
 import org.lwjgl.glfw.GLFWNativeWin32;
 import org.lwjgl.glfw.GLFWNativeX11;
@@ -27,10 +26,8 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
-import static net.vulkanmod.vulkan.queue.Queue.Family.GraphicsQueue;
-import static net.vulkanmod.vulkan.queue.Queue.Family.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queue.Family.*;
 import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
-import static net.vulkanmod.vulkan.queue.Queue.getQueueFamilies;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
@@ -144,14 +141,9 @@ public class Vulkan {
 
     public static VkPhysicalDeviceProperties deviceProperties;
     public static VkPhysicalDeviceMemoryProperties memoryProperties;
-
-    private static VkQueue graphicsQueue;
-    private static VkQueue presentQueue;
-    private static VkQueue transferQueue;
-
     private static SwapChain swapChain;
 
-    private static long commandPool;
+//    private static long commandPool;
     private static VkCommandBuffer immediateCmdBuffer;
     private static long immediateFence;
 
@@ -169,7 +161,9 @@ public class Vulkan {
         MemoryTypes.createMemoryTypes();
 
 //        Queue.initQueues();
-        createCommandPool();
+//        Queue.initDevs();
+
+
         allocateImmediateCmdBuffer();
 
         createSwapChain();
@@ -204,11 +198,12 @@ public class Vulkan {
 
     public static void cleanUp() {
         vkDeviceWaitIdle(device);
-        vkDestroyCommandPool(device, commandPool, null);
+//        vkDestroyCommandPool(device, commandPool -> GraphicsQueue.commandPool.id, null);
         vkDestroyFence(device, immediateFence, null);
 
         GraphicsQueue.cleanUp();
         TransferQueue.cleanUp();
+        ComputeQueue.cleanUp();
 
         Pipeline.destroyPipelineCache();
         swapChain.cleanUp();
@@ -503,16 +498,7 @@ public class Vulkan {
 
             device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, vkVer);
 
-            PointerBuffer pQueue = stack.mallocPointer(1);
-
-            vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
-            graphicsQueue = new VkQueue(pQueue.get(0), device);
-
-            vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
-            presentQueue = new VkQueue(pQueue.get(0), device);
-
-            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
-            transferQueue = new VkQueue(pQueue.get(0), device);
+            Queue.initDevs(indices);
 
         }
     }
@@ -537,27 +523,6 @@ public class Vulkan {
             }
 
             allocator = pAllocator.get(0);
-        }
-    }
-
-    private static void createCommandPool() {
-
-        try(MemoryStack stack = stackPush()) {
-
-            Queue.QueueFamilyIndices queueFamilyIndices = getQueueFamilies();
-
-            VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack);
-            poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(queueFamilyIndices.graphicsFamily);
-            poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-
-            LongBuffer pCommandPool = stack.mallocLong(1);
-
-            if (vkCreateCommandPool(device, poolInfo, null, pCommandPool) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create command pool");
-            }
-
-            commandPool = pCommandPool.get(0);
         }
     }
 
@@ -598,7 +563,7 @@ public class Vulkan {
             VkCommandBufferAllocateInfo allocInfo = VkCommandBufferAllocateInfo.callocStack(stack);
             allocInfo.sType(VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO);
             allocInfo.level(VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-            allocInfo.commandPool(commandPool);
+            allocInfo.commandPool(GraphicsQueue.commandPool.id);
             allocInfo.commandBufferCount(1);
 
             PointerBuffer pCommandBuffer = stack.mallocPointer(1);
@@ -627,22 +592,22 @@ public class Vulkan {
         return immediateCmdBuffer;
     }
 
-    public static void endImmediateCmd() {
-        try (MemoryStack stack = stackPush()) {
-            vkEndCommandBuffer(immediateCmdBuffer);
-
-            VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
-            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
-            submitInfo.pCommandBuffers(stack.pointers(immediateCmdBuffer));
-
-            vkQueueSubmit(graphicsQueue, submitInfo, immediateFence);
-
-            vkWaitForFences(device, immediateFence, true, VUtil.UINT64_MAX);
-            vkResetFences(device, immediateFence);
-            vkResetCommandBuffer(immediateCmdBuffer, 0);
-        }
-
-    }
+//    public static void endImmediateCmd() {
+//        try (MemoryStack stack = stackPush()) {
+//            vkEndCommandBuffer(immediateCmdBuffer);
+//
+//            VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
+//            submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
+//            submitInfo.pCommandBuffers(stack.pointers(immediateCmdBuffer));
+//
+//            vkQueueSubmit(graphicsQueue, submitInfo, immediateFence);
+//
+//            vkWaitForFences(device, immediateFence, true, VUtil.UINT64_MAX);
+//            vkResetFences(device, immediateFence);
+//            vkResetCommandBuffer(immediateCmdBuffer, 0);
+//        }
+//
+//    }
 
     private static PointerBuffer getRequiredExtensions() {
 
@@ -745,11 +710,11 @@ public class Vulkan {
 
     public static long getSurface() { return surface; }
 
-    public static VkQueue getPresentQueue() { return presentQueue; }
+    public static VkQueue getPresentQueue() { return ComputeQueue.Queue; }
 
-    public static VkQueue getGraphicsQueue() { return graphicsQueue; }
+    public static VkQueue getGraphicsQueue() { return GraphicsQueue.Queue; }
 
-    public static VkQueue getTransferQueue() { return transferQueue; }
+    public static VkQueue getTransferQueue() { return TransferQueue.Queue; }
 
     public static SwapChain getSwapChain() { return swapChain; }
 
@@ -762,7 +727,7 @@ public class Vulkan {
 
     public static long getCommandPool()
     {
-        return commandPool;
+        return GraphicsQueue.commandPool.id;
     }
 
     public static StagingBuffer getStagingBuffer(int i) { return stagingBuffers[i]; }

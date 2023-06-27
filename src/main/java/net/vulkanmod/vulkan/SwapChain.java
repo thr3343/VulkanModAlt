@@ -101,11 +101,11 @@ public class SwapChain {
             createInfo.imageArrayLayers(1);
             createInfo.imageUsage(VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
-            Queue.QueueFamilyIndices indices = Queue.getQueueFamilies();
+//            Queue.QueueFamilyIndices indices = Queue.getQueueFamilies();
 
-            if(indices.graphicsFamily!=(indices.presentFamily)) {
+            if(Queue.Constants.graphicsFamily.graphicsFamily1!=Queue.Constants.computeFamily.graphicsFamily1) {
                 createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
-                createInfo.pQueueFamilyIndices(stack.ints(indices.graphicsFamily, indices.presentFamily));
+                createInfo.pQueueFamilyIndices(stack.ints(Queue.Constants.graphicsFamily.graphicsFamily1, Queue.Constants.computeFamily.graphicsFamily1));
             } else {
                 createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             }

@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import java.util.Set;
 
 import static net.vulkanmod.vulkan.queue.Queue.Family.GraphicsQueue;
+import static net.vulkanmod.vulkan.queue.Queue.Family.TransferQueue;
 
 @Mixin(TextureManager.class)
 public abstract class MTextureManager {
@@ -34,13 +35,13 @@ public abstract class MTextureManager {
             return;
 
         if(SpriteUtil.shouldUpload())
-            GraphicsQueue.startRecording();
+            TransferQueue.startRecording();
         for (Tickable tickable : this.tickableTextures) {
             tickable.tick();
         }
         if(SpriteUtil.shouldUpload()) {
-            SpriteUtil.transitionLayouts(GraphicsQueue.getCommandBuffer());
-            GraphicsQueue.endRecordingAndSubmit();
+            SpriteUtil.transitionLayouts(TransferQueue.getCommandBuffer());
+            TransferQueue.endRecordingAndSubmit();
 //            Synchronization.INSTANCE.waitFences();
         }
     }

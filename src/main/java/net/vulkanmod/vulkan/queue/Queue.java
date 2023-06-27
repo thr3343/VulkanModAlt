@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.queue;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -24,21 +25,20 @@ public abstract class Queue {
         TransferQueue(Constants.transferFamily),
         ComputeQueue(Constants.computeFamily);
 
-        private static final VkDevice DEVICE = Vulkan.getDevice();
+//        private static final VkDevice DEVICE = Vulkan.getDevice();
 
-        private final CommandPool commandPool;
-        private final VkQueue Queue;
+        public final CommandPool commandPool;
+        public final VkQueue Queue;
         private CommandPool.CommandBuffer currentCmdBuffer;
         Family(Constants computeFamily) {
 
             commandPool = new CommandPool(computeFamily.graphicsFamily1);
-
-            this.Queue=switch (computeFamily)
-            {
-                case graphicsFamily -> Vulkan.getGraphicsQueue();
-                case transferFamily -> Vulkan.getTransferQueue();
-                case computeFamily -> Vulkan.getPresentQueue();
-            };
+           try(MemoryStack stack = MemoryStack.stackPush())
+           {
+               PointerBuffer pQueue = stack.mallocPointer(1);
+               vkGetDeviceQueue(DEVICE, computeFamily.graphicsFamily1, 0, pQueue);
+               this.Queue = new VkQueue(pQueue.get(0), DEVICE);
+           }
 
         }
 
@@ -148,29 +148,15 @@ public abstract class Queue {
             vkQueueWaitIdle(Vulkan.getTransferQueue());
         }
 
-        private enum Constants {
-            graphicsFamily(getQueueFamilies().graphicsFamily),
-            transferFamily(getQueueFamilies().transferFamily),
-            computeFamily(getQueueFamilies().presentFamily);
-
-            private final int graphicsFamily1;
-
-            Constants(int graphicsFamily) {
-
-                graphicsFamily1 = graphicsFamily;
-            }
-        }
     }
 
 
-    public static QueueFamilyIndices getQueueFamilies() {
-        if(DEVICE == null)
+    public static void initDevs(QueueFamilyIndices queueFamilyIndices1) {
+
             DEVICE = Vulkan.getDevice();
 
-        if(queueFamilyIndices == null) {
-            queueFamilyIndices = findQueueFamilies(DEVICE.getPhysicalDevice());
-        }
-        return queueFamilyIndices;
+        queueFamilyIndices = queueFamilyIndices1;
+        //        return queueFamilyIndices;
     }
 
     public static QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) {
@@ -245,7 +231,7 @@ public abstract class Queue {
                     indices.transferFamily = fallback;
                 }
             }
-            
+
             if(indices.computeFamily == -1) {
                 for(int i = 0; i < queueFamilies.capacity(); i++) {
                     int queueFlags = queueFamilies.get(i).queueFlags();
@@ -265,6 +251,19 @@ public abstract class Queue {
                 throw new RuntimeException("Unable to find queue family with compute support.");
 
             return indices;
+        }
+    }
+
+    public enum Constants {
+        graphicsFamily(queueFamilyIndices.graphicsFamily),
+        transferFamily(queueFamilyIndices.transferFamily),
+        computeFamily(queueFamilyIndices.presentFamily);
+
+        public final int graphicsFamily1;
+
+        Constants(int graphicsFamily) {
+
+            graphicsFamily1 = graphicsFamily;
         }
     }
 

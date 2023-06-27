@@ -197,7 +197,7 @@ public class Drawer {
 
         MemoryManager.getInstance().initFrame(currentFrame);
 
-        nvkWaitForFences(device, 1, frameFences.address(vsync ? oldestFrameIndex : currentFrame), 0, VUtil.UINT64_MAX);
+        nvkWaitForFences(device, 1, frameFences.address(currentFrame), 0, VUtil.UINT64_MAX);
 
 
 //        this.vertexBuffers[currentFrame].reset();
