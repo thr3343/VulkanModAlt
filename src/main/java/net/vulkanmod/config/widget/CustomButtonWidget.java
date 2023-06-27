@@ -1,14 +1,15 @@
 package net.vulkanmod.config.widget;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractButton;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Consumer;
 
@@ -27,10 +28,10 @@ public class CustomButtonWidget extends AbstractButton {
         this.onPress = onPress;
     }
 
-    public void renderWidget(PoseStack matrices, int mouseX, int mouseY, float delta) {
+    public void renderWidget(@NotNull GuiGraphics matrices, int mouseX, int mouseY, float delta) {
         Minecraft minecraftClient = Minecraft.getInstance();
         Font textRenderer = minecraftClient.font;
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, this.alpha);
         int i = this.getTextureY();
@@ -45,14 +46,14 @@ public class CustomButtonWidget extends AbstractButton {
         if(this.isHovered && this.active) color = 0xB0000000;
         else if(this.active) color = 0x90000000;
         else color = 0x70000000;
-        fill(matrices, this.x, this.y, this.x + width, this.y + this.height, color);
+        matrices.fill(this.x, this.y, this.x + width, this.y + this.height, color);
 //        this.renderWidget(matrices, mouseX, mouseY);
 //        this.renderWidget(matrices, 0, 0, 0);
         int j = this.active ? 0xFFFFFF : 0xA0A0A0;
-        drawCenteredString(matrices, textRenderer, this.getMessage(), this.x + this.width / 2, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0f) << 24);
+        matrices.drawCenteredString(textRenderer, this.getMessage(), this.x + this.width / 2, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0f) << 24);
 
         if(this.selected) {
-            fill(matrices, this.x, this.y + this.height - 2, this.x + this.width, this.y + this.height,  0xFFFFFFFF);
+            matrices.fill(this.x, this.y + this.height - 2, this.x + this.width, this.y + this.height,  0xFFFFFFFF);
         }
     }
 

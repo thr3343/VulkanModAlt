@@ -16,7 +16,7 @@ public class DrawUtil {
 
         Matrix4f matrix4f = new Matrix4f().setOrtho(0.0F, 1.0F, 1.0F, 0.0F, 0.0F, 1.0F);
 //        matrix4f.setIdentity();
-        RenderSystem.setProjectionMatrix(matrix4f);
+        RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.DISTANCE_TO_ORIGIN);
         PoseStack posestack = RenderSystem.getModelViewStack();
         posestack.pushPose();
         posestack.setIdentity();
@@ -25,8 +25,8 @@ public class DrawUtil {
 
 //        drawer.uploadAndBindUBOs(drawer.blitShader);
 
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            framebuffer.bindAsTexture(Drawer.getCommandBuffer(), stack);
+        try (MemoryStack ignored = MemoryStack.stackPush()) {
+            framebuffer.bindAsTexture();
         }
 
         ShaderInstance shaderInstance = Minecraft.getInstance().gameRenderer.blitShader;
@@ -39,7 +39,7 @@ public class DrawUtil {
 //        bufferBuilder.vertex(1.0D, 0.0D, 0.0D).uv(1.0F, 1.0F).endVertex();
 //        bufferBuilder.vertex(1.0D, 1.0D, 0.0D).uv(1.0F, 0.0F).endVertex();
 //        bufferBuilder.vertex(0.0D, 1.0D, 0.0D).uv(0.0F, 0.0F).endVertex();
-
+        //TODO: Use FullScreenQuadMethod
         bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
         bufferBuilder.vertex(0.0D, 0.0D, 0.0D).uv(0.0F, 0.0F).color(255, 255, 255, 255).endVertex();
         bufferBuilder.vertex(1.0D, 0.0D, 0.0D).uv(1.0F, 0.0F).color(255, 255, 255, 255).endVertex();

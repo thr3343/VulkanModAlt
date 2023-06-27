@@ -9,7 +9,13 @@ import net.vulkanmod.vulkan.queue.Queue;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
+
+import org.lwjgl.glfw.GLFWNativeWayland;
+import org.lwjgl.glfw.GLFWNativeWin32;
+import org.lwjgl.glfw.GLFWNativeX11;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.windows.WinBase;
 import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
 import org.lwjgl.util.vma.VmaVulkanFunctions;
 import org.lwjgl.vulkan.*;
@@ -26,7 +32,6 @@ import static net.vulkanmod.vulkan.queue.Queue.Family.TransferQueue;
 import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
 import static net.vulkanmod.vulkan.queue.Queue.getQueueFamilies;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
-import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -34,20 +39,34 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.util.vma.Vma.vmaCreateAllocator;
 import static org.lwjgl.util.vma.Vma.vmaDestroyAllocator;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
-import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK12.VK_API_VERSION_1_2;
+import static org.lwjgl.vulkan.VK11.vkEnumerateInstanceVersion;
 
 public class Vulkan {
 
-    public static final boolean ENABLE_VALIDATION_LAYERS = false;
-//    public static final boolean ENABLE_VALIDATION_LAYERS = true;
+//    public static final boolean ENABLE_VALIDATION_LAYERS = false;
+    public static final boolean ENABLE_VALIDATION_LAYERS = true;
 
     public static final Set<String> VALIDATION_LAYERS;
     public static final boolean RECOMPILE_SHADERS = true;
 
+    public static final int vkVer;
+
     static {
+
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            var a = stack.mallocInt(1);
+            vkEnumerateInstanceVersion(a);
+            int vkVer1 = a.get(0);
+            if(VK_VERSION_MINOR(vkVer1)<2)
+            {
+                throw new RuntimeException("Vulkan 1.2 not supported!: "+"Only Has: "+ DeviceInfo.decDefVersion(vkVer1));
+            }
+            vkVer= vkVer1;
+        }
+
         if(ENABLE_VALIDATION_LAYERS) {
             VALIDATION_LAYERS = new HashSet<>();
             VALIDATION_LAYERS.add("VK_LAYER_KHRONOS_validation");
@@ -60,7 +79,7 @@ public class Vulkan {
     }
 
     private static final Set<String> DEVICE_EXTENSIONS = Stream.of(
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME)
             .collect(toSet());
 
     private static int debugCallback(int messageSeverity, int messageType, long pCallbackData, long pUserData) {
@@ -111,6 +130,7 @@ public class Vulkan {
         return allocator;
     }
 
+    public static String surfaceExt;
     public static long window;
 
     private static VkInstance instance;
@@ -233,7 +253,7 @@ public class Vulkan {
             appInfo.applicationVersion(VK_MAKE_VERSION(1, 0, 0));
             appInfo.pEngineName(stack.UTF8Safe("No Engine"));
             appInfo.engineVersion(VK_MAKE_VERSION(1, 0, 0));
-            appInfo.apiVersion(VK_API_VERSION_1_2);
+            appInfo.apiVersion(vkVer);
 
             VkInstanceCreateInfo createInfo = VkInstanceCreateInfo.callocStack(stack);
 
@@ -299,13 +319,50 @@ public class Vulkan {
         try(MemoryStack stack = stackPush()) {
 
             LongBuffer pSurface = stack.longs(VK_NULL_HANDLE);
-
-            if(glfwCreateWindowSurface(instance, window, null, pSurface) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create window surface");
+            switch (surfaceExt)
+            {
+                case "VK_KHR_win32_surface" -> KHRWin32Handle(handle, stack, pSurface);
+                case "VK_KHR_wayland_surface" -> KHRWaylandHandle(handle, stack, pSurface);
+                case "VK_KHR_xlib_surface" -> KHRX11Handle(handle, stack, pSurface);
+                default -> throw new IllegalStateException("Unrecognised Platform-Surface Specific Ext: "+surfaceExt);
             }
 
             surface = pSurface.get(0);
         }
+    }
+
+    private static void KHRX11Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
+        VkXlibSurfaceCreateInfoKHR createSurfaceInfo = VkXlibSurfaceCreateInfoKHR.calloc(stack)
+                .sType(KHRXlibSurface.VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR)
+                .pNext(VK_NULL_HANDLE)
+                .flags(0)
+                .dpy(GLFWNativeX11.glfwGetX11Display())
+                .window(GLFWNativeX11.glfwGetX11Window(handle));
+
+
+        KHRXlibSurface.vkCreateXlibSurfaceKHR( instance, createSurfaceInfo, null, pSurface);
+    }
+    private static void KHRWaylandHandle(long handle, MemoryStack stack, LongBuffer pSurface) {
+        VkWaylandSurfaceCreateInfoKHR createSurfaceInfo = VkWaylandSurfaceCreateInfoKHR.calloc(stack)
+                .sType(KHRWaylandSurface.VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR)
+                .pNext(VK_NULL_HANDLE)
+                .flags(0)
+                .surface(GLFWNativeWayland.glfwGetWaylandWindow(handle))
+                .display(GLFWNativeWayland.glfwGetWaylandDisplay());
+
+
+        KHRWaylandSurface.vkCreateWaylandSurfaceKHR( instance, createSurfaceInfo, null, pSurface);
+    }
+
+    private static void KHRWin32Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
+        VkWin32SurfaceCreateInfoKHR createSurfaceInfo = VkWin32SurfaceCreateInfoKHR.calloc(stack)
+                .sType(KHRWin32Surface.VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR)
+                .pNext(VK_NULL_HANDLE)
+                .flags(0)
+                .hinstance(WinBase.nGetModuleHandle(NULL))
+                .hwnd(GLFWNativeWin32.glfwGetWin32Window(handle));
+
+        KHRWin32Surface.vkCreateWin32SurfaceKHR( instance, createSurfaceInfo, null, pSurface);
     }
 
     private static void pickPhysicalDevice() {
@@ -392,18 +449,22 @@ public class Vulkan {
             deviceFeatures.sType$Default();
 
             //TODO indirect draw option disabled in case it is not supported
-            if(deviceInfo.availableFeatures.features().samplerAnisotropy())
-                deviceFeatures.features().samplerAnisotropy(true);
-            if(deviceInfo.availableFeatures.features().logicOp())
-                deviceFeatures.features().logicOp(true);
+            deviceFeatures.features().samplerAnisotropy(deviceInfo.availableFeatures.features().samplerAnisotropy());
+            deviceFeatures.features().logicOp(deviceInfo.availableFeatures.features().logicOp());
 
             VkPhysicalDeviceVulkan11Features deviceVulkan11Features = VkPhysicalDeviceVulkan11Features.calloc(stack);
             deviceVulkan11Features.sType$Default();
+
+            VkPhysicalDeviceVulkan12Features deviceVulkan12Features = VkPhysicalDeviceVulkan12Features.calloc(stack);
+            deviceVulkan12Features.sType$Default();
 
             if(deviceInfo.isDrawIndirectSupported()) {
                 deviceFeatures.features().multiDrawIndirect(true);
                 deviceVulkan11Features.shaderDrawParameters(true);
             }
+
+            deviceVulkan12Features.imagelessFramebuffer(true);
+            deviceVulkan12Features.separateDepthStencilLayouts(true);
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.callocStack(stack);
 
@@ -413,12 +474,8 @@ public class Vulkan {
 
             createInfo.pEnabledFeatures(deviceFeatures.features());
 
-            VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeaturesKHR = VkPhysicalDeviceDynamicRenderingFeaturesKHR.calloc(stack);
-            dynamicRenderingFeaturesKHR.sType$Default();
-            dynamicRenderingFeaturesKHR.dynamicRendering(true);
-
             createInfo.pNext(deviceVulkan11Features);
-            deviceVulkan11Features.pNext(dynamicRenderingFeaturesKHR.address());
+            createInfo.pNext(deviceVulkan12Features);
 
             //Vulkan 1.3 dynamic rendering
 //            VkPhysicalDeviceVulkan13Features deviceVulkan13Features = VkPhysicalDeviceVulkan13Features.calloc(stack);
@@ -438,15 +495,15 @@ public class Vulkan {
                 createInfo.ppEnabledLayerNames(asPointerBuffer(VALIDATION_LAYERS));
             }
 
-            PointerBuffer pDevice = stack.pointers(VK_NULL_HANDLE);
+            PointerBuffer pDevice = stack.mallocPointer(1);
 
             if(vkCreateDevice(physicalDevice, createInfo, null, pDevice) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create logical device");
             }
 
-            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, VK_API_VERSION_1_2);
+            device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, vkVer);
 
-            PointerBuffer pQueue = stack.pointers(VK_NULL_HANDLE);
+            PointerBuffer pQueue = stack.mallocPointer(1);
 
             vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
             graphicsQueue = new VkQueue(pQueue.get(0), device);
@@ -471,8 +528,9 @@ public class Vulkan {
             allocatorCreateInfo.device(device);
             allocatorCreateInfo.pVulkanFunctions(vulkanFunctions);
             allocatorCreateInfo.instance(instance);
+            allocatorCreateInfo.vulkanApiVersion(vkVer);
 
-            PointerBuffer pAllocator = stack.pointers(VK_NULL_HANDLE);
+            PointerBuffer pAllocator = stack.mallocPointer(1);
 
             if (vmaCreateAllocator(allocatorCreateInfo, pAllocator) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create command pool");
@@ -529,7 +587,7 @@ public class Vulkan {
 
     public static int findDepthFormat() {
         return findSupportedFormat(
-                stackGet().ints(VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT),
+                stackGet().ints(VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT),
                 VK_IMAGE_TILING_OPTIMAL,
                 VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
     }
@@ -589,6 +647,8 @@ public class Vulkan {
     private static PointerBuffer getRequiredExtensions() {
 
         PointerBuffer glfwExtensions = glfwGetRequiredInstanceExtensions();
+
+        surfaceExt = MemoryUtil.memUTF8(glfwExtensions.get(1));
 
         if(ENABLE_VALIDATION_LAYERS) {
 
@@ -678,6 +738,7 @@ public class Vulkan {
     public static void setVsync(boolean b) {
         if(swapChain.isVsync() != b) {
             Drawer.shouldRecreate = true;
+            Drawer.vsync = b;
             swapChain.setVsync(b);
         }
     }

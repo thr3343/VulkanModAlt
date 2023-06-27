@@ -2,7 +2,10 @@ package net.vulkanmod.vulkan;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -14,6 +17,7 @@ import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
+import org.lwjgl.opengl.GL11C;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.*;
@@ -21,21 +25,26 @@ import org.lwjgl.vulkan.*;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
+import static net.vulkanmod.vulkan.Framebuffer.*;
 import static net.vulkanmod.vulkan.Vulkan.*;
+import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class Drawer {
+    public static boolean vsync;
     private static Drawer INSTANCE;
+
+    final IntArrayFIFOQueue frameBufferPresentIndices = new IntArrayFIFOQueue(Initializer.CONFIG.frameQueueSize-1);
+    public static final Framebuffer tstFrameBuffer2;
+    private int oldestFrameIndex = 0;
 
     public static void initDrawer() { INSTANCE = new Drawer(); }
 
@@ -53,7 +62,8 @@ public class Drawer {
     private static int MAX_FRAMES_IN_FLIGHT;
     private ArrayList<Long> imageAvailableSemaphores;
     private ArrayList<Long> renderFinishedSemaphores;
-    private ArrayList<Long> inFlightFences;
+    private PointerBuffer frameFences;
+    private final LongBuffer pPresentId;
 
     private Framebuffer boundFramebuffer;
 
@@ -80,7 +90,20 @@ public class Drawer {
         this(2000000, 200000);
     }
 
+    static
+    {
+        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
+
+    }
     public Drawer(int VBOSize, int UBOSize) {
+
+
+
+        frameBufferPresentIndices.clear();
+        for (int j = 0; j < Initializer.CONFIG.frameQueueSize-1; j++) {
+            frameBufferPresentIndices.enqueue(j);
+        }
+        pPresentId = MemoryUtil.memAllocLong(1);
         device = Vulkan.getDevice();
         MAX_FRAMES_IN_FLIGHT = getSwapChainImages().size();
         vertexBuffers = new VertexBuffer[MAX_FRAMES_IN_FLIGHT];
@@ -111,7 +134,7 @@ public class Drawer {
         VertexBuffer vertexBuffer = this.vertexBuffers[currentFrame];
         vertexBuffer.copyToVertexBuffer(vertexFormat.getVertexSize(), vertexCount, buffer);
 
-        Pipeline pipeline = ((ShaderMixed)(RenderSystem.getShader())).getPipeline();
+        Pipeline pipeline = ((ShaderMixed) (RenderSystem.getShader() == null ? GameRenderer.getPositionColorShader() : RenderSystem.getShader())).getPipeline();
         bindPipeline(pipeline);
         uploadAndBindUBOs(pipeline);
 
@@ -168,7 +191,6 @@ public class Drawer {
 
         if(skipRendering) return;
 
-        vkWaitForFences(device, inFlightFences.get(currentFrame), true, VUtil.UINT64_MAX);
 
         p.pop();
         p.start();
@@ -177,6 +199,9 @@ public class Drawer {
         AreaUploadManager.INSTANCE.updateFrame(currentFrame);
 
         MemoryManager.getInstance().initFrame(currentFrame);
+
+        nvkWaitForFences(device, 1, frameFences.address(vsync ? oldestFrameIndex : currentFrame), 0, VUtil.UINT64_MAX);
+
 
 //        this.vertexBuffers[currentFrame].reset();
 //        this.uniformBuffers.reset();
@@ -209,14 +234,13 @@ public class Drawer {
                 throw new RuntimeException("Failed to begin recording command buffer:" + err);
             }
 
-            //dyn-rendering
 
-            getSwapChain().colorAttachmentLayout(stack, commandBuffer, currentFrame);
-
-            Framebuffer framebuffer = Vulkan.getSwapChain();
+            Framebuffer framebuffer = tstFrameBuffer2;
 
             framebuffer.beginRendering(commandBuffer, stack);
             this.boundFramebuffer = framebuffer;
+
+//            tstFrameBuffer2.beginRendering(commandBuffer, stack);
 
 //            renderPassInfo.framebuffer(getSwapChainFramebuffers().get(currentFrame));
 //
@@ -237,14 +261,14 @@ public class Drawer {
 
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
-//        vkCmdEndRenderPass(commandBuffer);
+        vkCmdEndRenderPass(commandBuffer);
 //        vkCmdEndRendering(commandBuffer);
-        KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
+//        KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
         this.boundFramebuffer = null;
 
-        try(MemoryStack stack = MemoryStack.stackPush()) {
-            getSwapChain().presentLayout(stack, commandBuffer, currentFrame);
-        }
+//        try(MemoryStack stack = MemoryStack.stackPush()) {
+//            getSwapChain().presentLayout(stack, commandBuffer, currentFrame);
+//        }
 
         int result = vkEndCommandBuffer(commandBuffer);
         if(result != VK_SUCCESS) {
@@ -257,7 +281,7 @@ public class Drawer {
 
         if(this.boundFramebuffer != framebuffer) {
             this.endRendering();
-
+//--->
             try (MemoryStack stack = stackPush()) {
                 framebuffer.beginRendering(commandBuffers.get(currentFrame), stack);
             }
@@ -271,9 +295,9 @@ public class Drawer {
 
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
-//        vkCmdEndRenderPass(commandBuffer);
+        vkCmdEndRenderPass(commandBuffer);
 //        vkCmdEndRendering(commandBuffer);
-        KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
+//        KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
 
         this.boundFramebuffer = null;
     }
@@ -321,7 +345,8 @@ public class Drawer {
 
         imageAvailableSemaphores = new ArrayList<>(frameNum);
         renderFinishedSemaphores = new ArrayList<>(frameNum);
-        inFlightFences = new ArrayList<>(frameNum);
+
+        frameFences = MemoryUtil.memAllocPointer(frameNum);
 
         try(MemoryStack stack = stackPush()) {
 
@@ -347,7 +372,7 @@ public class Drawer {
 
                 imageAvailableSemaphores.add(pImageAvailableSemaphore.get(0));
                 renderFinishedSemaphores.add(pRenderFinishedSemaphore.get(0));
-                inFlightFences.add(pFence.get(0));
+                frameFences.put(i, pFence.get(0));
 
             }
 
@@ -365,8 +390,11 @@ public class Drawer {
 
             IntBuffer pImageIndex = stack.mallocInt(1);
 
+
+
             int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
+
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
                 shouldRecreate = false;
@@ -375,8 +403,10 @@ public class Drawer {
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Cannot get image: " + vkResult);
             }
+            frameBufferPresentIndices.enqueueFirst(pImageIndex.get(0));
+            oldestFrameIndex = frameBufferPresentIndices.dequeueInt();
 
-            final int imageIndex = pImageIndex.get(0);
+//            KHRPresentWait.vkWaitForPresentKHR(device, getSwapChain().getId(), pPresentId.get(0), 10000);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
@@ -389,24 +419,23 @@ public class Drawer {
 
             submitInfo.pCommandBuffers(stack.pointers(commandBuffers.get(currentFrame)));
 
-            vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
+            vkResetFences(device, frameFences.get(oldestFrameIndex));
 
             Synchronization.INSTANCE.waitFences();
 
-            if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, inFlightFences.get(currentFrame))) != VK_SUCCESS) {
-                vkResetFences(device, stackGet().longs(inFlightFences.get(currentFrame)));
+            if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, frameFences.get(oldestFrameIndex))) != VK_SUCCESS) {
+                vkResetFences(device, frameFences.get(oldestFrameIndex));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 
-            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.callocStack(stack);
-            presentInfo.sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR);
 
-            presentInfo.pWaitSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)));
-
-            presentInfo.swapchainCount(1);
-            presentInfo.pSwapchains(stack.longs(Vulkan.getSwapChain().getId()));
-
-            presentInfo.pImageIndices(pImageIndex);
+            VkPresentInfoKHR presentInfo = VkPresentInfoKHR.callocStack(stack)
+                    .sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR)
+//                    .pNext(vkPresentIdKHR)
+                    .pWaitSemaphores(stackGet().longs(renderFinishedSemaphores.get(currentFrame)))
+                    .swapchainCount(1)
+                    .pSwapchains(stack.longs(Vulkan.getSwapChain().getId()))
+                    .pImageIndices(pImageIndex);
 
             vkResult = vkQueuePresentKHR(getPresentQueue(), presentInfo);
 
@@ -430,7 +459,7 @@ public class Drawer {
         vkDeviceWaitIdle(device);
 
         for(int i = 0; i < getSwapChainImages().size(); ++i) {
-            vkDestroyFence(device, inFlightFences.get(i), null);
+            vkDestroyFence(device, frameFences.get(i), null);
             vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }
@@ -475,7 +504,7 @@ public class Drawer {
             buffer = this.uniformBuffers.getUniformBuffer(i);
             memoryManager.freeBuffer(buffer.getId(), buffer.getAllocation());
 
-            vkDestroyFence(device, inFlightFences.get(i), null);
+            vkDestroyFence(device, frameFences.get(i), null);
             vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }
@@ -582,59 +611,30 @@ public class Drawer {
     public static void clearAttachments(int v) {
         if(skipRendering) return;
 
+        if (v != GL11C.GL_DEPTH_BUFFER_BIT)  return;
+
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         try(MemoryStack stack = stackPush()) {
             //ClearValues have to be different for each attachment to clear, it seems it works like a buffer: color and depth attributes override themselves
-            VkClearValue colorValue = VkClearValue.callocStack(stack);
-            colorValue.color().float32(VRenderSystem.clearColor);
 
-            VkClearValue depthValue = VkClearValue.callocStack(stack);
-            depthValue.depthStencil().depth(VRenderSystem.clearDepth);
+            VkClearValue depthValue = VkClearValue.malloc(stack);
+            depthValue.depthStencil().set(VRenderSystem.clearDepth, 0);
 
-            int attachmentsCount;
-            VkClearAttachment.Buffer pAttachments;
-            if (v == 0x100) {
-                attachmentsCount = 1;
+            int attachmentsCount = 1;
 
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
-
-                VkClearAttachment clearDepth = pAttachments.get(0);
-                clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                clearDepth.clearValue(depthValue);
-            } else if (v == 0x4000) {
-                attachmentsCount = 1;
-
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
-
-                VkClearAttachment clearColor = pAttachments.get(0);
-                clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                clearColor.colorAttachment(0);
-                clearColor.clearValue(colorValue);
-            } else if (v == 0x4100) {
-                attachmentsCount = 2;
-
-                pAttachments = VkClearAttachment.callocStack(attachmentsCount, stack);
-
-                VkClearAttachment clearColor = pAttachments.get(0);
-                clearColor.aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
-                clearColor.clearValue(colorValue);
-
-                VkClearAttachment clearDepth = pAttachments.get(1);
-                clearDepth.aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT);
-                clearDepth.clearValue(depthValue);
-            } else {
-                throw new RuntimeException("unexpected value");
-            }
+            VkClearAttachment.Buffer pAttachments = VkClearAttachment.malloc(attachmentsCount, stack)
+                    .aspectMask(VK_IMAGE_ASPECT_DEPTH_BIT)
+                    .clearValue(depthValue);
 
             //Rect to clear
-            VkRect2D renderArea = VkRect2D.callocStack(stack);
-            renderArea.offset(VkOffset2D.callocStack(stack).set(0, 0));
+            VkRect2D renderArea = VkRect2D.malloc(stack);
+            renderArea.offset().set(0, 0);
             renderArea.extent(getSwapchainExtent());
 
-            VkClearRect.Buffer pRect = VkClearRect.callocStack(1, stack);
-            pRect.get(0).rect(renderArea);
-            pRect.get(0).layerCount(1);
+            VkClearRect.Buffer pRect = VkClearRect.calloc(1, stack)
+                    .rect(renderArea)
+                    .layerCount(1);
 
             vkCmdClearAttachments(commandBuffer, pAttachments, pRect);
         }

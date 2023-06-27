@@ -38,3 +38,11 @@ public class ShaderUtil {
 /*TODO: gl_Vertex =
 *  layout(location = 0) in vec3 Position;
 * */
+//=======
+//public class ShaderUtil {
+//    public enum shaderType
+//    {
+//        POSITION_COLOR()
+//    }
+//}
+//>>>>>>> test-1.20-port

@@ -10,9 +10,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(ClientLevel.class)
 public class ClientLevelM {
-
-    @Inject(method = "setLightReady", at = @At("RETURN"))
-    private void setLightReady(int i, int j, CallbackInfo ci) {
-        WorldRenderer.getInstance().setSectionsLightReady(i, j);
-    }
+//TODO --->!
+//    @Inject(method = "setLightReady", at = @At("RETURN"))
+//    private void setLightReady(int i, int j, CallbackInfo ci) {
+//        WorldRenderer.getInstance().setSectionsLightReady(i, j);
+//    }
 }

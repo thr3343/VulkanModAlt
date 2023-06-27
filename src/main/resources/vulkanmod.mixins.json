@@ -47,6 +47,7 @@
     "render.vertex.VertexBufferM",
     "render.vertex.VertexConsumerM",
     "render.vertex.VertexFormatMixin",
+    "screen.LoadingOverlayM",
     "screen.OptionsScreenM",
     "texture.MAbstractTexture",
     "texture.MDynamicTexture",

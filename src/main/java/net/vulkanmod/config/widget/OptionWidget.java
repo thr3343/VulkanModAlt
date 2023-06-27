@@ -1,14 +1,14 @@
 package net.vulkanmod.config.widget;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiComponent;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.client.sounds.SoundManager;
@@ -18,7 +18,7 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.util.Mth;
 import net.vulkanmod.vulkan.util.VUtil;
 
-public abstract class OptionWidget extends GuiComponent
+public abstract class OptionWidget
         implements Renderable, GuiEventListener, NarratableEntry {
 
     public static final ResourceLocation WIDGETS_TEXTURE = new ResourceLocation("textures/gui/widgets.png");
@@ -49,7 +49,7 @@ public abstract class OptionWidget extends GuiComponent
     }
 
     @Override
-    public void render(PoseStack matrices, int mouseX, int mouseY, float delta) {
+    public void render(GuiGraphics matrices, int mouseX, int mouseY, float delta) {
         if (!this.visible) {
             return;
         }
@@ -58,13 +58,13 @@ public abstract class OptionWidget extends GuiComponent
         this.renderWidget(matrices, mouseX, mouseY, delta);
     }
 
-    public void renderWidget(PoseStack matrices, int mouseX, int mouseY, float delta) {
+    public void renderWidget(GuiGraphics matrices, int mouseX, int mouseY, float delta) {
         Minecraft minecraftClient = Minecraft.getInstance();
         Font textRenderer = minecraftClient.font;
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
         RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
         RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, this.alpha);
-        int i = this.getYImage(this.isHovered());
+//        int i = this.getYImage(this.isHovered());
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         RenderSystem.enableDepthTest();
@@ -72,13 +72,13 @@ public abstract class OptionWidget extends GuiComponent
         int color = this.controlHovered ? VUtil.packColor(0.0f, 0.0f, 0.0f, 0.45f) : VUtil.packColor(0.0f, 0.0f, 0.0f, 0.3f);
 
         if(this.hovered)
-            fill(matrices, this.x - 2, this.y - 2, this.x + this.width + 2, this.y + this.height + 2, 0x28000000);
-        fill(matrices, this.controlX, this.y, this.controlX + this.controlWidth, this.y + height, color);
-
-        this.renderBackground(matrices, minecraftClient, mouseX, mouseY);
+            matrices.fill(this.x - 2, this.y - 2, this.x + this.width + 2, this.y + this.height + 2, 0x28000000);
+        matrices.fill(this.controlX, this.y, this.controlX + this.controlWidth, this.y + height, color);
+//TODO --->!
+//        this.renderBackground(matrices, minecraftClient, mouseX, mouseY);
         int j = this.active ? 0xFFFFFF : 0xA0A0A0;
-        GuiComponent.drawString(matrices, textRenderer, this.getName().getVisualOrderText(), this.x, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0f) << 24);
-        GuiComponent.drawCenteredString(matrices, textRenderer, this.getDisplayedValue(), this.controlX + this.controlWidth / 2, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0f) << 24);
+        matrices.drawString(textRenderer, this.getName().getVisualOrderText(), this.x, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0f) << 24);
+        matrices.drawCenteredString(textRenderer, this.getDisplayedValue(), this.controlX + this.controlWidth / 2, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0f) << 24);
     }
 
 
@@ -94,9 +94,6 @@ public abstract class OptionWidget extends GuiComponent
 
     public boolean isHovered() {
         return this.hovered || this.focused;
-    }
-
-    protected void renderBackground(PoseStack matrices, Minecraft client, int mouseX, int mouseY) {
     }
 
     public void onClick(double mouseX, double mouseY) {

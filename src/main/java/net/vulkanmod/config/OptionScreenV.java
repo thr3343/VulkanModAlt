@@ -3,6 +3,7 @@ package net.vulkanmod.config;
 import com.google.common.collect.ImmutableList;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.Util;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
@@ -13,6 +14,7 @@ import net.minecraft.util.FormattedCharSequence;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.widget.CustomButtonWidget;
 import net.vulkanmod.config.widget.OptionWidget;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -134,7 +136,7 @@ public class OptionScreenV extends Screen {
     }
 
     @Override
-    public void render(PoseStack matrices, int mouseX, int mouseY, float delta) {
+    public void render(@NotNull GuiGraphics matrices, int mouseX, int mouseY, float delta) {
         this.updateStatus();
 
         this.renderBackground(matrices);
@@ -145,7 +147,8 @@ public class OptionScreenV extends Screen {
         super.render(matrices, mouseX, mouseY, delta);
         List<FormattedCharSequence> list = getHoveredButtonTooltip(this.currentList, mouseX, mouseY);
         if (list != null) {
-            this.renderTooltip(matrices, list, mouseX, mouseY);
+            //TODO --->!
+            matrices.renderTooltip(this.minecraft.font, list, mouseX, mouseY);
         }
     }
 

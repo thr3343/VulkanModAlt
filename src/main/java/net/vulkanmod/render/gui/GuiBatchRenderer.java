@@ -3,15 +3,12 @@ package net.vulkanmod.render.gui;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiComponent;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.util.FormattedCharSequence;
 import org.joml.Matrix4f;
 
-public class GuiBatchRenderer extends GuiComponent {
+public class GuiBatchRenderer {
 
 //    public static void blit(PoseStack p_93201_, int p_93202_, int p_93203_, int p_93204_, int p_93205_, int p_93206_, TextureAtlasSprite sprite) {
 //        innerBlit(p_93201_.last().pose(), p_93202_, p_93202_ + p_93205_, p_93203_, p_93203_ + p_93206_, p_93204_, sprite.getU0(), sprite.getU1(), sprite.getV0(), sprite.getV1());
@@ -54,7 +51,7 @@ public class GuiBatchRenderer extends GuiComponent {
     }
 
     public static void innerBlit(Matrix4f matrix4f, int x1, int x2, int y1, int y2, int z, float uv1, float uv2, float uv3, float uv4) {
-        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        RenderSystem.setShader(GameRenderer::getPositionColorShader);
         BufferBuilder bufferbuilder = Tesselator.getInstance().getBuilder();
 
         bufferbuilder.vertex(matrix4f, (float)x1, (float)y2, (float)z).uv(uv1, uv4).endVertex();

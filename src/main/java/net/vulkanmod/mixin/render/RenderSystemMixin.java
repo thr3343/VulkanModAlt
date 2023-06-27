@@ -4,6 +4,7 @@ import com.mojang.blaze3d.platform.GlStateManager;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexSorting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.AbstractTexture;
 import net.minecraft.client.renderer.texture.TextureManager;
@@ -139,9 +140,7 @@ public abstract class RenderSystemMixin {
      * @author
      */
     @Overwrite(remap = false)
-    public static void clear(int mask, boolean getError) {
-        VRenderSystem.clear(mask);
-    }
+    public static void clear(int mask, boolean getError) {}
 
     /**
      * @author
@@ -158,7 +157,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void viewport(int x, int y, int width, int height) {
-        Drawer.setViewport(x, y, width, height);
+//        Drawer.setViewport(x, y, width, height);
     }
 
     /**
@@ -166,7 +165,7 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void enableScissor(int x, int y, int width, int height) {
-        Drawer.setScissor(x, y, width, height);
+//        Drawer.setScissor(x, y, width, height);
     }
 
     /**
@@ -403,12 +402,12 @@ public abstract class RenderSystemMixin {
         //Vulkan
         VRenderSystem.renderCrosshair(p_69882_, true, true, true);
     }
-
+//TODO --->!Missing VertexSorting
     /**
      * @author
      */
     @Overwrite(remap = false)
-    public static void setProjectionMatrix(Matrix4f projectionMatrix) {
+    public static void setProjectionMatrix(Matrix4f projectionMatrix, VertexSorting vertexSorting) {
         Matrix4f matrix4f = new Matrix4f(projectionMatrix);
         if (!isOnRenderThread()) {
             recordRenderCall(() -> {
