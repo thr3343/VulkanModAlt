@@ -10,44 +10,35 @@ import org.lwjgl.vulkan.*;
 import java.nio.IntBuffer;
 import java.util.stream.IntStream;
 
+import static org.lwjgl.system.Checks.CHECKS;
+import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.JNI.callPPV;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
 import static org.lwjgl.vulkan.VK10.*;
 
 public abstract class Queue {
     private static VkDevice DEVICE;
 
-    protected CommandPool commandPool;
-
-    public synchronized CommandPool.CommandBuffer beginCommands() {
-
-        return this.commandPool.beginCommands();
-    }
-
-    public abstract long submitCommands(CommandPool.CommandBuffer commandBuffer);
-
-    public void cleanUp() {
-        commandPool.cleanUp();
-    }
-
     public enum Family {
 
-        GraphicsQueue(Constants.graphicsFamily),
-        TransferQueue(Constants.transferFamily),
-        ComputeQueue(Constants.computeFamily);
+        GraphicsQueue(QueueFamilyIndices.graphicsFamily),
+        TransferQueue(QueueFamilyIndices.transferFamily),
+        ComputeQueue(QueueFamilyIndices.computeFamily);
 
 //        private static final VkDevice DEVICE = Vulkan.getDevice();
 
         public final CommandPool commandPool;
         public final VkQueue Queue;
         private CommandPool.CommandBuffer currentCmdBuffer;
-        Family(Constants computeFamily) {
+        Family(int computeFamily) {
 
-            commandPool = new CommandPool(computeFamily.graphicsFamily1);
+            commandPool = new CommandPool(computeFamily);
            try(MemoryStack stack = MemoryStack.stackPush())
            {
                PointerBuffer pQueue = stack.mallocPointer(1);
-               vkGetDeviceQueue(DEVICE, computeFamily.graphicsFamily1, 0, pQueue);
+               callPPV(DEVICE.address(), computeFamily, 0, pQueue.address(), DEVICE.getCapabilities().vkGetDeviceQueue);
                this.Queue = new VkQueue(pQueue.get(0), DEVICE);
            }
 
@@ -157,19 +148,6 @@ public abstract class Queue {
 
         public void waitIdle() {
             vkQueueWaitIdle(Vulkan.getTransferQueue());
-        }
-
-        private enum Constants {
-            graphicsFamily(QueueFamilyIndices.graphicsFamily),
-            transferFamily(QueueFamilyIndices.transferFamily),
-            computeFamily(QueueFamilyIndices.presentFamily);
-
-            private final int graphicsFamily1;
-
-            Constants(int graphicsFamily) {
-
-                graphicsFamily1 = graphicsFamily;
-            }
         }
 
     }
