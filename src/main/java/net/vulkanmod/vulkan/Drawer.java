@@ -40,8 +40,6 @@ public class Drawer {
     public static boolean vsync;
     private static Drawer INSTANCE;
 
-    private int oldestFrameIndex = 0;
-
     public static void initDrawer() { INSTANCE = new Drawer(); }
 
     private static VkDevice device;
@@ -184,7 +182,7 @@ public class Drawer {
 
         MemoryManager.getInstance().initFrame(currentFrame);
 
-        nvkWaitForFences(device, 1, frameFences.address(vsync ? oldestFrameIndex : currentFrame), 0, VUtil.UINT64_MAX);
+        nvkWaitForFences(device, 1, frameFences.address(currentFrame), 0, VUtil.UINT64_MAX);
 
 
 //        this.vertexBuffers[currentFrame].reset();
@@ -386,7 +384,6 @@ public class Drawer {
                 throw new RuntimeException("Cannot get image: " + vkResult);
             }
 //            frameBufferPresentIndices.enqueueFirst(pImageIndex.get(0));
-            oldestFrameIndex = currentFrame;
 
 //            KHRPresentWait.vkWaitForPresentKHR(device, getSwapChain().getId(), pPresentId.get(0), 10000);
 
@@ -401,12 +398,12 @@ public class Drawer {
 
             submitInfo.pCommandBuffers(stack.pointers(commandBuffers.get(currentFrame)));
 
-            vkResetFences(device, frameFences.get(oldestFrameIndex));
+            vkResetFences(device, frameFences.get(currentFrame));
 
             Synchronization.INSTANCE.waitFences();
 
-            if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, frameFences.get(oldestFrameIndex))) != VK_SUCCESS) {
-                vkResetFences(device, frameFences.get(oldestFrameIndex));
+            if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, frameFences.get(currentFrame))) != VK_SUCCESS) {
+                vkResetFences(device, frameFences.get(currentFrame));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 

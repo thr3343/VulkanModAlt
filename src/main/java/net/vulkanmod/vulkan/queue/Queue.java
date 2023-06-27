@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.queue;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -16,7 +17,6 @@ import static org.lwjgl.vulkan.VK10.*;
 public abstract class Queue {
     private static VkDevice DEVICE;
 
-    private static QueueFamilyIndices queueFamilyIndices;
     protected CommandPool commandPool;
 
     public synchronized CommandPool.CommandBuffer beginCommands() {
@@ -36,21 +36,20 @@ public abstract class Queue {
         TransferQueue(Constants.transferFamily),
         ComputeQueue(Constants.computeFamily);
 
-        private static final VkDevice DEVICE = Vulkan.getDevice();
+//        private static final VkDevice DEVICE = Vulkan.getDevice();
 
-        private final CommandPool commandPool;
-        private final VkQueue Queue;
+        public final CommandPool commandPool;
+        public final VkQueue Queue;
         private CommandPool.CommandBuffer currentCmdBuffer;
         Family(Constants computeFamily) {
 
             commandPool = new CommandPool(computeFamily.graphicsFamily1);
-
-            this.Queue=switch (computeFamily)
-            {
-                case graphicsFamily -> Vulkan.getGraphicsQueue();
-                case transferFamily -> Vulkan.getTransferQueue();
-                case computeFamily -> Vulkan.getPresentQueue();
-            };
+           try(MemoryStack stack = MemoryStack.stackPush())
+           {
+               PointerBuffer pQueue = stack.mallocPointer(1);
+               vkGetDeviceQueue(DEVICE, computeFamily.graphicsFamily1, 0, pQueue);
+               this.Queue = new VkQueue(pQueue.get(0), DEVICE);
+           }
 
         }
 
@@ -106,7 +105,7 @@ public abstract class Queue {
 
 
 
-        public static void uploadBufferCmd(CommandPool.CommandBuffer commandBuffer, long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+        public void uploadBufferCmd(CommandPool.CommandBuffer commandBuffer, long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
 
             try(MemoryStack stack = stackPush()) {
 
@@ -175,9 +174,25 @@ public abstract class Queue {
 
     }
 
-    public static void initQueues() {
-        GraphicsQueue.createInstance();
-        TransferQueue.createInstance();
+
+    public static void initDevs() {
+
+            DEVICE = Vulkan.getDevice();
+
+        //        return queueFamilyIndices;
+    }
+
+    public enum Constants {
+        graphicsFamily(QueueFamilyIndices.graphicsFamily),
+        transferFamily(QueueFamilyIndices.transferFamily),
+        computeFamily(QueueFamilyIndices.presentFamily);
+
+        public final int graphicsFamily1;
+
+        Constants(int graphicsFamily) {
+
+            graphicsFamily1 = graphicsFamily;
+        }
     }
 
     public static class QueueFamilyIndices {
