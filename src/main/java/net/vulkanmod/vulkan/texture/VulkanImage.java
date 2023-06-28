@@ -16,9 +16,10 @@ import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.Objects;
 
-import static net.vulkanmod.vulkan.Vulkan.*;
-import static net.vulkanmod.vulkan.queue.Queue.Family.GraphicsQueue;
-import static net.vulkanmod.vulkan.queue.Queue.Family.TransferQueue;
+
+import static net.vulkanmod.vulkan.Vulkan.getDevice;
+import static net.vulkanmod.vulkan.Vulkan.getDeviceInfo;
+import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 

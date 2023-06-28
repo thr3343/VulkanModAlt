@@ -5,7 +5,7 @@ import net.vulkanmod.vulkan.queue.CommandPool;
 
 import java.nio.ByteBuffer;
 
-import static net.vulkanmod.vulkan.queue.Queue.Family.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 
 public class IndirectBuffer extends Buffer {

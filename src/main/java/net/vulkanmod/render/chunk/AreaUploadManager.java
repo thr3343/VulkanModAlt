@@ -9,8 +9,8 @@ import org.apache.commons.lang3.Validate;
 
 import java.nio.ByteBuffer;
 
-import static net.vulkanmod.vulkan.queue.Queue.Family.TransferQueue;
-import static org.lwjgl.vulkan.VK10.vkWaitForFences;
+
+import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 
 public class AreaUploadManager {
     public static AreaUploadManager INSTANCE;

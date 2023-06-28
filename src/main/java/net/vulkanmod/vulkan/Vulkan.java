@@ -5,7 +5,7 @@ import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
-import net.vulkanmod.vulkan.queue.Queue;
+import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
@@ -25,9 +25,8 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
-import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
-import static net.vulkanmod.vulkan.queue.Queue.Family.*;
-import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
+
+import static net.vulkanmod.vulkan.queue.Queues.*;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
@@ -154,8 +153,8 @@ public class Vulkan {
     public static void initVulkan(long window) {
         createInstance();
         setupDebugMessenger();
-        createSurface(window);
         pickPhysicalDevice();
+        createSurface(window);
         createLogicalDevice();
         createVma();
         MemoryTypes.createMemoryTypes();
@@ -318,7 +317,7 @@ public class Vulkan {
             {
                 case "VK_KHR_win32_surface" -> KHRWin32Handle(handle, stack, pSurface);
                 case "VK_KHR_wayland_surface" -> KHRWaylandHandle(handle, stack, pSurface);
-                case "VK_KHR_xlib_surface" -> KHRX11Handle(handle, stack, pSurface);
+//                case "VK_KHR_xlib_surface" -> KHRX11Handle(handle, stack, pSurface);
                 default -> throw new IllegalStateException("Unrecognised Platform-Surface Specific Ext: "+surfaceExt);
             }
 
@@ -326,38 +325,50 @@ public class Vulkan {
         }
     }
 
-    private static void KHRX11Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
-        VkXlibSurfaceCreateInfoKHR createSurfaceInfo = VkXlibSurfaceCreateInfoKHR.calloc(stack)
-                .sType(KHRXlibSurface.VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR)
-                .pNext(VK_NULL_HANDLE)
-                .flags(0)
-                .dpy(GLFWNativeX11.glfwGetX11Display())
-                .window(GLFWNativeX11.glfwGetX11Window(handle));
+//    private static boolean KHRX11Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
+//        VkXlibSurfaceCreateInfoKHR createSurfaceInfo = VkXlibSurfaceCreateInfoKHR.calloc(stack)
+//                .sType(KHRXlibSurface.VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR)
+//                .pNext(VK_NULL_HANDLE)
+//                .flags(0)
+//                .dpy(GLFWNativeX11.glfwGetX11Display())
+//                .window(GLFWNativeX11.glfwGetX11Window(handle));
+//
+//        KHRXlibSurface.vkCreateXlibSurfaceKHR( instance, createSurfaceInfo, null, pSurface);
+//    }
+    private static boolean KHRWaylandHandle(long handle, MemoryStack stack, LongBuffer pSurface) {
+
+        final long wlDisplay = GLFWNativeWayland.glfwGetWaylandDisplay();
+        boolean Supported = KHRWaylandSurface.vkGetPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice, QueueFamilyIndices.presentFamily, wlDisplay);
+        if(Supported) {
+            VkWaylandSurfaceCreateInfoKHR createSurfaceInfo = VkWaylandSurfaceCreateInfoKHR.calloc(stack)
+                    .sType(KHRWaylandSurface.VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR)
+                    .pNext(VK_NULL_HANDLE)
+                    .flags(0)
+                    .surface(GLFWNativeWayland.glfwGetWaylandWindow(handle))
+                    .display(wlDisplay);
 
 
-        KHRXlibSurface.vkCreateXlibSurfaceKHR( instance, createSurfaceInfo, null, pSurface);
+            KHRWaylandSurface.vkCreateWaylandSurfaceKHR(instance, createSurfaceInfo, null, pSurface);
+        }
+
+        return Supported;
     }
-    private static void KHRWaylandHandle(long handle, MemoryStack stack, LongBuffer pSurface) {
-        VkWaylandSurfaceCreateInfoKHR createSurfaceInfo = VkWaylandSurfaceCreateInfoKHR.calloc(stack)
-                .sType(KHRWaylandSurface.VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR)
-                .pNext(VK_NULL_HANDLE)
-                .flags(0)
-                .surface(GLFWNativeWayland.glfwGetWaylandWindow(handle))
-                .display(GLFWNativeWayland.glfwGetWaylandDisplay());
 
 
-        KHRWaylandSurface.vkCreateWaylandSurfaceKHR( instance, createSurfaceInfo, null, pSurface);
-    }
 
-    private static void KHRWin32Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
-        VkWin32SurfaceCreateInfoKHR createSurfaceInfo = VkWin32SurfaceCreateInfoKHR.calloc(stack)
-                .sType(KHRWin32Surface.VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR)
-                .pNext(VK_NULL_HANDLE)
-                .flags(0)
-                .hinstance(WinBase.nGetModuleHandle(NULL))
-                .hwnd(GLFWNativeWin32.glfwGetWin32Window(handle));
+    private static boolean KHRWin32Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
+        boolean Supported = KHRWin32Surface.vkGetPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, QueueFamilyIndices.presentFamily);
+        if(Supported) {
+            VkWin32SurfaceCreateInfoKHR createSurfaceInfo = VkWin32SurfaceCreateInfoKHR.calloc(stack)
+                    .sType(KHRWin32Surface.VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR)
+                    .pNext(VK_NULL_HANDLE)
+                    .flags(0)
+                    .hinstance(WinBase.nGetModuleHandle(NULL))
+                    .hwnd(GLFWNativeWin32.glfwGetWin32Window(handle));
 
-        KHRWin32Surface.vkCreateWin32SurfaceKHR( instance, createSurfaceInfo, null, pSurface);
+            KHRWin32Surface.vkCreateWin32SurfaceKHR(instance, createSurfaceInfo, null, pSurface);
+        }
+        return Supported;
     }
 
     private static void pickPhysicalDevice() {
@@ -427,9 +438,7 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            net.vulkanmod.vulkan.queue.Queue.QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-
-            int[] uniqueQueueFamilies = indices.unique();
+            int[] uniqueQueueFamilies = QueueFamilyIndices.unique();
 
             VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.callocStack(uniqueQueueFamilies.length, stack);
 
@@ -498,7 +507,6 @@ public class Vulkan {
 
             device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, vkVer);
 
-            Queue.initDevs(indices);
 
         }
     }
@@ -633,17 +641,15 @@ public class Vulkan {
 
     private static boolean isDeviceSuitable(VkPhysicalDevice device) {
 
-        Queue.QueueFamilyIndices indices = findQueueFamilies(device);
-
         boolean extensionsSupported = checkDeviceExtensionSupport(device);
-        boolean swapChainAdequate = false;
+//        boolean swapChainAdequate = false;
 
-        if(extensionsSupported) {
-            try(MemoryStack stack = stackPush()) {
-                SwapChain.SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, stack);
-                swapChainAdequate = swapChainSupport.formats.hasRemaining() && swapChainSupport.presentModes.hasRemaining() ;
-            }
-        }
+//        if(extensionsSupported) {
+//            try(MemoryStack stack = stackPush()) {
+//                SwapChain.SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device, stack);
+//                swapChainAdequate = swapChainSupport.formats.hasRemaining() && swapChainSupport.presentModes.hasRemaining() ;
+//            }
+//        }
 
         boolean anisotropicFilterSuppoted = false;
         try(MemoryStack stack = stackPush()) {
@@ -652,7 +658,8 @@ public class Vulkan {
             anisotropicFilterSuppoted = supportedFeatures.samplerAnisotropy();
         }
 
-        return indices.isSuitable() && extensionsSupported && swapChainAdequate;
+
+        return QueueFamilyIndices.findQueueFamilies(device) && extensionsSupported;
     }
 
     private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device) {

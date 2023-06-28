@@ -14,8 +14,7 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import java.util.Set;
 
-import static net.vulkanmod.vulkan.queue.Queue.Family.GraphicsQueue;
-import static net.vulkanmod.vulkan.queue.Queue.Family.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 
 @Mixin(TextureManager.class)
 public abstract class MTextureManager {
