@@ -84,7 +84,7 @@ public class DeviceInfo {
 
         vkGetPhysicalDeviceFeatures2(this.device, this.availableFeatures);
 
-        this.depthAttachmentOptimal= hasDepthOnly() ? VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        this.depthAttachmentOptimal= hasDepthOnly() ? VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL : VK11.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
 
         this.hasLoadStoreOpNone= device.getCapabilities().Vulkan13;
 
