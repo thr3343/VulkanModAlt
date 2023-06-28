@@ -12,7 +12,7 @@ import java.util.List;
 
 import static net.vulkanmod.vulkan.Vulkan.deviceProperties;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
-import static net.vulkanmod.vulkan.queue.Queue.Family.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 import static net.vulkanmod.vulkan.util.VUtil.align;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 

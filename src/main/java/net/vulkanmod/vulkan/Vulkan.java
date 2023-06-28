@@ -5,17 +5,11 @@ import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
-import net.vulkanmod.vulkan.queue.Queue;
+import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.shader.Pipeline;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
-
-import org.lwjgl.glfw.GLFWNativeWayland;
-import org.lwjgl.glfw.GLFWNativeWin32;
-import org.lwjgl.glfw.GLFWNativeX11;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.system.windows.WinBase;
 import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
 import org.lwjgl.util.vma.VmaVulkanFunctions;
 import org.lwjgl.vulkan.*;
@@ -27,9 +21,9 @@ import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
-import static net.vulkanmod.vulkan.queue.Queue.findQueueFamilies;
-import static net.vulkanmod.vulkan.queue.Queue.getQueueFamilies;
+import static net.vulkanmod.vulkan.queue.Queues.*;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
+import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -310,52 +304,13 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            LongBuffer pSurface = stack.longs(VK_NULL_HANDLE);
-            switch (surfaceExt)
-            {
-                case "VK_KHR_win32_surface" -> KHRWin32Handle(handle, stack, pSurface);
-                case "VK_KHR_wayland_surface" -> KHRWaylandHandle(handle, stack, pSurface);
-                case "VK_KHR_xlib_surface" -> KHRX11Handle(handle, stack, pSurface);
-                default -> throw new IllegalStateException("Unrecognised Platform-Surface Specific Ext: "+surfaceExt);
-            }
+            LongBuffer pSurface = stack.mallocLong(1);
+            glfwCreateWindowSurface(instance, handle, null, pSurface);
 
             surface = pSurface.get(0);
         }
     }
 
-    private static void KHRX11Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
-        VkXlibSurfaceCreateInfoKHR createSurfaceInfo = VkXlibSurfaceCreateInfoKHR.calloc(stack)
-                .sType(KHRXlibSurface.VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR)
-                .pNext(VK_NULL_HANDLE)
-                .flags(0)
-                .dpy(GLFWNativeX11.glfwGetX11Display())
-                .window(GLFWNativeX11.glfwGetX11Window(handle));
-
-
-        KHRXlibSurface.vkCreateXlibSurfaceKHR( instance, createSurfaceInfo, null, pSurface);
-    }
-    private static void KHRWaylandHandle(long handle, MemoryStack stack, LongBuffer pSurface) {
-        VkWaylandSurfaceCreateInfoKHR createSurfaceInfo = VkWaylandSurfaceCreateInfoKHR.calloc(stack)
-                .sType(KHRWaylandSurface.VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR)
-                .pNext(VK_NULL_HANDLE)
-                .flags(0)
-                .surface(GLFWNativeWayland.glfwGetWaylandWindow(handle))
-                .display(GLFWNativeWayland.glfwGetWaylandDisplay());
-
-
-        KHRWaylandSurface.vkCreateWaylandSurfaceKHR( instance, createSurfaceInfo, null, pSurface);
-    }
-
-    private static void KHRWin32Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
-        VkWin32SurfaceCreateInfoKHR createSurfaceInfo = VkWin32SurfaceCreateInfoKHR.calloc(stack)
-                .sType(KHRWin32Surface.VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR)
-                .pNext(VK_NULL_HANDLE)
-                .flags(0)
-                .hinstance(WinBase.nGetModuleHandle(NULL))
-                .hwnd(GLFWNativeWin32.glfwGetWin32Window(handle));
-
-        KHRWin32Surface.vkCreateWin32SurfaceKHR( instance, createSurfaceInfo, null, pSurface);
-    }
 
     private static void pickPhysicalDevice() {
 
@@ -424,9 +379,7 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            net.vulkanmod.vulkan.queue.Queue.QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-
-            int[] uniqueQueueFamilies = indices.unique();
+            int[] uniqueQueueFamilies = QueueFamilyIndices.unique();
 
             VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.callocStack(uniqueQueueFamilies.length, stack);
 
@@ -496,18 +449,6 @@ public class Vulkan {
             device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, vkVer);
 
 
-            vkGetDeviceQueue(device, indices.graphicsFamily, 0, pQueue);
-            graphicsQueue = new VkQueue(pQueue.get(0), device);
-
-            vkGetDeviceQueue(device, indices.presentFamily, 0, pQueue);
-            presentQueue = new VkQueue(pQueue.get(0), device);
-
-            vkGetDeviceQueue(device, indices.transferFamily, 0, pQueue);
-            transferQueue = new VkQueue(pQueue.get(0), device);
-
-            Queue.initDevs();
-
-
         }
     }
 
@@ -534,26 +475,7 @@ public class Vulkan {
         }
     }
 
-    private static void createCommandPool() {
 
-        try(MemoryStack stack = stackPush()) {
-
-            Queue.QueueFamilyIndices queueFamilyIndices = getQueueFamilies();
-
-            VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack);
-            poolInfo.sType(VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
-            poolInfo.queueFamilyIndex(queueFamilyIndices.graphicsFamily);
-            poolInfo.flags(VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
-
-            LongBuffer pCommandPool = stack.mallocLong(1);
-
-            if (vkCreateCommandPool(device, poolInfo, null, pCommandPool) != VK_SUCCESS) {
-                throw new RuntimeException("Failed to create command pool");
-            }
-
-            commandPool = pCommandPool.get(0);
-        }
-    }
 
     private static int findSupportedFormat(IntBuffer formatCandidates, int tiling, int features) {
 
@@ -662,8 +584,6 @@ public class Vulkan {
 
     private static boolean isDeviceSuitable(VkPhysicalDevice device) {
 
-        Queue.QueueFamilyIndices indices = findQueueFamilies(device);
-
         boolean extensionsSupported = checkDeviceExtensionSupport(device);
         boolean swapChainAdequate = false;
 
@@ -681,7 +601,7 @@ public class Vulkan {
             anisotropicFilterSuppoted = supportedFeatures.samplerAnisotropy();
         }
 
-        return indices.isSuitable() && extensionsSupported && swapChainAdequate;
+        return QueueFamilyIndices.findQueueFamilies(device) && extensionsSupported;
     }
 
     private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device) {

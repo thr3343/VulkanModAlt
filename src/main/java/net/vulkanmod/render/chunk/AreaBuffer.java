@@ -7,7 +7,7 @@ import net.vulkanmod.vulkan.memory.*;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
-import static net.vulkanmod.vulkan.queue.Queue.Family.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 public class AreaBuffer {
