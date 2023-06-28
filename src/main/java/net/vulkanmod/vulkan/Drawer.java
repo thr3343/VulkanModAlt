@@ -180,10 +180,11 @@ public class Drawer {
 
         AreaUploadManager.INSTANCE.updateFrame(currentFrame);
 
-        MemoryManager.getInstance().initFrame(currentFrame);
 
         nvkWaitForFences(device, 1, frameFences.address(currentFrame), 0, VUtil.UINT64_MAX);
 
+        //Hopefully putting ShaderInstance closes/frees and vkDestroyDescriptor Pools after the fence won't cause perf regressions
+        MemoryManager.getInstance().initFrame(currentFrame);
 
 //        this.vertexBuffers[currentFrame].reset();
 //        this.uniformBuffers.reset();
@@ -372,7 +373,7 @@ public class Drawer {
 
 
 
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), 10000,
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
 
