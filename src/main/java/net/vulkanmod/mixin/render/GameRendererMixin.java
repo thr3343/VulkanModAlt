@@ -42,14 +42,14 @@ public abstract class GameRendererMixin {
 //    @Shadow private @Nullable static ShaderInstance blockShader;
 //    @Shadow private @Nullable static ShaderInstance newEntityShader;
     @Shadow private @Nullable static ShaderInstance particleShader;
-    @Shadow private @Nullable static ShaderInstance positionColorLightmapShader = null;
-    @Shadow private @Nullable static ShaderInstance positionColorTexLightmapShader = null;
+    @Shadow private @Nullable static ShaderInstance positionColorLightmapShader;
+    @Shadow private @Nullable static ShaderInstance positionColorTexLightmapShader;
     @Shadow private @Nullable static ShaderInstance positionTexColorNormalShader;
-    @Shadow private @Nullable static ShaderInstance positionTexLightmapColorShader = null;
-    @Shadow private @Nullable static ShaderInstance rendertypeSolidShader = null;
-    @Shadow private @Nullable static ShaderInstance rendertypeCutoutMippedShader = null;
-    @Shadow private @Nullable static ShaderInstance rendertypeCutoutShader = null;
-    @Shadow private @Nullable static ShaderInstance rendertypeTranslucentShader = null;
+    @Shadow private @Nullable static ShaderInstance positionTexLightmapColorShader;
+    @Shadow private @Nullable static ShaderInstance rendertypeSolidShader;
+    @Shadow private @Nullable static ShaderInstance rendertypeCutoutMippedShader;
+    @Shadow private @Nullable static ShaderInstance rendertypeCutoutShader;
+    @Shadow private @Nullable static ShaderInstance rendertypeTranslucentShader;
     @Shadow private @Nullable static ShaderInstance rendertypeTranslucentMovingBlockShader;
     @Shadow private @Nullable static ShaderInstance rendertypeTranslucentNoCrumblingShader;
     @Shadow private @Nullable static ShaderInstance rendertypeArmorCutoutNoCullShader;
@@ -110,17 +110,14 @@ public abstract class GameRendererMixin {
     @Inject(method = "reloadShaders", at = @At("HEAD"), cancellable = true)
     public void reloadShaders(ResourceProvider provider, CallbackInfo ci) {
         RenderSystem.assertOnRenderThread();
-//        List<Program> list = Lists.newArrayList();
+        List<Program> list = Lists.newArrayList();
 //        list.addAll(Program.Type.FRAGMENT.getPrograms().values());
 //        list.addAll(Program.Type.VERTEX.getPrograms().values());
 //        list.forEach(Program::close);
         List<Pair<ShaderInstance, Consumer<ShaderInstance>>> list1 = Lists.newArrayListWithCapacity(this.shaders.size());
 
         try {
-            final ShaderInstance positionColor = new ShaderInstance(provider, "position_color", DefaultVertexFormat.POSITION_COLOR);
-            final ShaderInstance entity_no_cull = new ShaderInstance(provider, "rendertype_entity_cutout_no_cull", DefaultVertexFormat.NEW_ENTITY);
-            final ShaderInstance endPortalShader = new ShaderInstance(provider, "rendertype_end_portal", DefaultVertexFormat.POSITION);
-            final ShaderInstance rendertypeText = new ShaderInstance(provider, "rendertype_text", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP);
+
             list1.add(Pair.of(new ShaderInstance(provider, "particle", DefaultVertexFormat.PARTICLE), (shaderInstance) -> {
                 particleShader = shaderInstance;
             }));
@@ -128,6 +125,8 @@ public abstract class GameRendererMixin {
                 positionShader = shaderInstance;
             }));
 
+
+            ShaderInstance positionColor = new ShaderInstance(provider, "position_color", DefaultVertexFormat.POSITION_COLOR);
             list1.add(Pair.of(positionColor, (shaderInstance) -> positionColorShader = shaderInstance));
 //            list1.add(Pair.of(new ShaderInstance(provider, "position_color_lightmap", DefaultVertexFormat.POSITION_COLOR_LIGHTMAP), (p_172705_) -> {
 //               positionColorLightmapShader = p_172705_;
@@ -150,18 +149,19 @@ public abstract class GameRendererMixin {
 //            list1.add(Pair.of(new ShaderInstance(provider, "position_tex_lightmap_color", DefaultVertexFormat.POSITION_TEX_LIGHTMAP_COLOR), (p_172687_) -> {
 //               positionTexLightmapColorShader = p_172687_;
 //            }));
-//            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_solid", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
-//                rendertypeSolidShader = shaderInstance;
-//            }));
-//            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_cutout_mipped", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
-//                rendertypeCutoutMippedShader = shaderInstance;
-//            }));
-//            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_cutout", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
-//                rendertypeCutoutShader = shaderInstance;
-//            }));
-//            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_translucent", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
-//                rendertypeTranslucentShader = shaderInstance;
-//            }));
+
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_solid", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+                rendertypeSolidShader = shaderInstance;
+            }));
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_cutout_mipped", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+                rendertypeCutoutMippedShader = shaderInstance;
+            }));
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_cutout", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+                rendertypeCutoutShader = shaderInstance;
+            }));
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_translucent", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+                rendertypeTranslucentShader = shaderInstance;
+            }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_translucent_moving_block", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
                 rendertypeTranslucentMovingBlockShader = shaderInstance;
             }));
@@ -179,11 +179,16 @@ public abstract class GameRendererMixin {
             }));
 
             //No diff in these shaders
-            list1.add(Pair.of(entity_no_cull, (shaderInstance) -> rendertypeEntityCutoutNoCullShader = shaderInstance));
+            ShaderInstance entity_no_cull = new ShaderInstance(provider, "rendertype_entity_cutout_no_cull", DefaultVertexFormat.NEW_ENTITY);
+            list1.add(Pair.of(entity_no_cull, (shaderInstance) -> {
+                rendertypeEntityCutoutNoCullShader = shaderInstance;
+            }));
 //            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_entity_cutout_no_cull_z_offset", DefaultVertexFormat.POSITION_COLOR_TEX_OVERLAY_LIGHTMAP), (p_172654_) -> {
 //               rendertypeEntityCutoutNoCullZOffsetShader = p_172654_;
 //            }));
-            list1.add(Pair.of(entity_no_cull, (shaderInstance) -> rendertypeEntityCutoutNoCullZOffsetShader = shaderInstance));
+            list1.add(Pair.of(entity_no_cull, (shaderInstance) -> {
+                rendertypeEntityCutoutNoCullZOffsetShader = shaderInstance;
+            }));
 
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_item_entity_translucent_cull", DefaultVertexFormat.NEW_ENTITY), (shaderInstance) -> {
                 rendertypeItemEntityTranslucentCullShader = shaderInstance;
@@ -253,26 +258,43 @@ public abstract class GameRendererMixin {
             }));
 
             //Text
-            list1.add(Pair.of(rendertypeText, (shaderInstance) -> rendertypeTextShader = shaderInstance));
+
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_text", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), (shaderInstance) -> {
+                rendertypeTextShader = shaderInstance;
+            }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_text_background", DefaultVertexFormat.POSITION_COLOR_LIGHTMAP), (shaderInstance) -> {
                 rendertypeTextBackgroundShader = shaderInstance;
             }));
-            list1.add(Pair.of(rendertypeText, (shaderInstance) -> rendertypeTextIntensityShader = shaderInstance));
-            list1.add(Pair.of(rendertypeText, (shaderInstance) -> rendertypeTextSeeThroughShader = shaderInstance));
-            list1.add(Pair.of(positionColor, (shaderInstance) -> rendertypeTextBackgroundSeeThroughShader = shaderInstance));
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_text_intensity", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), (shaderInstance) -> {
+                rendertypeTextIntensityShader = shaderInstance;
+            }));
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_text_see_through", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), (shaderInstance) -> {
+                rendertypeTextSeeThroughShader = shaderInstance;
+            }));
+            list1.add(Pair.of(positionColor, (shaderInstance) -> {
+                rendertypeTextBackgroundSeeThroughShader = shaderInstance;
+            }));
 //            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_text_background_see_through", DefaultVertexFormat.POSITION_COLOR_LIGHTMAP), (shaderInstance) -> {
 //                rendertypeTextBackgroundSeeThroughShader = shaderInstance;
 //            }));
-            list1.add(Pair.of(rendertypeText, (shaderInstance) -> rendertypeTextIntensitySeeThroughShader = shaderInstance));
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_text_intensity_see_through", DefaultVertexFormat.POSITION_COLOR_TEX_LIGHTMAP), (shaderInstance) -> {
+                rendertypeTextIntensitySeeThroughShader = shaderInstance;
+            }));
 
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_lightning", DefaultVertexFormat.POSITION_COLOR), (shaderInstance) -> {
                 rendertypeLightningShader = shaderInstance;
             }));
-//            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_tripwire", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
-//                rendertypeTripwireShader = shaderInstance;
-//            }));
-            list1.add(Pair.of(endPortalShader, (shaderInstance) -> rendertypeEndPortalShader = shaderInstance));
-            list1.add(Pair.of(endPortalShader, (shaderInstance) -> rendertypeEndGatewayShader = shaderInstance));
+
+            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_tripwire", DefaultVertexFormat.BLOCK), (shaderInstance) -> {
+                rendertypeTripwireShader = shaderInstance;
+            }));
+            ShaderInstance endPortalShader = new ShaderInstance(provider, "rendertype_end_portal", DefaultVertexFormat.POSITION);
+            list1.add(Pair.of(endPortalShader, (shaderInstance) -> {
+                rendertypeEndPortalShader = shaderInstance;
+            }));
+            list1.add(Pair.of(endPortalShader, (shaderInstance) -> {
+                rendertypeEndGatewayShader = shaderInstance;
+            }));
             list1.add(Pair.of(new ShaderInstance(provider, "rendertype_lines", DefaultVertexFormat.POSITION_COLOR_NORMAL), (shaderInstance) -> {
                 rendertypeLinesShader = shaderInstance;
             }));
@@ -293,7 +315,9 @@ public abstract class GameRendererMixin {
 //            }));
 
         } catch (IOException ioexception) {
-            list1.forEach((p_172772_) -> p_172772_.getFirst().close());
+            list1.forEach((p_172772_) -> {
+                p_172772_.getFirst().close();
+            });
             throw new RuntimeException("could not reload shaders", ioexception);
         }
 
