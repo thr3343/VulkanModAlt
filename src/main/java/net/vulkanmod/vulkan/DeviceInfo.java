@@ -41,10 +41,10 @@ public class DeviceInfo {
     public final VkPhysicalDeviceVulkan11Features availableFeatures11;
     public final int depthAttachmentOptimal;
 
-    public final VkPhysicalDeviceVulkan12Features availableFeatures12;
+//    public final VkPhysicalDeviceVulkan12Features availableFeatures12;
 //    public final boolean vulkan13Support;
 
-    private boolean drawIndirectSupported;
+    private final boolean drawIndirectSupported;
 
     static {
         CentralProcessor centralProcessor = new SystemInfo().getHardware().getProcessor();
@@ -72,9 +72,7 @@ public class DeviceInfo {
         this.availableFeatures11 = VkPhysicalDeviceVulkan11Features.malloc();
         this.availableFeatures11.sType$Default();
 
-        this.availableFeatures12 = VkPhysicalDeviceVulkan12Features.malloc();
-        this.availableFeatures12.sType$Default();
-        this.availableFeatures.pNext(this.availableFeatures12.pNext(this.availableFeatures11.pNext(this.availableFeatures.pNext()).address()));
+        this.availableFeatures.pNext(this.availableFeatures11);
 
         //Vulkan 1.3
 //        this.availableFeatures13 = VkPhysicalDeviceVulkan13Features.malloc();
@@ -85,12 +83,11 @@ public class DeviceInfo {
 
         vkGetPhysicalDeviceFeatures2(this.device, this.availableFeatures);
 
-        this.depthAttachmentOptimal= hasDepthOnly() ? VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        this.depthAttachmentOptimal= hasDepthOnly() ? VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL : VK11.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
 
         this.hasLoadStoreOpNone= device.getCapabilities().Vulkan13;
 
-        if(this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters())
-                this.drawIndirectSupported = true;
+                this.drawIndirectSupported = this.availableFeatures.features().multiDrawIndirect() && this.availableFeatures11.shaderDrawParameters();
 
     }
 

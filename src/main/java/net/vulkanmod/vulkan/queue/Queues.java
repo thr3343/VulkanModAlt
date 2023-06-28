@@ -20,7 +20,7 @@ public enum Queues {
 
     GraphicsQueue(QueueFamilyIndices.graphicsFamily),
     TransferQueue(QueueFamilyIndices.transferFamily),
-    ComputeQueue(QueueFamilyIndices.computeFamily);
+    ComputeQueue(QueueFamilyIndices.presentFamily);
 
     public final CommandPool commandPool;
     public final VkQueue Queue;
