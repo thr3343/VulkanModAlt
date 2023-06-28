@@ -3,7 +3,7 @@ package net.vulkanmod.vulkan;
 import net.minecraft.util.Mth;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import net.vulkanmod.vulkan.queue.Queue;
+import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -101,9 +101,9 @@ public class SwapChain {
             createInfo.imageUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 
 
-            if(Queue.QueueFamilyIndices.graphicsFamily != Queue.QueueFamilyIndices.presentFamily) {
+            if(QueueFamilyIndices.graphicsFamily != QueueFamilyIndices.presentFamily) {
                 createInfo.imageSharingMode(VK_SHARING_MODE_CONCURRENT);
-                createInfo.pQueueFamilyIndices(stack.ints(Queue.QueueFamilyIndices.graphicsFamily, Queue.QueueFamilyIndices.presentFamily));
+                createInfo.pQueueFamilyIndices(stack.ints(QueueFamilyIndices.graphicsFamily, QueueFamilyIndices.presentFamily));
             } else {
                 createInfo.imageSharingMode(VK_SHARING_MODE_EXCLUSIVE);
             }

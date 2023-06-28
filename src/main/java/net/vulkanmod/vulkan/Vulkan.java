@@ -6,7 +6,7 @@ import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
-import net.vulkanmod.vulkan.queue.Queue;
+import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.PointerBuffer;
@@ -24,7 +24,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toSet;
-import static net.vulkanmod.vulkan.queue.Queue.Family.*;
+import static net.vulkanmod.vulkan.queue.Queues.*;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
@@ -377,7 +377,7 @@ public class Vulkan {
     private static boolean KHRWaylandHandle(long handle, MemoryStack stack, LongBuffer pSurface) {
 
         final long wlDisplay = GLFWNativeWayland.glfwGetWaylandDisplay();
-        boolean Supported = KHRWaylandSurface.vkGetPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice, Queue.QueueFamilyIndices.presentFamily, wlDisplay);
+        boolean Supported = KHRWaylandSurface.vkGetPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice, QueueFamilyIndices.presentFamily, wlDisplay);
         if(Supported) {
             VkWaylandSurfaceCreateInfoKHR createSurfaceInfo = VkWaylandSurfaceCreateInfoKHR.calloc(stack)
                     .sType(KHRWaylandSurface.VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR)
@@ -393,7 +393,7 @@ public class Vulkan {
     }
 
     private static boolean KHRWin32Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
-        boolean Supported = KHRWin32Surface.vkGetPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, Queue.QueueFamilyIndices.presentFamily);
+        boolean Supported = KHRWin32Surface.vkGetPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, QueueFamilyIndices.presentFamily);
         if(Supported) {
             VkWin32SurfaceCreateInfoKHR createSurfaceInfo = VkWin32SurfaceCreateInfoKHR.calloc(stack)
                     .sType(KHRWin32Surface.VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR)
@@ -475,7 +475,7 @@ public class Vulkan {
 
         try(MemoryStack stack = stackPush()) {
 
-            int[] uniqueQueueFamilies = Queue.QueueFamilyIndices.unique();
+            int[] uniqueQueueFamilies = QueueFamilyIndices.unique();
 
             VkDeviceQueueCreateInfo.Buffer queueCreateInfos = VkDeviceQueueCreateInfo.callocStack(uniqueQueueFamilies.length, stack);
 
@@ -545,7 +545,6 @@ public class Vulkan {
             device = new VkDevice(pDevice.get(0), physicalDevice, createInfo, vkVer);
 
 
-            Queue.initDevs();
 
         }
     }
@@ -677,7 +676,7 @@ public class Vulkan {
             anisotropicFilterSuppoted = supportedFeatures.samplerAnisotropy();
         }
 
-        return Queue.QueueFamilyIndices.findQueueFamilies(device) && extensionsSupported;
+        return QueueFamilyIndices.findQueueFamilies(device) && extensionsSupported;
     }
 
     private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device) {

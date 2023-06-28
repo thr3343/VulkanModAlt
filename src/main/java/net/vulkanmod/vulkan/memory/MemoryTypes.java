@@ -7,7 +7,7 @@ import org.lwjgl.vulkan.VkMemoryType;
 
 import java.nio.ByteBuffer;
 
-import static net.vulkanmod.vulkan.queue.Queue.Family.TransferQueue;
+import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class MemoryTypes {
