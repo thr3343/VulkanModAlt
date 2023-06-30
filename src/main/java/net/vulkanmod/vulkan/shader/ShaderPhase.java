@@ -8,6 +8,9 @@ public class ShaderPhase {
     public ShaderPhase(ShaderPhase.Shadervarient shadervarient, Framebuffer.AttachmentTypes... attachments) {
     }
 
+    /*TODO
+    *  CHEC if Multiple RenderPasses are Possible
+    * if not will need to */
     enum Shadervarient
     {
         COLOUR,

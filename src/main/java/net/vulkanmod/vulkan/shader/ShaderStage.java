@@ -16,13 +16,13 @@ public class ShaderStage {
 
     }
 
-    ShaderState executeStaderStage(Function<> Stage Executable, )
-    {
-        Uniforms unfir = stageStage.getUniforms(isPending);
-
-        //COLOUR, DEPTH, negated stages, sSHdowinverse e.g.
-        ShaderStae Compsietenenxtion stageMeshSystem (archi pahse,xutpese;
-
-        ShaderCompoant.drawShaderStae()
-    }
+//    ShaderState executeStaderStage(Function<> Stage Executable, )
+//    {
+//        Uniforms unfir = stageStage.getUniforms(isPending);
+//
+//        //COLOUR, DEPTH, negated stages, sSHdowinverse e.g.
+//        ShaderStae Compsietenenxtion stageMeshSystem (archi pahse,xutpese;
+//
+//        ShaderCompoant.drawShaderStae()
+//    }
 }

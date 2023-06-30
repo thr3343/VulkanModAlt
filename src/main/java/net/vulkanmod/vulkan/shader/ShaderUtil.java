@@ -13,7 +13,7 @@ public class ShaderUtil {
 
 
         FINAL("final", 1);
-        ShaderStage(String gbuffersBasic, int i, CommonUniforms unifs, phase, Function<> entryPoint) {
+        ShaderStage(String gbuffersBasic, int i) {
 
         }
     }
