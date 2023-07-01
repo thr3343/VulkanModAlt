@@ -1,6 +1,6 @@
 package net.vulkanmod.vulkan.shader;
 
-import net.minecraft.client.renderer.ShaderInstance;
+import static net.vulkanmod.vulkan.shader.ShaderUtil.RenderPassScope.*;
 
 public class ShaderUtil {
 
@@ -9,13 +9,21 @@ public class ShaderUtil {
 
     public enum ShaderStage
     {
-        GBUFFERS_BASIC("gbuffers_basic", 1),
+        BASIC("gbuffers_basic", MAIN),
 
-
-        FINAL("final", 1);
-        ShaderStage(String gbuffersBasic, int i) {
+        COMPOSITE("composite", MAIN), //TODO: Combine Composite Stages...
+        FINAL("final", POST);
+        ShaderStage(String gbuffersBasic, RenderPassScope i) {
 
         }
+    }
+
+    enum RenderPassScope
+    {
+        MAIN,
+        POST,
+        DEFERRED,
+        PRE_SETUP;
     }
 }
 

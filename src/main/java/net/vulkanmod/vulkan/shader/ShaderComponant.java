@@ -21,7 +21,8 @@ public class ShaderComponant {
 
 //    ShaderPhase shaderPhase = new ShaderPhase(ShaderPhase.Shadervarient shadervarient, Framebuffer.AttachmentTypes... attachments)
 
-    public ShaderComponant(ShaderStage shaderStage, String shaderPath, ShaderPhase.Shadervarient shadervarient)  {
+    public ShaderComponant(ShaderUtil.ShaderStage shaderStage, String baseShaderPath) {
+
     }
 
     void extractUniforms()

@@ -274,7 +274,7 @@ public class Drawer {
     }
 
     public void beginRendering(Framebuffer framebuffer) {
-        if(skipRendering) return;
+        if(skipRendering || framebuffer==null) return;
 
         if(this.boundFramebuffer != framebuffer) {
             this.endRendering();

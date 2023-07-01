@@ -7,11 +7,11 @@ import static org.lwjgl.util.spvc.Spvc.spvc_compiler_create_shader_resources;
 
 public class SPVUtilAsm
 {
-    private static final long compiler;
+//    private static final long compiler;
 
     static{
-        PointerBuffer refRes;
-        spvc_compiler_create_shader_resources(compiler, refRes)
+//        PointerBuffer refRes;
+//        spvc_compiler_create_shader_resources(compiler, refRes)
 
     }
 
