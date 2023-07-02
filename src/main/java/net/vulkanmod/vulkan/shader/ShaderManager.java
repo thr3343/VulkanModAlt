@@ -1,6 +1,5 @@
 package net.vulkanmod.vulkan.shader;
 
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
@@ -20,23 +19,27 @@ public class ShaderManager {
     Pipeline terrainShader;
     public Pipeline terrainDirectShader;
 
+//    public Pipeline testShader;
+
     public ShaderManager() {
         createBasicPipelines();
     }
 
     private void createBasicPipelines() {
-        this.terrainShader = createPipeline("terrain");
+        this.terrainShader = createPipeline("terrain", "basic/%s/%s", false);
 
-        this.terrainDirectShader = createPipeline("terrain_direct");
+        this.terrainDirectShader = createPipeline("terrain_direct", "basic/%s/%s", false);
+
+//        this.testShader = createPipeline("test", "post/%s/%s", true);
     }
 
-    private Pipeline createPipeline(String name) {
-        String path = String.format("basic/%s/%s", name, name);
+    private Pipeline createPipeline(String name, String baseDir, boolean b) {
+        String path = String.format(baseDir, name, name);
 
         Pipeline.Builder pipelineBuilder = new Pipeline.Builder(TERRAIN_VERTEX_FORMAT, path);
         pipelineBuilder.parseBindingsJSON();
         pipelineBuilder.compileShaders();
-        return pipelineBuilder.createPipeline();
+        return pipelineBuilder.createPipeline(b);
     }
 
     public Pipeline getTerrainShader() {

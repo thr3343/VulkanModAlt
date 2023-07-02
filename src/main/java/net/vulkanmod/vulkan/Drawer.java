@@ -2,10 +2,8 @@ package net.vulkanmod.vulkan;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -92,7 +90,7 @@ public class Drawer {
 
     static
     {
-        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
+        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.DEPTH, AttachmentTypes.OUTPUTCOLOR);
 
     }
     public Drawer(int VBOSize, int UBOSize) {
@@ -257,6 +255,21 @@ public class Drawer {
         if(skipRendering) return;
 
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
+
+//
+
+        tstFrameBuffer2.nextSubPass(commandBuffer);
+
+//        VRenderSystem.disableDepthTest();
+//        VRenderSystem.disableCull();
+//
+//        final Pipeline testShader = ShaderManager.getInstance().testShader;
+//        bindPipeline(testShader);
+//        testShader.bindDescriptorSets(commandBuffer, currentFrame);
+//        vkCmdDraw(commandBuffer,3, 1, 0, 0);
+
+
+
 
         vkCmdEndRenderPass(commandBuffer);
 //        vkCmdEndRendering(commandBuffer);

@@ -14,7 +14,8 @@ import net.vulkanmod.vulkan.shader.Pipeline;
 import org.joml.Matrix4f;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.locks.ReentrantLock;
+
+import static net.vulkanmod.vulkan.Drawer.*;
 
 @Environment(EnvType.CLIENT)
 public class VBO {
@@ -67,9 +68,9 @@ public class VBO {
 
             AutoIndexBuffer autoIndexBuffer;
             if(this.mode != VertexFormat.Mode.TRIANGLE_FAN) {
-                autoIndexBuffer = Drawer.getInstance().getQuadsIndexBuffer();
+                autoIndexBuffer = getInstance().getQuadsIndexBuffer();
             } else {
-                autoIndexBuffer = Drawer.getInstance().getTriangleFanIndexBuffer();
+                autoIndexBuffer = getInstance().getTriangleFanIndexBuffer();
                 this.indexCount = (vertexCount - 2) * 3;
             }
 
@@ -97,7 +98,7 @@ public class VBO {
 
             VRenderSystem.applyMVP(MV, P);
 
-            Drawer drawer = Drawer.getInstance();
+            Drawer drawer = getInstance();
             Pipeline pipeline = ((ShaderMixed)(RenderSystem.getShader())).getPipeline();
             drawer.bindPipeline(pipeline);
             drawer.uploadAndBindUBOs(pipeline);
@@ -117,7 +118,7 @@ public class VBO {
         if (this.indexCount != 0) {
 
             RenderSystem.assertOnRenderThread();
-            Drawer drawer = Drawer.getInstance();
+            Drawer drawer = getInstance();
             drawer.drawIndexed(vertexBuffer, indexBuffer, indexCount);
         }
     }

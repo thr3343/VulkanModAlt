@@ -52,6 +52,7 @@ public class Pipeline {
     private static final VkDevice DEVICE = Vulkan.getDevice();
     private static final long PIPELINE_CACHE = createPipelineCache();
     private static final int IMAGES_SIZE = getSwapChainImages().size();
+    private final int subIndex;
 
     private long descriptorSetLayout;
     private long pipelineLayout;
@@ -62,6 +63,7 @@ public class Pipeline {
     private int colorFormat;
     private int depthFormat;
 
+    private final List<InputAttachment> inputAttachments;
     private final List<UBO> UBOs;
     private final ManualUBO manualUBO;
     private final List<Sampler> samplers;
@@ -70,7 +72,9 @@ public class Pipeline {
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
 
-    public Pipeline(VertexFormat vertexFormat, int colorFormat, int depthFormat, List<UBO> UBOs, ManualUBO manualUBO, List<Sampler> samplers, PushConstants pushConstants, long vertSpirv, long fragSpirv) {
+    public Pipeline(boolean b, List<InputAttachment> inputAttachments, VertexFormat vertexFormat, int colorFormat, int depthFormat, List<UBO> UBOs, ManualUBO manualUBO, List<Sampler> samplers, PushConstants pushConstants, long vertSpirv, long fragSpirv) {
+        this.inputAttachments = inputAttachments;
+        this.subIndex=b?1:0;
         this.UBOs = UBOs;
         this.manualUBO = manualUBO;
         this.samplers = samplers;
@@ -220,7 +224,7 @@ public class Pipeline {
             pipelineInfo.pDynamicState(dynamicStates);
             pipelineInfo.layout(pipelineLayout);
             pipelineInfo.renderPass(Drawer.tstFrameBuffer2.renderPass); //Can render to a different renderPass, even if !begin
-//            pipelineInfo.subpass(0);
+            pipelineInfo.subpass(subIndex);
             pipelineInfo.basePipelineHandle(VK_NULL_HANDLE);
             pipelineInfo.basePipelineIndex(-1);
 
@@ -236,9 +240,19 @@ public class Pipeline {
 
     private void createDescriptorSetLayout() {
         try(MemoryStack stack = stackPush()) {
-            int bindingsSize = this.UBOs.size() + samplers.size();
+            int bindingsSize = this.inputAttachments.size() + this.UBOs.size() + samplers.size();
 
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.callocStack(bindingsSize, stack);
+
+            for(InputAttachment inputAttachment : inputAttachments)
+            {
+                VkDescriptorSetLayoutBinding imgLayoutBinding =  bindings.get(inputAttachment.binding());
+                imgLayoutBinding.binding(inputAttachment.binding());
+                imgLayoutBinding.descriptorCount(1);
+                imgLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
+                imgLayoutBinding.pImmutableSamplers(null);
+                imgLayoutBinding.stageFlags(inputAttachment.type());;
+            }
 
             for(UBO ubo : this.UBOs) {
                 VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(ubo.getBinding());
@@ -292,6 +306,7 @@ public class Pipeline {
 
                 pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
             }
+
 
             LongBuffer pPipelineLayout = stack.longs(VK_NULL_HANDLE);
 
@@ -485,6 +500,7 @@ public class Pipeline {
     }
 
     public long getHandle(PipelineState state) {
+//        this.subIndex=currentSubPassIndex;
         return graphicsPipelines.computeIfAbsent(state, this::createGraphicsPipeline);
     }
 
@@ -596,11 +612,28 @@ public class Pipeline {
 
             this.currentSet = this.sets.get(this.currentIdx);
 
-            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.callocStack(UBOs.size() + samplers.size(), stack);
+            VkWriteDescriptorSet.Buffer descriptorWrites = VkWriteDescriptorSet.callocStack(inputAttachments.size() + UBOs.size() + samplers.size(), stack);
             VkDescriptorBufferInfo.Buffer[] bufferInfos = new VkDescriptorBufferInfo.Buffer[UBOs.size()];
-
-            //TODO maybe ubo update is not needed everytime!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            VkDescriptorImageInfo.Buffer[] imgInfos = new VkDescriptorImageInfo.Buffer[inputAttachments.size()];
             int i = 0;
+            for(InputAttachment inputAttachment1 : inputAttachments)
+            {
+                imgInfos[i]=VkDescriptorImageInfo.callocStack(1, stack);
+                imgInfos[i].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                imgInfos[i].imageView(Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame()));
+                imgInfos[i].sampler(NULL);
+
+                VkWriteDescriptorSet imgDescriptorWrite = descriptorWrites.get(i);
+                imgDescriptorWrite.sType$Default();
+                imgDescriptorWrite.dstBinding(inputAttachment1.binding());
+                imgDescriptorWrite.dstArrayElement(0);
+                imgDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
+                imgDescriptorWrite.descriptorCount(1);
+                imgDescriptorWrite.pImageInfo(imgInfos[inputAttachment1.binding()]);
+                imgDescriptorWrite.dstSet(currentSet);
+                ++i;
+            }
+
             for(UBO ubo : UBOs) {
 
                 bufferInfos[i] = VkDescriptorBufferInfo.callocStack(1, stack);
@@ -660,6 +693,7 @@ public class Pipeline {
             VkDescriptorSetAllocateInfo allocInfo = VkDescriptorSetAllocateInfo.callocStack(stack);
             allocInfo.sType$Default();
             allocInfo.descriptorPool(descriptorPool);
+            allocInfo.descriptorSetCount();
             allocInfo.pSetLayouts(layout);
 
             this.sets = MemoryUtil.memAllocLong(this.poolSize);
@@ -671,12 +705,17 @@ public class Pipeline {
         }
 
         private void createDescriptorPool(MemoryStack stack) {
-            int size =  UBOs.size() + samplers.size();
+            int size =  inputAttachments.size() + UBOs.size() + samplers.size();
 
             VkDescriptorPoolSize.Buffer poolSizes = VkDescriptorPoolSize.callocStack(size, stack);
 
             int i;
-            for(i = 0; i < UBOs.size(); ++i) {
+            for(i = 0; i < inputAttachments.size(); ++i) {
+                VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(i);
+                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
+                uniformBufferPoolSize.descriptorCount(this.poolSize);
+            }
+            for(; i < UBOs.size(); ++i) {
                 VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(i);
 //                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
                 uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
@@ -722,6 +761,9 @@ public class Pipeline {
     public static class Builder {
         private final VertexFormat vertexFormat;
         private final String shaderPath;
+
+        private final List<InputAttachment> inputAttachmentsPre =new ArrayList<>();
+
         private List<UBO> UBOs;
         private ManualUBO manualUBO;
         private PushConstants pushConstants;
@@ -733,6 +775,7 @@ public class Pipeline {
 
         private Framebuffer framebuffer;
 
+
         public Builder(VertexFormat vertexFormat, String path) {
             this.vertexFormat = vertexFormat;
             this.shaderPath = path;
@@ -742,7 +785,7 @@ public class Pipeline {
             this(vertexFormat, null);
         }
 
-        public Pipeline createPipeline() {
+        public Pipeline createPipeline(boolean b) {
             Validate.isTrue(this.samplers != null && this.UBOs != null
                     && this.vertShaderSPIRV != NULL && this.fragShaderSPIRV != NULL,
                     "Cannot create Pipeline: resources missing");
@@ -753,7 +796,7 @@ public class Pipeline {
             if(this.manualUBO != null)
                 this.UBOs.add(this.manualUBO);
 
-            return new Pipeline(this.vertexFormat, this.framebuffer.getFormat(), this.framebuffer.getDepthFormat(),
+            return new Pipeline(b, this.inputAttachmentsPre, this.vertexFormat, this.framebuffer.getFormat(), this.framebuffer.getDepthFormat(),
                     this.UBOs, this.manualUBO, this.samplers, this.pushConstants, this.vertShaderSPIRV, this.fragShaderSPIRV);
         }
 
@@ -788,7 +831,11 @@ public class Pipeline {
             JsonArray jsonManualUbos = GsonHelper.getAsJsonArray(jsonObject, "ManualUBOs", (JsonArray)null);
             JsonArray jsonSamplers = GsonHelper.getAsJsonArray(jsonObject, "samplers", (JsonArray)null);
             JsonArray jsonPushConstants = GsonHelper.getAsJsonArray(jsonObject, "PushConstants", (JsonArray)null);
+            JsonArray jsonInputAttachments = GsonHelper.getAsJsonArray(jsonObject, "Inputs", (JsonArray)null);
 
+            if(jsonInputAttachments != null) {
+                this.parseInputAttachments(jsonInputAttachments);
+            }
             if (jsonUbos != null) {
                 for (JsonElement jsonelement : jsonUbos) {
                     this.parseUboNode(jsonelement);
@@ -808,6 +855,23 @@ public class Pipeline {
             if(jsonPushConstants != null) {
                 this.parsePushConstantNode(jsonPushConstants);
             }
+
+
+        }
+
+        private void parseInputAttachments(JsonArray jsonInputAttachments) {
+
+            for(JsonElement inputAttachment :jsonInputAttachments)
+            {
+//                final JsonObject asJsonObject = inputAttachment.getAsJsonObject();
+//                String name = GsonHelper.getAsString(asJsonObject, "type");
+                inputAttachmentsPre.add(new InputAttachment(VK_SHADER_STAGE_FRAGMENT_BIT,0,0));
+
+            }
+
+
+            this.currentBinding++;
+
         }
 
         private void parseUboNode(JsonElement jsonelement) {
