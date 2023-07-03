@@ -50,7 +50,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public class Pipeline {
 
     private static final VkDevice DEVICE = Vulkan.getDevice();
-    private static final long PIPELINE_CACHE = createPipelineCache();
+    public static final long PIPELINE_CACHE = createPipelineCache();
     private static final int IMAGES_SIZE = getSwapChainImages().size();
     private final int subIndex;
 
@@ -453,7 +453,7 @@ public class Pipeline {
         return attributeDescriptions.rewind();
     }
 
-    private static long createShaderModule(long spirvCode) {
+    public static long createShaderModule(long spirvCode) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -806,8 +806,8 @@ public class Pipeline {
         }
 
         public void compileShaders() {
-            this.vertShaderSPIRV = compileShaderFile(this.shaderPath + ".vsh", ShaderKind.VERTEX_SHADER);
-            this.fragShaderSPIRV = compileShaderFile(this.shaderPath + ".fsh", ShaderKind.FRAGMENT_SHADER);
+            this.vertShaderSPIRV = compileShaderFile(this.shaderPath + ".vsh", ShaderKind.VERTEX_SHADER, "/assets/vulkanmod/shaders/");
+            this.fragShaderSPIRV = compileShaderFile(this.shaderPath + ".fsh", ShaderKind.FRAGMENT_SHADER, "/assets/vulkanmod/shaders/");
         }
 
         public void compileShaders(String vsh, String fsh) {

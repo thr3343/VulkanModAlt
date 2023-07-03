@@ -3,9 +3,7 @@ package net.vulkanmod.vulkan.shader;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.system.NativeResource;
 import org.lwjgl.util.shaderc.*;
-import org.lwjgl.util.spvc.Spvc;
 import org.lwjgl.vulkan.VK12;
 
 import java.io.FileInputStream;
@@ -50,9 +48,9 @@ public class ShaderSPIRVUtils {
 
     }
 
-    public static long compileShaderFile(String shaderFile, ShaderKind shaderKind) {
+    public static long compileShaderFile(String shaderFile, ShaderKind shaderKind, String s) {
         //TODO name out
-        String path = ShaderSPIRVUtils.class.getResource("/assets/vulkanmod/shaders/" + shaderFile).toExternalForm();
+        String path = ShaderSPIRVUtils.class.getResource(s + shaderFile).toExternalForm();
         return compileShaderAbsoluteFile(path, shaderKind);
     }
 
@@ -109,6 +107,7 @@ public class ShaderSPIRVUtils {
 
     public enum ShaderKind {
         VERTEX_SHADER(shaderc_glsl_vertex_shader),
+        COMPUTE_SHADER(shaderc_glsl_compute_shader),
         GEOMETRY_SHADER(shaderc_glsl_geometry_shader),
         FRAGMENT_SHADER(shaderc_glsl_fragment_shader);
 

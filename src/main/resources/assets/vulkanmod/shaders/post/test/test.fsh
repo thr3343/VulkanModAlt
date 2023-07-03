@@ -3,8 +3,8 @@
 
 layout(location = 0) out vec4 outColor;
 
-layout(input_attachment_index = 1, set =0, binding = 0) uniform subpassInput inputColor;
+layout(set =0, binding = 0) uniform image2D inputColor;
 
 void main() {
-    outColor = subpassLoad(inputColor).bgra;
+    outColor = imageLoad(inputColor).bgra;
 }

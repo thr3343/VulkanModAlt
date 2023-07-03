@@ -19,7 +19,7 @@ public class ShaderManager {
     Pipeline terrainShader;
     public Pipeline terrainDirectShader;
 
-    public Pipeline testShader;
+    public ComputePipeline testShader;
 
     public ShaderManager() {
         createBasicPipelines();
@@ -30,7 +30,7 @@ public class ShaderManager {
 
         this.terrainDirectShader = createPipeline("terrain_direct", "basic/%s/%s", false);
 
-        this.testShader = createPipeline("test", "post/%s/%s", true);
+        this.testShader = new ComputePipeline("test/Swizzle2");
     }
 
     private Pipeline createPipeline(String name, String baseDir, boolean b) {
