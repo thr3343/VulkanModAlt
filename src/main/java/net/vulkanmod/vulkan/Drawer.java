@@ -8,7 +8,6 @@ import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.memory.*;
-import net.vulkanmod.vulkan.shader.ComputePipeline;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.ShaderManager;
@@ -36,7 +35,6 @@ import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK10.vkCmdBindPipeline;
 
 public class Drawer {
     public static boolean vsync;
@@ -265,28 +263,23 @@ public class Drawer {
 //        VRenderSystem.disableDepthTest();
 //        VRenderSystem.disableCull();
 //
+//        final Pipeline testShader = ShaderManager.getInstance().testShader;
+//        bindPipeline(testShader);
+//        testShader.bindDescriptorSets(commandBuffer, currentFrame);
+//        vkCmdDraw(commandBuffer,3, 1, 0, 0);
 
-
-        vkCmdEndRenderPass(commandBuffer);
-
-        final ComputePipeline testShader = ShaderManager.getInstance().testShader;
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, testShader.compPipeline);
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, testShader.compPipelineLayout, 0,  stack.longs(testShader.compDescriptorSet), null);
-
-            int i1 = ((tstFrameBuffer2.width * tstFrameBuffer2.height)/32/128)+1;
-            vkCmdDispatch(commandBuffer, tstFrameBuffer2.width/32 +1, tstFrameBuffer2.height/32 +1, 1);
-        }
         final VkImageCopy.Buffer pRegions = VkImageCopy.calloc(1);
         pRegions.srcSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
         pRegions.dstSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
         pRegions.extent().set(tstFrameBuffer2.width, tstFrameBuffer2.height, 1);
 
-        vkCmdCopyImage(commandBuffer, tstFrameBuffer2.getColorAttachment().getId(), VK_IMAGE_LAYOUT_GENERAL,
+        vkCmdCopyImage(commandBuffer, tstFrameBuffer2.getColorAttachment().getId(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 Vulkan.getSwapChain().getImageId(Drawer.getCurrentFrame()),
                 VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
                 pRegions);
 
+
+        vkCmdEndRenderPass(commandBuffer);
 //        vkCmdEndRendering(commandBuffer);
 //        KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);
         this.boundFramebuffer = null;
