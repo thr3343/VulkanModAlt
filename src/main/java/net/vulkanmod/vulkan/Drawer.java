@@ -29,12 +29,15 @@ import static net.vulkanmod.vulkan.Framebuffer.*;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
+import static org.lwjgl.system.Checks.remainingSafe;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.memAddress;
+import static org.lwjgl.system.MemoryUtil.memAddressSafe;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK10.vkCmdBindDescriptorSets;
 
 public class Drawer {
     public static boolean vsync;
@@ -265,7 +268,13 @@ public class Drawer {
 
         final Pipeline testShader = ShaderManager.getInstance().testShader;
         bindPipeline(testShader);
-        testShader.bindDescriptorSets(commandBuffer, currentFrame);
+        try(MemoryStack stack = stackPush()) {
+
+//            testShader.descriptorSets[currentFrame].updateUniforms(uniformBuffers1);
+            testShader.descriptorSets[currentFrame].updateDescriptorSet(stack, getInstance().getUniformBuffers());
+
+            nvkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, testShader.getLayout(), 0, 1, (stack.npointer(testShader.descriptorSets[currentFrame].currentSet)), remainingSafe(testShader.descriptorSets[currentFrame].dynamicOffsets), memAddressSafe(testShader.descriptorSets[currentFrame].dynamicOffsets));
+        }
         vkCmdDraw(commandBuffer,3, 1, 0, 0);
 
 //        final VkImageCopy.Buffer pRegions = VkImageCopy.calloc(1);

@@ -1,0 +1,98 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Google Shaderc over Glslang; 11
+; Bound: 165
+; Schema: 0
+               OpCapability Shader
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint Fragment %4 "main" %gl_FragCoord %164
+               OpExecutionMode %4 OriginUpperLeft
+               OpDecorate %gl_FragCoord BuiltIn FragCoord
+               OpDecorate %24 DescriptorSet 0
+               OpDecorate %24 Binding 0
+               OpDecorate %164 Location 0
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+      %float = OpTypeFloat 32
+    %v2float = OpTypeVector %float 2
+    %v4float = OpTypeVector %float 4
+%_ptr_Input_v4float = OpTypePointer Input %v4float
+%gl_FragCoord = OpVariable %_ptr_Input_v4float Input
+         %21 = OpTypeImage %float 2D 0 0 0 1 Unknown
+         %22 = OpTypeSampledImage %21
+%_ptr_UniformConstant_22 = OpTypePointer UniformConstant %22
+         %24 = OpVariable %_ptr_UniformConstant_22 UniformConstant
+    %float_0 = OpConstant %float 0
+%float_n0_00092592591 = OpConstant %float -0.00092592591
+         %29 = OpConstantComposite %v2float %float_0 %float_n0_00092592591
+%float_0_00092592591 = OpConstant %float 0.00092592591
+         %36 = OpConstantComposite %v2float %float_0 %float_0_00092592591
+%float_n0_00052083336 = OpConstant %float -0.00052083336
+         %43 = OpConstantComposite %v2float %float_n0_00052083336 %float_0
+%float_0_00052083336 = OpConstant %float 0.00052083336
+         %50 = OpConstantComposite %v2float %float_0_00052083336 %float_0
+         %68 = OpConstantComposite %v2float %float_n0_00052083336 %float_n0_00092592591
+         %74 = OpConstantComposite %v2float %float_0_00052083336 %float_0_00092592591
+         %80 = OpConstantComposite %v2float %float_n0_00052083336 %float_0_00092592591
+         %86 = OpConstantComposite %v2float %float_0_00052083336 %float_n0_00092592591
+%float_n0_00185185182 = OpConstant %float -0.00185185182
+        %109 = OpConstantComposite %v2float %float_0 %float_n0_00185185182
+%float_0_00185185182 = OpConstant %float 0.00185185182
+        %116 = OpConstantComposite %v2float %float_0 %float_0_00185185182
+%float_n0_00104166672 = OpConstant %float -0.00104166672
+        %123 = OpConstantComposite %v2float %float_n0_00104166672 %float_0
+%float_0_00104166672 = OpConstant %float 0.00104166672
+        %130 = OpConstantComposite %v2float %float_0_00104166672 %float_0
+        %int = OpTypeInt 32 1
+      %v2int = OpTypeVector %int 2
+      %int_0 = OpConstant %int 0
+%_ptr_Output_v4float = OpTypePointer Output %v4float
+        %164 = OpVariable %_ptr_Output_v4float Output
+          %4 = OpFunction %void None %3
+          %5 = OpLabel
+         %13 = OpLoad %v4float %gl_FragCoord
+         %14 = OpVectorShuffle %v2float %13 %13 0 1
+         %25 = OpLoad %22 %24
+         %30 = OpExtInst %v2float %1 Fma %14 %74 %29
+         %31 = OpImageSampleImplicitLod %v4float %25 %30
+         %37 = OpExtInst %v2float %1 Fma %14 %74 %36
+         %38 = OpImageSampleImplicitLod %v4float %25 %37
+         %44 = OpExtInst %v2float %1 Fma %14 %74 %43
+         %45 = OpImageSampleImplicitLod %v4float %25 %44
+         %51 = OpExtInst %v2float %1 Fma %14 %74 %50
+         %52 = OpImageSampleImplicitLod %v4float %25 %51
+         %56 = OpExtInst %v4float %1 FMin %45 %52
+         %60 = OpExtInst %v4float %1 FMin %31 %38
+         %64 = OpExtInst %v4float %1 FMin %56 %60
+         %69 = OpExtInst %v2float %1 Fma %14 %74 %68
+         %70 = OpImageSampleImplicitLod %v4float %25 %69
+         %75 = OpExtInst %v2float %1 Fma %14 %74 %74
+         %76 = OpImageSampleImplicitLod %v4float %25 %75
+         %81 = OpExtInst %v2float %1 Fma %14 %74 %80
+         %82 = OpImageSampleImplicitLod %v4float %25 %81
+         %87 = OpExtInst %v2float %1 Fma %14 %74 %86
+         %88 = OpImageSampleImplicitLod %v4float %25 %87
+         %92 = OpExtInst %v4float %1 FMin %70 %76
+         %96 = OpExtInst %v4float %1 FMin %88 %82
+        %100 = OpExtInst %v4float %1 FMin %92 %96
+        %104 = OpExtInst %v4float %1 FMin %64 %100
+        %110 = OpExtInst %v2float %1 Fma %14 %74 %109
+        %111 = OpImageSampleImplicitLod %v4float %25 %110
+        %117 = OpExtInst %v2float %1 Fma %14 %74 %116
+        %118 = OpImageSampleImplicitLod %v4float %25 %117
+        %124 = OpExtInst %v2float %1 Fma %14 %74 %123
+        %125 = OpImageSampleImplicitLod %v4float %25 %124
+        %131 = OpExtInst %v2float %1 Fma %14 %74 %130
+        %132 = OpImageSampleImplicitLod %v4float %25 %131
+        %136 = OpExtInst %v4float %1 FMin %111 %118
+        %140 = OpExtInst %v4float %1 FMin %125 %132
+        %144 = OpExtInst %v4float %1 FMin %136 %140
+        %148 = OpExtInst %v4float %1 FMin %104 %144
+        %155 = OpConvertFToS %v2int %14
+        %157 = OpImage %21 %25
+        %158 = OpImageFetch %v4float %157 %155 Lod %int_0
+        %162 = OpExtInst %v4float %1 FMin %158 %148
+               OpStore %164 %162
+               OpReturn
+               OpFunctionEnd

@@ -20,8 +20,7 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK13.VK_ACCESS_NONE;
-import static org.lwjgl.vulkan.VK13.VK_PIPELINE_STAGE_NONE;
+import static org.lwjgl.vulkan.VK13.*;
 
 public class Framebuffer {
 
@@ -75,7 +74,7 @@ public class Framebuffer {
     public enum AttachmentTypes
     {
         OUTPUTCOLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
-        COLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT),
+        COLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_SAMPLED_BIT),
         DEPTH(getDeviceInfo().depthAttachmentOptimal, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 
@@ -234,7 +233,7 @@ public class Framebuffer {
                     .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
                     .dstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
                     .srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-                    .dstAccessMask(VK_ACCESS_INPUT_ATTACHMENT_READ_BIT)
+                    .dstAccessMask(VK_ACCESS_SHADER_READ_BIT)
                     .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
 
 

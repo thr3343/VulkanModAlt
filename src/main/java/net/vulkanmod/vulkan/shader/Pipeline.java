@@ -57,7 +57,7 @@ public class Pipeline {
     private long descriptorSetLayout;
     private long pipelineLayout;
     private final Map<PipelineState, Long> graphicsPipelines = new HashMap<>();
-    private final DescriptorSets[] descriptorSets = new DescriptorSets[IMAGES_SIZE];
+    public final DescriptorSets[] descriptorSets = new DescriptorSets[IMAGES_SIZE];
     private final VertexFormat vertexFormat;
 
     private int colorFormat;
@@ -249,7 +249,7 @@ public class Pipeline {
                 VkDescriptorSetLayoutBinding imgLayoutBinding =  bindings.get(inputAttachment.binding());
                 imgLayoutBinding.binding(inputAttachment.binding());
                 imgLayoutBinding.descriptorCount(1);
-                imgLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
+                imgLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
                 imgLayoutBinding.pImmutableSamplers(null);
                 imgLayoutBinding.stageFlags(inputAttachment.type());;
             }
@@ -519,17 +519,17 @@ public class Pipeline {
         this.descriptorSets[frame].bindSets(commandBuffer, uniformBuffers);
     }
 
-    private class DescriptorSets {
+    public class DescriptorSets {
         private int poolSize = 10;
         private long descriptorPool;
         private LongBuffer sets;
         private long uniformBufferId;
-        private long currentSet;
+        public long currentSet;
         private int currentIdx = -1;
 
         private final int frame;
         private final VulkanImage.Sampler[] boundTextures = new VulkanImage.Sampler[samplers.size()];
-        private final IntBuffer dynamicOffsets = MemoryUtil.memAllocInt(UBOs.size());;
+        public final IntBuffer dynamicOffsets = MemoryUtil.memAllocInt(UBOs.size());;
 
         DescriptorSets(int frame) {
             this.frame = frame;
@@ -540,7 +540,7 @@ public class Pipeline {
             }
         }
 
-        private void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers) {
+        public void bindSets(VkCommandBuffer commandBuffer, UniformBuffers uniformBuffers) {
             try(MemoryStack stack = stackPush()) {
 
                 this.updateUniforms(uniformBuffers);
@@ -551,7 +551,7 @@ public class Pipeline {
             }
         }
 
-        private void updateUniforms(UniformBuffers uniformBuffers) {
+        public void updateUniforms(UniformBuffers uniformBuffers) {
             int currentOffset = uniformBuffers.getUsedBytes();
 
             int i = 0;
@@ -574,7 +574,7 @@ public class Pipeline {
             }
         }
 
-        private void updateDescriptorSet(MemoryStack stack, UniformBuffers uniformBuffers) {
+        public void updateDescriptorSet(MemoryStack stack, UniformBuffers uniformBuffers) {
 
             boolean changed = false;
             for(int j = 0; j < samplers.size(); ++j) {
@@ -627,7 +627,7 @@ public class Pipeline {
                 imgDescriptorWrite.sType$Default();
                 imgDescriptorWrite.dstBinding(inputAttachment1.binding());
                 imgDescriptorWrite.dstArrayElement(0);
-                imgDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
+                imgDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
                 imgDescriptorWrite.descriptorCount(1);
                 imgDescriptorWrite.pImageInfo(imgInfos[inputAttachment1.binding()]);
                 imgDescriptorWrite.dstSet(currentSet);
@@ -712,7 +712,7 @@ public class Pipeline {
             int i;
             for(i = 0; i < inputAttachments.size(); ++i) {
                 VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(i);
-                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
+                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
                 uniformBufferPoolSize.descriptorCount(this.poolSize);
             }
             for(; i < UBOs.size(); ++i) {
