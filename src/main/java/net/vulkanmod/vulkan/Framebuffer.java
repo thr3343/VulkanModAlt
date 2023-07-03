@@ -71,8 +71,8 @@ public class Framebuffer {
 
     public enum AttachmentTypes
     {
-        OUTPUTCOLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
-        COLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
+        OUTPUTCOLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
+        COLOR(VK_IMAGE_LAYOUT_GENERAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT),
         DEPTH(getDeviceInfo().depthAttachmentOptimal, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 
@@ -242,16 +242,15 @@ public class Framebuffer {
                     .colorAttachmentCount(1)
                     .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, attachmentRefs.get(1)))
                     .pDepthStencilAttachment(attachmentRefs.get(2));
-            final VkAttachmentReference.Buffer inputs = VkAttachmentReference.calloc(1, stack)
-                    .put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).attachment(1));
-//                    .put(1, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).attachment(2));
+            //                    .put(1, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).attachment(2));
             VkSubpassDescription vkSubpassDescription = subpass.get(1)
                     .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
                     .colorAttachmentCount(1)
-                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(0)));
-            long struct = vkSubpassDescription.address();
-            memPutAddress(struct + VkSubpassDescription.PINPUTATTACHMENTS, memAddressSafe(inputs));
-            VkSubpassDescription.ninputAttachmentCount(struct, 2);
+                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(0)))
+                    .pInputAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_GENERAL).attachment(1)));
+//            long struct = vkSubpassDescription.address();
+//            memPutAddress(struct + VkSubpassDescription.PINPUTATTACHMENTS, memAddressSafe(inputs));
+//            VkSubpassDescription.ninputAttachmentCount(struct, 2);
             //                    .pDepthStencilAttachment(attachmentRefs.get(0));
 
 
@@ -263,17 +262,7 @@ public class Framebuffer {
 
             LongBuffer pRenderPass = stack.mallocLong(1);
 
-            if (CHECKS) {
-                check(pRenderPass, 1);
-            }
-            long pCreateInfo = renderPassInfo.address();
-            long pAllocator = memAddressSafe((VkAllocationCallbacks) null);
-            long pRenderPass1 = memAddress(pRenderPass);
-            long __functionAddress = getDevice().getCapabilities().vkCreateRenderPass;
-            if (CHECKS) {
-                VkRenderPassCreateInfo.validate(pCreateInfo);
-            }
-            if(callPPPPI(getDevice().address(), pCreateInfo, pAllocator, pRenderPass1, __functionAddress) != VK_SUCCESS) {
+            if(callPPPPI(getDevice().address(), renderPassInfo.address(), NULL, memAddress(pRenderPass), getDevice().getCapabilities().vkCreateRenderPass) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create render pass");
             }
 

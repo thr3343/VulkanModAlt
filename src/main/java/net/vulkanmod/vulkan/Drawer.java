@@ -260,23 +260,23 @@ public class Drawer {
 
         tstFrameBuffer2.nextSubPass(commandBuffer);
 
-//        VRenderSystem.disableDepthTest();
-//        VRenderSystem.disableCull();
+        VRenderSystem.disableDepthTest();
+        VRenderSystem.disableCull();
+
+        final Pipeline testShader = ShaderManager.getInstance().testShader;
+        bindPipeline(testShader);
+        testShader.bindDescriptorSets(commandBuffer, currentFrame);
+        vkCmdDraw(commandBuffer,3, 1, 0, 0);
+
+//        final VkImageCopy.Buffer pRegions = VkImageCopy.calloc(1);
+//        pRegions.srcSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
+//        pRegions.dstSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
+//        pRegions.extent().set(tstFrameBuffer2.width, tstFrameBuffer2.height, 1);
 //
-//        final Pipeline testShader = ShaderManager.getInstance().testShader;
-//        bindPipeline(testShader);
-//        testShader.bindDescriptorSets(commandBuffer, currentFrame);
-//        vkCmdDraw(commandBuffer,3, 1, 0, 0);
-
-        final VkImageCopy.Buffer pRegions = VkImageCopy.calloc(1);
-        pRegions.srcSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
-        pRegions.dstSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
-        pRegions.extent().set(tstFrameBuffer2.width, tstFrameBuffer2.height, 1);
-
-        vkCmdCopyImage(commandBuffer, tstFrameBuffer2.getColorAttachment().getId(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                Vulkan.getSwapChain().getImageId(Drawer.getCurrentFrame()),
-                VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                pRegions);
+//        vkCmdCopyImage(commandBuffer, tstFrameBuffer2.getColorAttachment().getId(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+//                Vulkan.getSwapChain().getImageId(Drawer.getCurrentFrame()),
+//                VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+//                pRegions);
 
 
         vkCmdEndRenderPass(commandBuffer);

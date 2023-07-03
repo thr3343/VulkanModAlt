@@ -619,8 +619,8 @@ public class Pipeline {
             for(InputAttachment inputAttachment1 : inputAttachments)
             {
                 imgInfos[i]=VkDescriptorImageInfo.callocStack(1, stack);
-                imgInfos[i].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-                imgInfos[i].imageView(Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame()));
+                imgInfos[i].imageLayout(VK_IMAGE_LAYOUT_GENERAL);
+                imgInfos[i].imageView(Drawer.tstFrameBuffer2.getColorAttachment().getImageView());
                 imgInfos[i].sampler(NULL);
 
                 VkWriteDescriptorSet imgDescriptorWrite = descriptorWrites.get(i);
