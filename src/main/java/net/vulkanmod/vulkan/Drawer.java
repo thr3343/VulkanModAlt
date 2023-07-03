@@ -90,7 +90,7 @@ public class Drawer {
 
     static
     {
-        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.DEPTH, AttachmentTypes.OUTPUTCOLOR);
+        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.OUTPUTCOLOR, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
 
     }
     public Drawer(int VBOSize, int UBOSize) {
@@ -268,7 +268,15 @@ public class Drawer {
 //        testShader.bindDescriptorSets(commandBuffer, currentFrame);
 //        vkCmdDraw(commandBuffer,3, 1, 0, 0);
 
+        final VkImageCopy.Buffer pRegions = VkImageCopy.calloc(1);
+        pRegions.srcSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
+        pRegions.dstSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
+        pRegions.extent().set(tstFrameBuffer2.width, tstFrameBuffer2.height, 1);
 
+        vkCmdCopyImage(commandBuffer, tstFrameBuffer2.getColorAttachment().getId(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                Vulkan.getSwapChain().getImageId(Drawer.getCurrentFrame()),
+                VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                pRegions);
 
 
         vkCmdEndRenderPass(commandBuffer);

@@ -71,8 +71,8 @@ public class Framebuffer {
 
     public enum AttachmentTypes
     {
-        OUTPUTCOLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
-        COLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT),
+        OUTPUTCOLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
+        COLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT|VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
         DEPTH(getDeviceInfo().depthAttachmentOptimal, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 
@@ -229,25 +229,37 @@ public class Framebuffer {
                     .srcSubpass(0)
                     .dstSubpass(1)
                     .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                    .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                    .srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_READ_BIT)
-                    .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+                    .dstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
+                    .srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+                    .dstAccessMask(VK_ACCESS_INPUT_ATTACHMENT_READ_BIT)
                     .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
 
 
 
-            VkSubpassDescription.Buffer subpass = VkSubpassDescription.callocStack(2, stack)
+            VkSubpassDescription.Buffer subpass = VkSubpassDescription.callocStack(2, stack);
+            VkSubpassDescription subpassColour=subpass.get(0)
                     .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
                     .colorAttachmentCount(1)
                     .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, attachmentRefs.get(1)))
-                    .pDepthStencilAttachment(attachmentRefs.get(0));
+                    .pDepthStencilAttachment(attachmentRefs.get(2));
+            final VkAttachmentReference.Buffer inputs = VkAttachmentReference.calloc(1, stack)
+                    .put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).attachment(1));
+//                    .put(1, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).attachment(2));
+            VkSubpassDescription vkSubpassDescription = subpass.get(1)
+                    .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
+                    .colorAttachmentCount(1)
+                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(0)));
+            long struct = vkSubpassDescription.address();
+            memPutAddress(struct + VkSubpassDescription.PINPUTATTACHMENTS, memAddressSafe(inputs));
+            VkSubpassDescription.ninputAttachmentCount(struct, 2);
+            //                    .pDepthStencilAttachment(attachmentRefs.get(0));
 
 
             VkRenderPassCreateInfo renderPassInfo = VkRenderPassCreateInfo.callocStack(stack);
             renderPassInfo.sType(VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO);
             renderPassInfo.pAttachments(attachments);
             renderPassInfo.pSubpasses(subpass);
-//            renderPassInfo.pDependencies(vkSubpassDependencies);
+            renderPassInfo.pDependencies(vkSubpassDependencies);
 
             LongBuffer pRenderPass = stack.mallocLong(1);
 
@@ -304,14 +316,15 @@ public class Framebuffer {
 
         VkRenderPassAttachmentBeginInfo vkRenderPassAttachmentBeginInfo = VkRenderPassAttachmentBeginInfo.calloc(stack)
                 .sType$Default()
-                .pAttachments(stack.longs(depthAttachment.getImageView(), Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame())));
+                .pAttachments(stack.longs(Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame()), colorAttachment.getImageView(), depthAttachment.getImageView()));
         //Clear Color value is ignored if Load Op is Not set to Clear
 ///TODO:--->!
         VkClearValue.Buffer clearValues = VkClearValue.calloc(attachments.length, stack);
 
 //        clearValues.get(inputID).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
+        clearValues.get(0).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
         clearValues.get(1).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
-        clearValues.get(0).depthStencil().set(1.0f, 0);
+        clearValues.get(2).depthStencil().set(1.0f, 0);
 
         VkRenderPassBeginInfo renderingInfo = VkRenderPassBeginInfo.calloc(stack)
                 .sType$Default()
