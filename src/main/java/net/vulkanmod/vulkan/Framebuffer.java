@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.vulkan.shader.ShaderManager;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.NotNull;
@@ -19,6 +20,8 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
+import static org.lwjgl.vulkan.VK13.VK_ACCESS_NONE;
+import static org.lwjgl.vulkan.VK13.VK_PIPELINE_STAGE_NONE;
 
 public class Framebuffer {
 
@@ -39,7 +42,7 @@ public class Framebuffer {
 
 
 //    private List<VulkanImage> images;
-    private final VulkanImage colorAttachment;
+    private VulkanImage colorAttachment;
     protected VulkanImage depthAttachment;
     private final imageAttachmentReference[] attachments;
     private final boolean isSwapChainMode;
@@ -72,7 +75,7 @@ public class Framebuffer {
     public enum AttachmentTypes
     {
         OUTPUTCOLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
-        COLOR(VK_IMAGE_LAYOUT_GENERAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT),
+        COLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT),
         DEPTH(getDeviceInfo().depthAttachmentOptimal, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 
@@ -213,8 +216,8 @@ public class Framebuffer {
                 VkAttachmentDescription colorAttachment = attachments.get(attachID);
                 colorAttachment.format(attachmentType.format);
                 colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-                colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
-                colorAttachment.storeOp(VK_ATTACHMENT_STORE_OP_STORE);
+                colorAttachment.loadOp(attachmentType==OUTPUTCOLOR ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_CLEAR);
+                colorAttachment.storeOp(storeOp);
                 colorAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
                 colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
                 colorAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
@@ -247,7 +250,7 @@ public class Framebuffer {
                     .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
                     .colorAttachmentCount(1)
                     .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(0)))
-                    .pInputAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_GENERAL).attachment(1)));
+                    .pInputAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).attachment(1)));
 //            long struct = vkSubpassDescription.address();
 //            memPutAddress(struct + VkSubpassDescription.PINPUTATTACHMENTS, memAddressSafe(inputs));
 //            VkSubpassDescription.ninputAttachmentCount(struct, 2);
@@ -311,7 +314,6 @@ public class Framebuffer {
         VkClearValue.Buffer clearValues = VkClearValue.calloc(attachments.length, stack);
 
 //        clearValues.get(inputID).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
-        clearValues.get(0).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
         clearValues.get(1).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
         clearValues.get(2).depthStencil().set(1.0f, 0);
 
@@ -396,7 +398,10 @@ public class Framebuffer {
 
 //        this.depthFormat = findDepthFormat();
         depthAttachment.free();
-        if(!isSwapChainMode) this.colorAttachment.free();
+        this.colorAttachment.free();
+        this.colorAttachment = new VulkanImage(this.format, 1, width, height, COLOR.usage, 0);
+        colorAttachment.createImage(1, width, height, format,  COLOR.usage);
+        colorAttachment.imageView = createImageView(colorAttachment.getId(), format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
         createDepthResources(false);
     }
 
