@@ -36,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static net.vulkanmod.vulkan.Framebuffer.AttachmentTypes.COLOR;
 import static net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.compileShader;
 import static net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.compileShaderFile;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
@@ -619,7 +620,7 @@ public class Pipeline {
             for(InputAttachment inputAttachment1 : inputAttachments)
             {
                 imgInfos[i]=VkDescriptorImageInfo.callocStack(1, stack);
-                imgInfos[i].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                imgInfos[i].imageLayout(COLOR.layout);
                 imgInfos[i].imageView(Drawer.tstFrameBuffer2.getColorAttachment().getImageView());
                 imgInfos[i].sampler(NULL);
 
@@ -661,7 +662,7 @@ public class Pipeline {
                 texture.readOnlyLayout();
 
                 imageInfo[j] = VkDescriptorImageInfo.callocStack(1, stack);
-                imageInfo[j].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                imageInfo[j].imageLayout(COLOR.layout);
 
                 imageInfo[j].imageView(texture.getImageView());
                 imageInfo[j].sampler(textureSampler.sampler());

@@ -18,6 +18,7 @@ import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.JNI.callPPPPI;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.vulkan.EXTLoadStoreOpNone.VK_ATTACHMENT_LOAD_OP_NONE_EXT;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK13.*;
@@ -74,11 +75,13 @@ public class Framebuffer {
     public enum AttachmentTypes
     {
         OUTPUTCOLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
-        COLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT),
+        COLOR(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT),
         DEPTH(getDeviceInfo().depthAttachmentOptimal, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 
-        private final int layout, format, usage;
+        public final int layout;
+        private final int format;
+        private final int usage;
 
         AttachmentTypes(int depthAttachmentOptimal, int depthFormat, int i) {
 
@@ -208,19 +211,31 @@ public class Framebuffer {
                 AttachmentTypes attachmentType = attachmentTypes[attachID];
 
                 final int storeOp = switch (attachmentType) {
-                    case COLOR,DEPTH -> VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                    case COLOR -> VK_ATTACHMENT_STORE_OP_NONE;
+                    case DEPTH -> VK_ATTACHMENT_STORE_OP_NONE;
                     case OUTPUTCOLOR -> VK_ATTACHMENT_STORE_OP_STORE;
+                };
+
+                final int loadOp = switch (attachmentType) {
+                    case OUTPUTCOLOR -> VK_ATTACHMENT_LOAD_OP_NONE_EXT;
+                    case COLOR -> VK_ATTACHMENT_LOAD_OP_CLEAR;
+                    case DEPTH -> VK_ATTACHMENT_LOAD_OP_CLEAR;
                 };
 
                 VkAttachmentDescription colorAttachment = attachments.get(attachID);
                 colorAttachment.format(attachmentType.format);
                 colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
-                colorAttachment.loadOp(attachmentType==OUTPUTCOLOR ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_CLEAR);
+                colorAttachment.loadOp(loadOp);
                 colorAttachment.storeOp(storeOp);
                 colorAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
                 colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
                 colorAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
-                colorAttachment.finalLayout(attachmentType== OUTPUTCOLOR ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : attachmentType.layout);//TODO: Attachment present precedence
+                final int value = switch (attachmentType) {
+                    case OUTPUTCOLOR -> VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+                    case COLOR -> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    case DEPTH -> DEPTH.layout;
+                };
+                colorAttachment.finalLayout(value);//TODO: Attachment present precedence
 
 
                 attachmentRefs.get(attachID).set(attachID,attachmentType.layout);
@@ -233,8 +248,8 @@ public class Framebuffer {
                     .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
                     .dstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
                     .srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-                    .dstAccessMask(VK_ACCESS_INPUT_ATTACHMENT_READ_BIT)
-                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
+                    .dstAccessMask(VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
+//                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
 
 
 
@@ -248,8 +263,8 @@ public class Framebuffer {
             VkSubpassDescription vkSubpassDescription = subpass.get(1)
                     .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
                     .colorAttachmentCount(1)
-                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(0)))
-                    .pInputAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).attachment(1)));
+                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(0)));
+//                    .pInputAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_UNDEFINED).attachment(1)));
 //            long struct = vkSubpassDescription.address();
 //            memPutAddress(struct + VkSubpassDescription.PINPUTATTACHMENTS, memAddressSafe(inputs));
 //            VkSubpassDescription.ninputAttachmentCount(struct, 2);
