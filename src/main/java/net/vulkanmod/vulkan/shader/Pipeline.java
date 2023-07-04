@@ -249,7 +249,7 @@ public class Pipeline {
                 VkDescriptorSetLayoutBinding imgLayoutBinding =  bindings.get(inputAttachment.binding());
                 imgLayoutBinding.binding(inputAttachment.binding());
                 imgLayoutBinding.descriptorCount(1);
-                imgLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+                imgLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
                 imgLayoutBinding.pImmutableSamplers(null);
                 imgLayoutBinding.stageFlags(inputAttachment.type());;
             }
@@ -627,7 +627,7 @@ public class Pipeline {
                 imgDescriptorWrite.sType$Default();
                 imgDescriptorWrite.dstBinding(inputAttachment1.binding());
                 imgDescriptorWrite.dstArrayElement(0);
-                imgDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+                imgDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
                 imgDescriptorWrite.descriptorCount(1);
                 imgDescriptorWrite.pImageInfo(imgInfos[inputAttachment1.binding()]);
                 imgDescriptorWrite.dstSet(currentSet);
@@ -712,7 +712,7 @@ public class Pipeline {
             int i;
             for(i = 0; i < inputAttachments.size(); ++i) {
                 VkDescriptorPoolSize uniformBufferPoolSize = poolSizes.get(i);
-                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE);
+                uniformBufferPoolSize.type(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
                 uniformBufferPoolSize.descriptorCount(this.poolSize);
             }
             for(; i < UBOs.size(); ++i) {
