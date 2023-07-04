@@ -10,6 +10,7 @@ import net.minecraft.util.GsonHelper;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Framebuffer;
+import net.vulkanmod.vulkan.SwapChain;
 import net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.ShaderKind;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
@@ -621,7 +622,7 @@ public class Pipeline {
             {
                 imgInfos[i]=VkDescriptorImageInfo.callocStack(1, stack);
                 imgInfos[i].imageLayout(COLOR.layout);
-                imgInfos[i].imageView(Drawer.tstFrameBuffer2.getColorAttachment().getImageView());
+                imgInfos[i].imageView(Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame()));
                 imgInfos[i].sampler(NULL);
 
                 VkWriteDescriptorSet imgDescriptorWrite = descriptorWrites.get(i);
@@ -662,7 +663,7 @@ public class Pipeline {
                 texture.readOnlyLayout();
 
                 imageInfo[j] = VkDescriptorImageInfo.callocStack(1, stack);
-                imageInfo[j].imageLayout(COLOR.layout);
+                imageInfo[j].imageLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
                 imageInfo[j].imageView(texture.getImageView());
                 imageInfo[j].sampler(textureSampler.sampler());
