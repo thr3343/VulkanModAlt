@@ -212,12 +212,12 @@ public class Framebuffer {
 
                 final int storeOp = switch (attachmentType) {
                     case COLOR -> VK_ATTACHMENT_STORE_OP_NONE;
-                    case DEPTH -> VK_ATTACHMENT_STORE_OP_NONE;
-                    case OUTPUTCOLOR -> VK_ATTACHMENT_STORE_OP_STORE;
+                    case DEPTH -> VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                    case OUTPUTCOLOR -> VK_ATTACHMENT_STORE_OP_NONE;
                 };
 
                 final int loadOp = switch (attachmentType) {
-                    case OUTPUTCOLOR -> VK_ATTACHMENT_LOAD_OP_NONE_EXT;
+                    case OUTPUTCOLOR -> VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                     case COLOR -> VK_ATTACHMENT_LOAD_OP_CLEAR;
                     case DEPTH -> VK_ATTACHMENT_LOAD_OP_CLEAR;
                 };
