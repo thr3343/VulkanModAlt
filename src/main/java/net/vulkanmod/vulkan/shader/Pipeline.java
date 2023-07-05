@@ -10,7 +10,6 @@ import net.minecraft.util.GsonHelper;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Framebuffer;
-import net.vulkanmod.vulkan.SwapChain;
 import net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.ShaderKind;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
@@ -75,9 +74,9 @@ public class Pipeline {
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
 
-    public Pipeline(boolean b, List<InputAttachment> inputAttachments, VertexFormat vertexFormat, int colorFormat, int depthFormat, List<UBO> UBOs, ManualUBO manualUBO, List<Sampler> samplers, PushConstants pushConstants, long vertSpirv, long fragSpirv) {
+    public Pipeline(int b, List<InputAttachment> inputAttachments, VertexFormat vertexFormat, int colorFormat, int depthFormat, List<UBO> UBOs, ManualUBO manualUBO, List<Sampler> samplers, PushConstants pushConstants, long vertSpirv, long fragSpirv) {
         this.inputAttachments = inputAttachments;
-        this.subIndex=b?1:0;
+        this.subIndex=b;
         this.UBOs = UBOs;
         this.manualUBO = manualUBO;
         this.samplers = samplers;
@@ -795,7 +794,7 @@ public class Pipeline {
             this(vertexFormat, null);
         }
 
-        public Pipeline createPipeline(boolean b) {
+        public Pipeline createPipeline(int b) {
             Validate.isTrue(this.samplers != null && this.UBOs != null
                     && this.vertShaderSPIRV != NULL && this.fragShaderSPIRV != NULL,
                     "Cannot create Pipeline: resources missing");

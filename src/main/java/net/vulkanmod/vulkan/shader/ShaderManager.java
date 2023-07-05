@@ -29,17 +29,17 @@ public class ShaderManager {
     }
 
     private void createBasicPipelines() {
-        this.terrainShader = createPipeline("terrain", "basic/%s/%s", false);
+        this.terrainShader = createPipeline("terrain", "basic/%s/%s", 0);
 
-        this.terrainDirectShader = createPipeline("terrain_direct", "basic/%s/%s", false);
+        this.terrainDirectShader = createPipeline("terrain_direct", "basic/%s/%s", 0);
 
-        this.testShader = createPipeline("test", "post/%s/%s", false);
-        this.tstBlitShader = createPipeline("tstBlit", "post/test/tstBlit", true);
-        this.tstBlitShader2 = createPipeline("tstBlit2", "post/test/tstBlit2", true);
+        this.testShader = createPipeline("test", "post/%s/%s", 1);
+        this.tstBlitShader = createPipeline("tstBlit", "post/test/tstBlit", 1);
+        this.tstBlitShader2 = createPipeline("tstBlit2", "post/test/tstBlit2", 1);
 //        this.testShader2 = createPipeline("test2", "post/%s/%s", true);
     }
 
-    private Pipeline createPipeline(String name, String baseDir, boolean b) {
+    private Pipeline createPipeline(String name, String baseDir, int b) {
         String path = String.format(baseDir, name, name);
 
         Pipeline.Builder pipelineBuilder = new Pipeline.Builder(TERRAIN_VERTEX_FORMAT, path);

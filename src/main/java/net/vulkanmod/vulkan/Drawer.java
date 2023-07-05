@@ -8,7 +8,6 @@ import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.memory.*;
-import net.vulkanmod.vulkan.queue.Queues;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.ShaderManager;
@@ -255,6 +254,45 @@ public class Drawer {
         }
     }
 
+        public void superBarrier(MemoryStack stack, VkCommandBuffer commandBuffer, int vkImageLayoutGeneral, int vkImageLayoutColorAttachmentOptimal) {
+            VkImageMemoryBarrier.Buffer barrier2 = VkImageMemoryBarrier.callocStack(1, stack);
+            final VkImageMemoryBarrier vkImageMemoryBarrier = barrier2.get(0);
+            vkImageMemoryBarrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+            vkImageMemoryBarrier.oldLayout(vkImageLayoutGeneral);
+            vkImageMemoryBarrier.newLayout(vkImageLayoutColorAttachmentOptimal);
+            vkImageMemoryBarrier.srcQueueFamilyIndex(0);
+            vkImageMemoryBarrier.dstQueueFamilyIndex(0);
+//            vkImageMemoryBarrier.srcAccessMask(VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
+//            vkImageMemoryBarrier.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+            vkImageMemoryBarrier.image(Vulkan.getSwapChain().getImageId(currentFrame));
+//
+            vkImageMemoryBarrier.subresourceRange().set(VK_IMAGE_ASPECT_COLOR_BIT,0,1,0,1);
+//            final VkImageMemoryBarrier vkImageMemoryBarrier2 = barrier2.get(1);
+//            vkImageMemoryBarrier2.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+//            vkImageMemoryBarrier2.oldLayout(vkImageLayoutColorAttachmentOptimal);
+//            vkImageMemoryBarrier2.newLayout(vkImageLayoutGeneral);
+//            vkImageMemoryBarrier2.srcQueueFamilyIndex(0);
+//            vkImageMemoryBarrier2.dstQueueFamilyIndex(0);
+//            vkImageMemoryBarrier2.image(Vulkan.getSwapChain().getImageId(currentFrame));
+//
+//            vkImageMemoryBarrier2.subresourceRange().set(VK_IMAGE_ASPECT_COLOR_BIT,0,1,0,1);
+
+
+//            VkMemoryBarrier.Buffer barrier = VkMemoryBarrier.callocStack(2, stack);
+//            barrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
+//            barrier.srcAccessMask(VK_ACCESS_MEMORY_WRITE_BIT|VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_SHADER_READ_BIT|VK_ACCESS_SHADER_WRITE_BIT);
+//            barrier.dstAccessMask(VK_ACCESS_MEMORY_WRITE_BIT|VK_ACCESS_MEMORY_READ_BIT|VK_ACCESS_SHADER_READ_BIT|VK_ACCESS_SHADER_WRITE_BIT);
+
+            vkCmdPipelineBarrier(commandBuffer,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,  // srcStageMask
+                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, // dstStageMask
+                    0,
+                    null,
+                    null,
+                    barrier2// pImageMemoryBarriers
+            );
+
+    }
     public void endRenderPass() {
         if(skipRendering) return;
 
@@ -270,13 +308,12 @@ public class Drawer {
             VRenderSystem.disableDepthTest();
             VRenderSystem.disableCull();
 
+            tstFrameBuffer2.nextSubPass(commandBuffer);
+//            superBarrier(stack, commandBuffer, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL);
             ShaderManager.getInstance().testShader.fastBasicDraw(commandBuffer);
-            vkQueueWaitIdle(Queues.GraphicsQueue.Queue);
-            tstFrameBuffer2.nextSubPass(commandBuffer);
-            ShaderManager.getInstance().tstBlitShader.fastBasicDraw(commandBuffer);
-            tstFrameBuffer2.nextSubPass(commandBuffer);
 
-            ShaderManager.getInstance().tstBlitShader2.fastBasicDraw(commandBuffer);
+            superBarrier(stack, commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            ShaderManager.getInstance().tstBlitShader.fastBasicDraw(commandBuffer);
 
         }
 

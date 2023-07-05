@@ -67,7 +67,7 @@ public class ShaderInstanceM implements ShaderMixed {
         Pipeline.Builder pipelineBuilder = new Pipeline.Builder(format, path);
         pipelineBuilder.parseBindingsJSON();
         pipelineBuilder.compileShaders();
-        this.pipeline = pipelineBuilder.createPipeline(false);
+        this.pipeline = pipelineBuilder.createPipeline(0);
     }
 
     @Inject(method = "getOrCreate", at = @At("HEAD"), cancellable = true)
@@ -192,7 +192,7 @@ public class ShaderInstanceM implements ShaderMixed {
             builder.setUniforms(Collections.singletonList(ubo), converter.getSamplerList());
             builder.compileShaders(converter.getVshConverted(), converter.getFshConverted());
 
-            this.pipeline = builder.createPipeline(false);
+            this.pipeline = builder.createPipeline(0);
             this.isLegacy = true;
 
         } catch (Throwable throwable) {
