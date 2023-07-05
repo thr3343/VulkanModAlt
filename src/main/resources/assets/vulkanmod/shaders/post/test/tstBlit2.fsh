@@ -9,6 +9,6 @@ layout(binding = 0) uniform sampler2D inputColor;
     vec2 texCoord = gl_FragCoord.xy/InSize;
 	const float Radius = 3;
 void main() {
-    outColor = texture(inputColor, texCoord)/2;
+    outColor = vec4(texture(inputColor, texCoord).rgb, .5);
     
 }

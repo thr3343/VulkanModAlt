@@ -311,7 +311,7 @@ public class Drawer {
 
             tstFrameBuffer2.nextSubPass(commandBuffer);
             ShaderManager.getInstance().testShader.fastBasicDraw(commandBuffer);
-            superBarrier(stack, commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            tstFrameBuffer2.nextSubPass(commandBuffer);
             ShaderManager.getInstance().tstBlitShader.fastBasicDraw(commandBuffer);
             tstFrameBuffer2.nextSubPass(commandBuffer);
             ShaderManager.getInstance().tstBlitShader2.fastBasicDraw(commandBuffer);
