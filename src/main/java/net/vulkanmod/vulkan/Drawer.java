@@ -286,7 +286,7 @@ public class Drawer {
             vkCmdPipelineBarrier(commandBuffer,
                     VK_PIPELINE_STAGE_TRANSFER_BIT,  // srcStageMask
                     VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, // dstStageMask
-                    0,
+                    VK_DEPENDENCY_BY_REGION_BIT,
                     null,
                     null,
                     barrier2// pImageMemoryBarriers
@@ -307,13 +307,14 @@ public class Drawer {
 
             VRenderSystem.disableDepthTest();
             VRenderSystem.disableCull();
+            //TODO: OutOfOrderExecution...
 
             tstFrameBuffer2.nextSubPass(commandBuffer);
-//            superBarrier(stack, commandBuffer, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_GENERAL);
             ShaderManager.getInstance().testShader.fastBasicDraw(commandBuffer);
-
             superBarrier(stack, commandBuffer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             ShaderManager.getInstance().tstBlitShader.fastBasicDraw(commandBuffer);
+            tstFrameBuffer2.nextSubPass(commandBuffer);
+            ShaderManager.getInstance().tstBlitShader2.fastBasicDraw(commandBuffer);
 
         }
 
