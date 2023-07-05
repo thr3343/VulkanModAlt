@@ -338,7 +338,7 @@ public class Vulkan {
     private static boolean KHRWaylandHandle(long handle, MemoryStack stack, LongBuffer pSurface) {
 
         final long wlDisplay = GLFWNativeWayland.glfwGetWaylandDisplay();
-        boolean Supported = KHRWaylandSurface.vkGetPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice, QueueFamilyIndices.presentFamily, wlDisplay);
+        boolean Supported = KHRWaylandSurface.vkGetPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice, QueueFamilyIndices.graphicsFamily, wlDisplay);
         if(Supported) {
             VkWaylandSurfaceCreateInfoKHR createSurfaceInfo = VkWaylandSurfaceCreateInfoKHR.calloc(stack)
                     .sType(KHRWaylandSurface.VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR)
@@ -357,7 +357,7 @@ public class Vulkan {
 
 
     private static boolean KHRWin32Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
-        boolean Supported = KHRWin32Surface.vkGetPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, QueueFamilyIndices.presentFamily);
+        boolean Supported = KHRWin32Surface.vkGetPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, QueueFamilyIndices.graphicsFamily);
         if(Supported) {
             VkWin32SurfaceCreateInfoKHR createSurfaceInfo = VkWin32SurfaceCreateInfoKHR.calloc(stack)
                     .sType(KHRWin32Surface.VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR)

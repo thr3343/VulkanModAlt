@@ -9,6 +9,7 @@ public class ShaderManager {
 //    public static final VertexFormat TERRAIN_VERTEX_FORMAT = DefaultVertexFormat.BLOCK;
 
     public static ShaderManager shaderManager;
+//    public Pipeline testShader2;
 
     public static void initShaderManager() {
         shaderManager = new ShaderManager();
@@ -20,6 +21,8 @@ public class ShaderManager {
     public Pipeline terrainDirectShader;
 
     public Pipeline testShader;
+    public Pipeline tstBlitShader;
+    public Pipeline tstBlitShader2;
 
     public ShaderManager() {
         createBasicPipelines();
@@ -30,7 +33,10 @@ public class ShaderManager {
 
         this.terrainDirectShader = createPipeline("terrain_direct", "basic/%s/%s", false);
 
-        this.testShader = createPipeline("test", "post/%s/%s", true);
+        this.testShader = createPipeline("test", "post/%s/%s", false);
+        this.tstBlitShader = createPipeline("tstBlit", "post/test/tstBlit", true);
+        this.tstBlitShader2 = createPipeline("tstBlit2", "post/test/tstBlit2", true);
+//        this.testShader2 = createPipeline("test2", "post/%s/%s", true);
     }
 
     private Pipeline createPipeline(String name, String baseDir, boolean b) {

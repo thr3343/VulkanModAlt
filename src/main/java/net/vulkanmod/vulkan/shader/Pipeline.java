@@ -43,6 +43,7 @@ import static net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.compileShaderFile;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static net.vulkanmod.vulkan.shader.PipelineState.*;
 import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.Checks.remainingSafe;
 import static org.lwjgl.system.JNI.callPPPPI;
 import static org.lwjgl.system.JNI.invokePP;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -96,6 +97,13 @@ public class Pipeline {
         createDescriptorSets();
         //allocateDescriptorSets();
 
+    }
+
+    public void fastBasicDraw(VkCommandBuffer commandBuffer) {
+        Drawer.getInstance().bindPipeline(this);
+        this.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
+
+        vkCmdDraw(commandBuffer,3, 1, 0, 0);
     }
 
     private long createGraphicsPipeline(PipelineState state) {
@@ -622,7 +630,7 @@ public class Pipeline {
             {
                 imgInfos[i]=VkDescriptorImageInfo.callocStack(1, stack);
                 imgInfos[i].imageLayout(COLOR.layout);
-                imgInfos[i].imageView(Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame()));
+                imgInfos[i].imageView(inputAttachment1.attachment()==1 ? Drawer.tstFrameBuffer2.getColorAttachment().getImageView() : Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame()));
                 imgInfos[i].sampler(NULL);
 
                 VkWriteDescriptorSet imgDescriptorWrite = descriptorWrites.get(i);
@@ -865,9 +873,11 @@ public class Pipeline {
 
             for(JsonElement inputAttachment :jsonInputAttachments)
             {
-//                final JsonObject asJsonObject = inputAttachment.getAsJsonObject();
-//                String name = GsonHelper.getAsString(asJsonObject, "type");
-                inputAttachmentsPre.add(new InputAttachment(VK_SHADER_STAGE_FRAGMENT_BIT,0,0));
+                final JsonObject asJsonObject = inputAttachment.getAsJsonObject();
+                String name = GsonHelper.getAsString(asJsonObject, "type");
+                int binding = GsonHelper.getAsInt(asJsonObject, "binding");
+                int attachment = GsonHelper.getAsInt(asJsonObject, "attachment");
+                inputAttachmentsPre.add(new InputAttachment(VK_SHADER_STAGE_FRAGMENT_BIT,binding,attachment));
 
             }
 

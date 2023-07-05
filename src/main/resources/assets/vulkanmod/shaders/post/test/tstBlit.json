@@ -1,0 +1,16 @@
+{
+    "blend": {
+        "func": "add",
+        "srcrgb": "srcalpha",
+        "dstrgb": "1-srcalpha"
+    },
+    "vertex": "tstBlit",
+    "fragment": "tstBlit",
+    "attributes": [
+    ],
+    "samplers": [
+    ],
+	"Inputs": [
+		{ "type": "fragment", "binding": 0, "attachment": 1 }
+	]
+}

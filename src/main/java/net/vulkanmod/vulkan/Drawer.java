@@ -8,6 +8,7 @@ import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.memory.*;
+import net.vulkanmod.vulkan.queue.Queues;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.ShaderManager;
@@ -93,7 +94,7 @@ public class Drawer {
 
     static
     {
-        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.OUTPUTCOLOR, AttachmentTypes.DEPTH);
+        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.OUTPUTCOLOR, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
 
     }
     public Drawer(int VBOSize, int UBOSize) {
@@ -261,21 +262,23 @@ public class Drawer {
 
 //
 
-        tstFrameBuffer2.nextSubPass(commandBuffer);
 
-        VRenderSystem.disableDepthTest();
-        VRenderSystem.disableCull();
 
-        final Pipeline testShader = ShaderManager.getInstance().testShader;
-        bindPipeline(testShader);
+
         try(MemoryStack stack = stackPush()) {
 
-//            testShader.descriptorSets[currentFrame].updateUniforms(uniformBuffers1);
-            testShader.descriptorSets[currentFrame].updateDescriptorSet(stack, getInstance().getUniformBuffers());
+            VRenderSystem.disableDepthTest();
+            VRenderSystem.disableCull();
 
-            nvkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, testShader.getLayout(), 0, 1, (stack.npointer(testShader.descriptorSets[currentFrame].currentSet)), remainingSafe(testShader.descriptorSets[currentFrame].dynamicOffsets), memAddressSafe(testShader.descriptorSets[currentFrame].dynamicOffsets));
+            ShaderManager.getInstance().testShader.fastBasicDraw(commandBuffer);
+            vkQueueWaitIdle(Queues.GraphicsQueue.Queue);
+            tstFrameBuffer2.nextSubPass(commandBuffer);
+            ShaderManager.getInstance().tstBlitShader.fastBasicDraw(commandBuffer);
+            tstFrameBuffer2.nextSubPass(commandBuffer);
+
+            ShaderManager.getInstance().tstBlitShader2.fastBasicDraw(commandBuffer);
+
         }
-        vkCmdDraw(commandBuffer,3, 1, 0, 0);
 
 //        final VkImageCopy.Buffer pRegions = VkImageCopy.calloc(1);
 //        pRegions.srcSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
