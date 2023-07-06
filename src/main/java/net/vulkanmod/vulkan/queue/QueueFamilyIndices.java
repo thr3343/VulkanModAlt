@@ -17,6 +17,7 @@ public class QueueFamilyIndices {
     public static int presentFamily = -1;
     public static int transferFamily = -1;
     public static int computeFamily = -1;
+    public static boolean hasTransferQueue;
 
     public static boolean findQueueFamilies(VkPhysicalDevice device) {
 
@@ -37,10 +38,10 @@ public class QueueFamilyIndices {
 
                 if ((queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0) {
                     graphicsFamily = i;
-
 //                        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
 
                     if ((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
+                        hasTransferQueue=true;
                         presentFamily = i;
                     }
                 } else if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0
@@ -63,7 +64,7 @@ public class QueueFamilyIndices {
             }
 
             if (transferFamily == -1) {
-
+                hasTransferQueue=false;
                 int fallback = -1;
                 for (int i = 0; i < queueFamilies.capacity(); i++) {
                     int queueFlags = queueFamilies.get(i).queueFlags();
