@@ -8,6 +8,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
+import java.util.Arrays;
 
 import static net.vulkanmod.vulkan.Framebuffer.AttachmentTypes.*;
 import static net.vulkanmod.vulkan.Vulkan.*;
@@ -241,46 +242,21 @@ public class Framebuffer {
             }
 
             VkSubpassDependency.Buffer vkSubpassDependencies = VkSubpassDependency.calloc(3, stack);
-//            vkSubpassDependencies.get(0)
-//                    .srcSubpass(0)
-//                    .dstSubpass(0)
-//                    .srcStageMask(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT)
-//                    .dstStageMask(VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT)
-//                    .srcAccessMask(VK_ACCESS_MEMORY_WRITE_BIT|VK_ACCESS_MEMORY_READ_BIT)
-//                    .dstAccessMask(VK_ACCESS_MEMORY_WRITE_BIT|VK_ACCESS_MEMORY_READ_BIT)
-//                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
-//            vkSubpassDependencies.get(1)
-//                    .srcSubpass(1)
-//                    .dstSubpass(1)
-//                    .srcStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
-//                    .dstStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-//                    .srcAccessMask(VK_ACCESS_INPUT_ATTACHMENT_READ_BIT)
-//                    .dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-//                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
-            vkSubpassDependencies.get(0)
+
+            for (VkSubpassDependency vkSubpassDependency : Arrays.asList(vkSubpassDependencies.get(0)
                     .srcSubpass(0)
-                    .dstSubpass(1)
-                    .dstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
-                    .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                    .dstAccessMask(VK_ACCESS_INPUT_ATTACHMENT_READ_BIT)
-                    .srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
-            vkSubpassDependencies.get(1)
+                    .dstSubpass(1), vkSubpassDependencies.get(1)
                     .srcSubpass(1)
-                    .dstSubpass(2)
-                    .dstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
-                    .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                    .dstAccessMask(VK_ACCESS_INPUT_ATTACHMENT_READ_BIT)
-                    .srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
-            vkSubpassDependencies.get(2)
+                    .dstSubpass(2), vkSubpassDependencies.get(2)
                     .srcSubpass(2)
-                    .dstSubpass(3)
-                    .dstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
-                    .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
-                    .dstAccessMask(VK_ACCESS_INPUT_ATTACHMENT_READ_BIT)
-                    .srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
-                    .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
+                    .dstSubpass(3))) {
+                vkSubpassDependency
+                        .dstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
+                        .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
+                        .dstAccessMask(VK_ACCESS_INPUT_ATTACHMENT_READ_BIT)
+                        .srcAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT)
+                        .dependencyFlags(VK_DEPENDENCY_BY_REGION_BIT);
+            }
 
 
             //TODO: MSAA for faster MultiSample compute/Adjacent Pixel Handling
