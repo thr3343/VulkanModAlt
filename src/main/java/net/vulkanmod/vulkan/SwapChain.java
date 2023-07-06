@@ -324,19 +324,19 @@ public class SwapChain {
     }
 
     private int chooseSwapPresentMode(IntBuffer availablePresentModes) {
-        return vsync ? VK_PRESENT_MODE_MAILBOX_KHR|VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
 //
 //        //fifo mode is the only mode that has to be supported
-//        if(requestedMode == VK_PRESENT_MODE_FIFO_KHR) return VK_PRESENT_MODE_FIFO_KHR;
+        if(requestedMode == VK_PRESENT_MODE_FIFO_KHR) return VK_PRESENT_MODE_FIFO_KHR;
+
+        for(int i = 0;i < availablePresentModes.capacity();i++) {
+            if(availablePresentModes.get(i) == requestedMode) {
+                return requestedMode;
+            }
+        }
 //
-//        for(int i = 0;i < availablePresentModes.capacity();i++) {
-//            if(availablePresentModes.get(i) == requestedMode) {
-//                return requestedMode;
-//            }
-//        }
-//
-//        Initializer.LOGGER.warn("Requested mode not supported: using fallback VK_PRESENT_MODE_FIFO_KHR");
-//        return VK_PRESENT_MODE_FIFO_KHR;
+        Initializer.LOGGER.warn("Requested mode not supported: using fallback VK_PRESENT_MODE_FIFO_KHR");
+        return VK_PRESENT_MODE_FIFO_KHR;
 
     }
 
