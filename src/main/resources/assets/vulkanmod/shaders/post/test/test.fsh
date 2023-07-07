@@ -13,6 +13,6 @@ void main() {
     vec4 CurrTexel = texture(inputColor, texCoord);
     vec4 PrevTexel = texture(prevColor, texCoord);
 
-    outColor = vec4(max(PrevTexel.rgb * .95, CurrTexel.rgb), 1.0);
+    outColor = vec4(max(CurrTexel.rgb * .95, PrevTexel.rgb), 1.0);
 
 }
