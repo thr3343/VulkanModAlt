@@ -2,11 +2,8 @@ package net.vulkanmod.vulkan;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-
-import net.vulkanmod.config.Config;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -26,14 +23,18 @@ import org.lwjgl.vulkan.*;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import static net.vulkanmod.vulkan.Framebuffer.DEFAULT_FORMAT;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
+import static org.lwjgl.system.JNI.callPPI;
+import static org.lwjgl.system.JNI.callPPJI;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -449,7 +450,7 @@ public class Drawer {
 
             Synchronization.INSTANCE.waitFences();
 
-            if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, frameFences.get(currentFrame))) != VK_SUCCESS) {
+            if((vkResult = callPPJI(getGraphicsQueue(), 1, submitInfo.address(), frameFences.get(currentFrame), device.getCapabilities().vkQueueSubmit)) != VK_SUCCESS) {
                 vkResetFences(device, frameFences.get(currentFrame));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
@@ -463,7 +464,7 @@ public class Drawer {
                     .pSwapchains(stack.longs(Vulkan.getSwapChain().getId()))
                     .pImageIndices(pImageIndex);
 
-            vkResult = vkQueuePresentKHR(getPresentQueue(), presentInfo);
+            vkResult = callPPI(getPresentQueue(), presentInfo.address(), device.getCapabilities().vkQueuePresentKHR);
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
                 shouldRecreate = false;

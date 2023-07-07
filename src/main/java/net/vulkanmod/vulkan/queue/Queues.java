@@ -23,7 +23,7 @@ public enum Queues {
     ComputeQueue(QueueFamilyIndices.presentFamily);
 
     public final CommandPool commandPool;
-    public final VkQueue Queue;
+    public final long Queue;
     private CommandPool.CommandBuffer currentCmdBuffer;
 
     Queues(int computeFamily) {
@@ -33,7 +33,7 @@ public enum Queues {
             final VkDevice DEVICE = Vulkan.getDevice();
             PointerBuffer pQueue = stack.mallocPointer(1);
             JNI.callPPV(DEVICE.address(), computeFamily, 0, pQueue.address(), DEVICE.getCapabilities().vkGetDeviceQueue);
-            this.Queue = new VkQueue(pQueue.get(0), DEVICE);
+            this.Queue = pQueue.get(0);
         }
 
     }
@@ -139,7 +139,7 @@ public enum Queues {
     }
 
     public void waitIdle() {
-        vkQueueWaitIdle(Vulkan.getTransferQueue());
+//        vkQueueWaitIdle(Vulkan.getTransferQueue());
     }
 
 }

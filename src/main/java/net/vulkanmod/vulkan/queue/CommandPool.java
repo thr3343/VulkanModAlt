@@ -10,6 +10,7 @@ import java.nio.LongBuffer;
 import java.util.ArrayDeque;
 import java.util.List;
 
+import static org.lwjgl.system.JNI.callPPJI;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -84,20 +85,22 @@ public class CommandPool {
         }
     }
 
-    public synchronized long submitCommands(CommandBuffer commandBuffer, VkQueue queue) {
+
+    public /*synchronized*/ long submitCommands(CommandBuffer commandBuffer, long queue) {
 
         try(MemoryStack stack = stackPush()) {
             long fence = commandBuffer.fence;
 
             vkEndCommandBuffer(commandBuffer.handle);
 
-            vkResetFences(Vulkan.getDevice(), commandBuffer.fence);
+            final VkDevice device = Vulkan.getDevice();
+            vkResetFences(device, commandBuffer.fence);
 
             VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
 
-            vkQueueSubmit(queue, submitInfo, fence);
+            callPPJI(queue, 1, submitInfo.address(), fence, device.getCapabilities().vkQueueSubmit);
             //vkQueueWaitIdle(graphicsQueue);
 
             //vkFreeCommandBuffers(device, commandPool, commandBuffer);
