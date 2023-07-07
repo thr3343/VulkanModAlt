@@ -19,8 +19,7 @@ import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
-import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
+import static org.lwjgl.vulkan.VK11.*;
 
 public class DeviceInfo {
 
@@ -84,7 +83,7 @@ public class DeviceInfo {
 
         vkGetPhysicalDeviceFeatures2(this.device, this.availableFeatures);
 
-        this.depthAttachmentOptimal= hasDepthOnly() ? VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        this.depthAttachmentOptimal= hasDepthOnly() ? VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL
 
         this.hasLoadStoreOpNone= device.getCapabilities().Vulkan13;
 
