@@ -41,7 +41,6 @@ public class QueueFamilyIndices {
 //                        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, Vulkan.getSurface(), presentSupport);
 
                     if ((queueFlags & VK_QUEUE_COMPUTE_BIT) != 0) {
-                        hasTransferQueue=true;
                         presentFamily = i;
                     }
                 } else if ((queueFlags & (VK_QUEUE_GRAPHICS_BIT)) == 0
@@ -49,6 +48,7 @@ public class QueueFamilyIndices {
                     computeFamily = i;
                 } else if ((queueFlags & (VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT)) == 0
                         && (queueFlags & VK_QUEUE_TRANSFER_BIT) != 0) {
+                    hasTransferQueue=true;
                     transferFamily = i;
                 }
 
