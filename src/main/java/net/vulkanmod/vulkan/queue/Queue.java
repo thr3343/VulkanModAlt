@@ -30,7 +30,7 @@ public abstract class Queue {
 //        private static final VkDevice DEVICE = Vulkan.getDevice();
 
         public final CommandPool commandPool;
-        public final VkQueue Queue;
+        public final long Queue;
         private CommandPool.CommandBuffer currentCmdBuffer;
         Family(int computeFamily) {
 
@@ -40,7 +40,7 @@ public abstract class Queue {
                PointerBuffer pQueue = stack.mallocPointer(1);
                final VkDevice device = Vulkan.getDevice();
                callPPV(device.address(), computeFamily, 0, pQueue.address(), device.getCapabilities().vkGetDeviceQueue);
-               this.Queue = new VkQueue(pQueue.get(0), device);
+               this.Queue =pQueue.get(0);
            }
 
 
@@ -149,9 +149,9 @@ public abstract class Queue {
             return commandPool.submitCommands(commandBuffer, this.Queue);
         }
 
-        public void waitIdle() {
-            vkQueueWaitIdle(Vulkan.getTransferQueue());
-        }
+//        public void waitIdle() {
+//            vkQueueWaitIdle(Vulkan.getTransferQueue());
+//        }
 
     }
 
