@@ -45,7 +45,7 @@ public class Drawer {
 
 //    final IntArrayFIFOQueue frameBufferPresentIndices = new IntArrayFIFOQueue(Initializer.CONFIG.frameQueueSize-1);
     public static final Framebuffer tstFrameBuffer2;
-    private int oldestFrameIndex = 0;
+    private static int oldestFrameIndex = 0;
 
     public static void initDrawer() { INSTANCE = new Drawer(); }
 
@@ -93,7 +93,7 @@ public class Drawer {
 
     static
     {
-        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.OUTPUTCOLOR, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
+        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.OUTPUTCOLOR, AttachmentTypes.COLOR, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
 
     }
     public Drawer(int VBOSize, int UBOSize) {
@@ -313,8 +313,8 @@ public class Drawer {
             ShaderManager.getInstance().testShader.fastBasicDraw(commandBuffer);
             tstFrameBuffer2.nextSubPass(commandBuffer);
             ShaderManager.getInstance().tstBlitShader.fastBasicDraw(commandBuffer);
-            tstFrameBuffer2.nextSubPass(commandBuffer);
-            ShaderManager.getInstance().tstBlitShader2.fastBasicDraw(commandBuffer);
+//            tstFrameBuffer2.nextSubPass(commandBuffer);
+//            ShaderManager.getInstance().tstBlitShader2.fastBasicDraw(commandBuffer);
 
         }
 
@@ -452,6 +452,10 @@ public class Drawer {
 
     public static int getCurrentFrame() { return currentFrame; }
 
+    public static int getOldestFrameIndex() {
+        return oldestFrameIndex;
+    }
+
     private void drawFrame() {
 
         try(MemoryStack stack = stackPush()) {
@@ -487,12 +491,12 @@ public class Drawer {
 
             submitInfo.pCommandBuffers(stack.pointers(commandBuffers.get(currentFrame)));
 
-            vkResetFences(device, frameFences.get(oldestFrameIndex));
+            vkResetFences(device, frameFences.get(currentFrame));
 
             Synchronization.INSTANCE.waitFences();
 
-            if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, frameFences.get(oldestFrameIndex))) != VK_SUCCESS) {
-                vkResetFences(device, frameFences.get(oldestFrameIndex));
+            if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, frameFences.get(currentFrame))) != VK_SUCCESS) {
+                vkResetFences(device, frameFences.get(currentFrame));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
 

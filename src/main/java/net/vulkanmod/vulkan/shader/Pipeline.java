@@ -629,7 +629,12 @@ public class Pipeline {
             {
                 imgInfos[i]=VkDescriptorImageInfo.callocStack(1, stack);
                 imgInfos[i].imageLayout(COLOR.layout);
-                imgInfos[i].imageView(inputAttachment1.attachment()==1 ? Drawer.tstFrameBuffer2.getColorAttachment().getImageView() : Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame()));
+                switch (inputAttachment1.attachment()) {
+                    case 1 -> imgInfos[i].imageView(Drawer.tstFrameBuffer2.getColorAttachment01().getImageView());
+                    case 2 -> imgInfos[i].imageView(Drawer.tstFrameBuffer2.getColorAttachment02().getImageView());
+                    case -1 -> imgInfos[i].imageView(Vulkan.getSwapChain().getImageView(Drawer.getOldestFrameIndex()));
+                    default -> imgInfos[i].imageView(Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame()));
+                }
                 imgInfos[i].sampler(NULL);
 
                 VkWriteDescriptorSet imgDescriptorWrite = descriptorWrites.get(i);

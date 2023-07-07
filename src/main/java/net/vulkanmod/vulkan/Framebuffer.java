@@ -41,7 +41,8 @@ public class Framebuffer {
 
 
 //    private List<VulkanImage> images;
-    private VulkanImage colorAttachment;
+    private VulkanImage colorAttachment01;
+    private VulkanImage colorAttachment02;
     protected VulkanImage depthAttachment;
     private final imageAttachmentReference[] attachments;
     private final boolean isSwapChainMode;
@@ -98,12 +99,12 @@ public class Framebuffer {
         }
         return -1;
     }
-    public Framebuffer(VulkanImage colorAttachment, AttachmentTypes... attachmentTypes) {
-        this.width = colorAttachment.width;
-        this.height = colorAttachment.height;
+    public Framebuffer(VulkanImage colorAttachment02, AttachmentTypes... attachmentTypes) {
+        this.width = colorAttachment02.width;
+        this.height = colorAttachment02.height;
         this.isSwapChainMode = false;
-        this.colorAttachment = colorAttachment;
-        this.format=colorAttachment.format;
+        this.colorAttachment01 = colorAttachment02;
+        this.format= colorAttachment02.format;
         this.attachmentTypes = attachmentTypes;
 //
 //        for (int i = 0; i < attachmentTypes.length; i++) {
@@ -133,13 +134,19 @@ public class Framebuffer {
 
         attachments = new imageAttachmentReference[attachmentTypes.length];
         this.renderPass=createRenderPass(attachmentTypes);
-        this.colorAttachment = new VulkanImage(this.format, 1, width, height, COLOR.usage, 0);
-        colorAttachment.createImage(1, width, height, format,  COLOR.usage);
-        colorAttachment.imageView = createImageView(colorAttachment.getId(), format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        this.colorAttachment01= initColorAttachment(width, height);
+        this.colorAttachment02= initColorAttachment(width, height);
         createDepthResources(false);
 
 
         this.frameBuffer=createFramebuffers(attachmentTypes);
+    }
+
+    private VulkanImage initColorAttachment(int width, int height) {
+        VulkanImage colorAttachment011 = new VulkanImage(this.format, 1, width, height, COLOR.usage, 0);
+        colorAttachment011.createImage(1, width, height, format,  COLOR.usage);
+        colorAttachment011.imageView = createImageView(colorAttachment011.getId(), format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        return colorAttachment011;
     }
 
     private  long createFramebuffers(AttachmentTypes[] attachmentTypes) {
@@ -228,6 +235,10 @@ public class Framebuffer {
                 colorAttachment.storeOp(storeOp);
                 colorAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
                 colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
+                final int initialLayout = switch (attachmentType) {
+                    case OUTPUTCOLOR -> VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+                    case COLOR, DEPTH -> VK_IMAGE_LAYOUT_UNDEFINED;
+                };
                 colorAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
                 final int value = switch (attachmentType) {
                     case OUTPUTCOLOR -> VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
@@ -241,15 +252,13 @@ public class Framebuffer {
 
             }
 
-            VkSubpassDependency.Buffer vkSubpassDependencies = VkSubpassDependency.calloc(3, stack);
+            VkSubpassDependency.Buffer vkSubpassDependencies = VkSubpassDependency.calloc(2, stack);
 
             for (VkSubpassDependency vkSubpassDependency : Arrays.asList(vkSubpassDependencies.get(0)
                     .srcSubpass(0)
                     .dstSubpass(1), vkSubpassDependencies.get(1)
                     .srcSubpass(1)
-                    .dstSubpass(2), vkSubpassDependencies.get(2)
-                    .srcSubpass(2)
-                    .dstSubpass(3))) {
+                    .dstSubpass(2))) {
                 vkSubpassDependency
                         .dstStageMask(VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
                         .srcStageMask(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)
@@ -260,28 +269,24 @@ public class Framebuffer {
 
 
             //TODO: MSAA for faster MultiSample compute/Adjacent Pixel Handling
-            VkSubpassDescription.Buffer subpass = VkSubpassDescription.callocStack(4, stack);
+            VkSubpassDescription.Buffer subpass = VkSubpassDescription.callocStack(3, stack);
             VkSubpassDescription subpassColour=subpass.get(0)
                     .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
                     .colorAttachmentCount(1)
-                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).attachment(1)))
+                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).attachment(2)))
 
-                    .pDepthStencilAttachment(attachmentRefs.get(2));
+                    .pDepthStencilAttachment(attachmentRefs.get(3));
             //                    .put(1, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).attachment(2));
             VkSubpassDescription vkSubpassDescription = subpass.get(1)
                     .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
                     .colorAttachmentCount(1)
-                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).attachment(0)));
+                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).attachment(1)));
 //                    .pInputAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_GENERAL).attachment(1)));
             VkSubpassDescription vkSubpass2n = subpass.get(2)
                     .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
                     .colorAttachmentCount(1)
-                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(1)));
+                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL).attachment(0)));
 //                    .pInputAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(0)));
-            VkSubpassDescription vkSubpass3n = subpass.get(3)
-                    .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
-                    .colorAttachmentCount(1)
-                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(0)));
 //                    .pInputAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_GENERAL).attachment(1)));
 //            long struct = vkSubpassDescription.address();
 //            memPutAddress(struct + VkSubpassDescription.PINPUTATTACHMENTS, memAddressSafe(inputs));
@@ -340,14 +345,15 @@ public class Framebuffer {
 
         VkRenderPassAttachmentBeginInfo vkRenderPassAttachmentBeginInfo = VkRenderPassAttachmentBeginInfo.calloc(stack)
                 .sType$Default()
-                .pAttachments(stack.longs(Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame()), colorAttachment.getImageView(), depthAttachment.getImageView()));
+                .pAttachments(stack.longs(Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame()), colorAttachment01.getImageView(), colorAttachment02.getImageView(), depthAttachment.getImageView()));
         //Clear Color value is ignored if Load Op is Not set to Clear
 ///TODO:--->!
         VkClearValue.Buffer clearValues = VkClearValue.calloc(attachments.length, stack);
 
 //        clearValues.get(inputID).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
         clearValues.get(1).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
-        clearValues.get(2).depthStencil().set(1.0f, 0);
+        clearValues.get(2).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
+        clearValues.get(3).depthStencil().set(1.0f, 0);
 
         VkRenderPassBeginInfo vkRenderPassBeginInfo = VkRenderPassBeginInfo.calloc(stack)
                 .sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
@@ -362,7 +368,7 @@ public class Framebuffer {
 
     public void bindAsTexture() {
 //        this.colorAttachment.transitionImageLayout(stack, commandBuffer, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        VTextureSelector.bindFramebufferTexture(this.colorAttachment);
+        VTextureSelector.bindFramebufferTexture(this.colorAttachment01);
     }
 
     public VkViewport.Buffer viewport(MemoryStack stack) {
@@ -392,7 +398,8 @@ public class Framebuffer {
         }
         vkDestroyRenderPass(getDevice(), this.renderPass, null);
 
-        if(colorAttachment!=null) this.colorAttachment.free();
+        if(colorAttachment01 !=null) this.colorAttachment01.free();
+        if(colorAttachment02 !=null) this.colorAttachment02.free();
         this.depthAttachment.free();
     }
 
@@ -400,7 +407,8 @@ public class Framebuffer {
 
     public VulkanImage getDepthAttachment() { return depthAttachment; }
 
-    public VulkanImage getColorAttachment() { return colorAttachment; }
+    public VulkanImage getColorAttachment01() { return colorAttachment01; }
+    public VulkanImage getColorAttachment02() { return colorAttachment02; }
 
     public int getFormat() {
         return format;
@@ -430,10 +438,10 @@ public class Framebuffer {
 
 //        this.depthFormat = findDepthFormat();
         depthAttachment.free();
-        this.colorAttachment.free();
-        this.colorAttachment = new VulkanImage(this.format, 1, width, height, COLOR.usage, 0);
-        colorAttachment.createImage(1, width, height, format,  COLOR.usage);
-        colorAttachment.imageView = createImageView(colorAttachment.getId(), format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        this.colorAttachment01.free();
+        this.colorAttachment02.free();
+        this.colorAttachment01 = initColorAttachment(width, height);
+        this.colorAttachment02 = initColorAttachment(width, height);
         createDepthResources(false);
     }
 

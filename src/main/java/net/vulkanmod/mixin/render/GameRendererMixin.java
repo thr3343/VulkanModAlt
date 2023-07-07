@@ -14,6 +14,7 @@ import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.ResourceProvider;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.memory.MemoryManager;
+import net.vulkanmod.vulkan.shader.ShaderManager;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -313,6 +314,7 @@ public abstract class GameRendererMixin {
 //            list1.add(Pair.of(new ShaderInstance(provider, "rendertype_gui_ghost_recipe_overlay", DefaultVertexFormat.POSITION_COLOR), (shaderInstance) -> {
 //                rendertypeGuiGhostRecipeOverlayShader = shaderInstance;
 //            }));
+            ShaderManager.getInstance().createBasicPipelines();
 
         } catch (IOException ioexception) {
             list1.forEach((p_172772_) -> {
