@@ -13,7 +13,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public class QueueFamilyIndices {
 
     // We use Integer to use null as the empty value
-    public static int graphicsFamily = -1, presentFamily = -1, transferFamily = -1, computeFamily = -1;
+    public static int graphicsFamily, presentFamily, transferFamily, computeFamily = -1;
     public static boolean hasTransferQueue;
 
     public static boolean findQueueFamilies(VkPhysicalDevice device) {
