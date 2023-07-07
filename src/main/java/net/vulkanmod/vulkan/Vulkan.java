@@ -659,11 +659,11 @@ public class Vulkan {
 
     public static long getSurface() { return surface; }
 
-    public static VkQueue getPresentQueue() { return ComputeQueue.Queue; }
+    public static long getPresentQueue() { return ComputeQueue.Queue; }
 
-    public static VkQueue getGraphicsQueue() { return GraphicsQueue.Queue; }
+    public static long getGraphicsQueue() { return GraphicsQueue.Queue; }
 
-    public static VkQueue getTransferQueue() { return TransferQueue.Queue; }
+    public static long getTransferQueue() { return TransferQueue.Queue; }
 
     public static SwapChain getSwapChain() { return swapChain; }
 

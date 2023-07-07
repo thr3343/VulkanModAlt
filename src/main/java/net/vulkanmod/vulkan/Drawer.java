@@ -20,6 +20,7 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.system.Struct;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
@@ -31,8 +32,13 @@ import static net.vulkanmod.vulkan.Framebuffer.*;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
+import static org.lwjgl.system.Checks.CHECKS;
+import static org.lwjgl.system.Checks.check;
+import static org.lwjgl.system.JNI.callPPI;
+import static org.lwjgl.system.JNI.callPPJI;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
+import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -422,7 +428,7 @@ public class Drawer {
 
             Synchronization.INSTANCE.waitFences();
 
-            if((vkResult = vkQueueSubmit(getGraphicsQueue(), submitInfo, frameFences.get(currentFrame))) != VK_SUCCESS) {
+            if((vkResult = callPPJI(getGraphicsQueue(), 1, submitInfo.address(), frameFences.get(currentFrame), device.getCapabilities().vkQueueSubmit)) != VK_SUCCESS) {
                 vkResetFences(device, frameFences.get(currentFrame));
                 throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
             }
@@ -436,7 +442,7 @@ public class Drawer {
                     .pSwapchains(stack.longs(Vulkan.getSwapChain().getId()))
                     .pImageIndices(pImageIndex);
 
-            vkResult = vkQueuePresentKHR(getPresentQueue(), presentInfo);
+            vkResult = callPPI(getPresentQueue(), presentInfo.address(), device.getCapabilities().vkQueuePresentKHR);
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
                 shouldRecreate = false;
