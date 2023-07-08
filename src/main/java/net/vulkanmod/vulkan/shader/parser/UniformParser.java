@@ -29,7 +29,7 @@ public class UniformParser {
         }
     }
 
-    public boolean parseToken(String token) {
+    public boolean parseToken(String token, GlslConverter.ShaderStage shaderStage) {
         if(token.matches("uniform")) return false;
 
         if (this.type == null) {
@@ -42,7 +42,7 @@ public class UniformParser {
             this.name = token;
 
             //TODO check if already present
-            Uniform uniform = new Uniform(this.type, this.name);
+            Uniform uniform = new Uniform(this.type, this.name, shaderStage.stageMaskBit);
             if ("sampler2D".equals(this.type)) {
                 if (!this.currentUniforms.samplers.contains(uniform))
                     this.currentUniforms.samplers.add(uniform);
@@ -68,10 +68,10 @@ public class UniformParser {
 //        this.state = State.None;
     }
 
-    public String createUniformsCode() {
+    public String createUniformsCode(GlslConverter.ShaderStage shaderStage) {
         StringBuilder builder = new StringBuilder();
 
-        this.ubo = this.createUBO();
+        this.ubo = this.createUBO(shaderStage);
 
         //hardcoded 0 binding as it should always be 0 in this case
         builder.append(String.format("layout(binding = %d) uniform UniformBufferObject {\n", 0));
@@ -96,7 +96,7 @@ public class UniformParser {
         return builder.toString();
     }
 
-    private UBO createUBO() {
+    private UBO createUBO(GlslConverter.ShaderStage shaderStage) {
         AlignedStruct.Builder builder = new AlignedStruct.Builder();
 
         for(Uniform uniform : this.globalUniforms) {
@@ -104,7 +104,7 @@ public class UniformParser {
         }
 
         //hardcoded 0 binding as it should always be 0 in this case
-        return builder.buildUBO(0, Pipeline.Builder.getTypeFromString("all"));
+        return builder.buildUBO(0, shaderStage.stageMaskBit);
     }
 
     private List<Pipeline.Sampler> createSamplerList() {
@@ -114,7 +114,7 @@ public class UniformParser {
 
         for(StageUniforms stageUniforms : this.stageUniforms) {
             for(Uniform uniform : stageUniforms.samplers) {
-                samplers.add(new Pipeline.Sampler(currentLocation, uniform.type, uniform.name));
+                samplers.add(new Pipeline.Sampler(currentLocation, uniform.type, uniform.name, uniform.stageMaskBit));
                 currentLocation++;
             }
         }
@@ -137,7 +137,7 @@ public class UniformParser {
         return this.samplers;
     }
 
-    public record Uniform(String type, String name) {}
+    public record Uniform(String type, String name, int stageMaskBit) {}
 
     private static class StageUniforms {
         List<Uniform> samplers = new ArrayList<>();

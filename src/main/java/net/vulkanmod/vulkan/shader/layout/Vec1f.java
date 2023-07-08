@@ -21,6 +21,7 @@ public class Vec1f extends Field {
             case "LineWidth" -> this.floatSupplier = RenderSystem::getShaderLineWidth;
             case "GameTime" -> this.floatSupplier = RenderSystem::getShaderGameTime;
             case "AlphaCutout" -> this.floatSupplier = () -> VRenderSystem.alphaCutout;
+            case "Radius" -> this.floatSupplier = () -> 5f;
 //            default -> throw new IllegalArgumentException("Unexpected value: " + this.fieldInfo.name);
         }
     }

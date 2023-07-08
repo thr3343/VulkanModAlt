@@ -40,6 +40,6 @@
         ] }
     ],
     "PushConstants": [
-        { "name": "ChunkOffset", "type": "float", "count": 3, "values": [0.0, 0.0, 0.0] }
+        { "name": "ChunkOffset", "stage": "vertex", "type": "float", "count": 3, "values": [0.0, 0.0, 0.0] }
     ]
 }

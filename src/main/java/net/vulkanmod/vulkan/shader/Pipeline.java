@@ -279,7 +279,7 @@ public class Pipeline {
                 samplerLayoutBinding.descriptorCount(1);
                 samplerLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                 samplerLayoutBinding.pImmutableSamplers(null);
-                samplerLayoutBinding.stageFlags(VK_SHADER_STAGE_ALL_GRAPHICS);
+                samplerLayoutBinding.stageFlags(sampler.stageMaskBit);
 
 //                ++i;
             }
@@ -311,7 +311,7 @@ public class Pipeline {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.callocStack(1, stack);
                 pushConstantRange.size(this.pushConstants.getSize());
                 pushConstantRange.offset(0);
-                pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
+                pushConstantRange.stageFlags(this.pushConstants.stage);
 
                 pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
             }
@@ -517,7 +517,7 @@ public class Pipeline {
 
     public long getLayout() { return pipelineLayout; }
 
-    public record Sampler(int binding, String type, String name) {}
+    public record Sampler(int binding, String type, String name, int stageMaskBit) {}
 
     public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame) {
         UniformBuffers uniformBuffers = Drawer.getInstance().getUniformBuffers();
@@ -933,31 +933,32 @@ public class Pipeline {
             String name = GsonHelper.getAsString(jsonobject, "name");
 
             this.currentBinding++;
-
-            this.samplers.add(new Sampler(this.currentBinding, "sampler2D", name));
+            //TODO: maybe enumerate ShaderStage flags properly
+            this.samplers.add(new Sampler(this.currentBinding, "sampler2D", name, VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT));
         }
 
         private void parsePushConstantNode(JsonArray jsonArray) {
             AlignedStruct.Builder builder = new AlignedStruct.Builder();
-
+            String stage= "all";
             for(JsonElement jsonelement : jsonArray) {
                 JsonObject jsonobject2 = GsonHelper.convertToJsonObject(jsonelement, "PC");
 
                 String name = GsonHelper.getAsString(jsonobject2, "name");
+                stage = GsonHelper.getAsString(jsonobject2, "stage");
                 String type2 = GsonHelper.getAsString(jsonobject2, "type");
                 int j = GsonHelper.getAsInt(jsonobject2, "count");
 
                 builder.addFieldInfo(type2, name, j);
             }
 
-            this.pushConstants = builder.buildPushConstant();
+            this.pushConstants = builder.buildPushConstant(getTypeFromString(stage));
         }
 
         public static int getTypeFromString(String s) {
             return switch (s) {
                 case "vertex" -> VK_SHADER_STAGE_VERTEX_BIT;
                 case "fragment" -> VK_SHADER_STAGE_FRAGMENT_BIT;
-                case "all" -> VK_SHADER_STAGE_ALL_GRAPHICS;
+                case "all" -> VK_SHADER_STAGE_VERTEX_BIT|VK_SHADER_STAGE_FRAGMENT_BIT;
 
                 default -> throw new RuntimeException("cannot identify type..");
             };

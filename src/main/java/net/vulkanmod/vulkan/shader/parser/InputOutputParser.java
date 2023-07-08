@@ -27,7 +27,7 @@ public class InputOutputParser {
         this.vertexFormat = vertexFormat;
     }
 
-    public boolean parseToken(String token) {
+    public boolean parseToken(String token, GlslConverter.ShaderStage shaderStage) {
 
         if (this.ioType == null)
             this.ioType = token;

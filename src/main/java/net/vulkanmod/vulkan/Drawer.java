@@ -301,24 +301,20 @@ public class Drawer {
 //
 
 
+        VRenderSystem.disableDepthTest();
+        VRenderSystem.disableCull();
+        //TODO: OutOfOrderExecution...
 
-
-        try(MemoryStack stack = stackPush()) {
-
-            VRenderSystem.disableDepthTest();
-            VRenderSystem.disableCull();
-            //TODO: OutOfOrderExecution...
-
-            tstFrameBuffer2.nextSubPass(commandBuffer);
-            ShaderManager.getInstance().testShader.fastBasicDraw(commandBuffer);
-            tstFrameBuffer2.nextSubPass(commandBuffer);
-            ShaderManager.getInstance().tstBlitShader.fastBasicDraw(commandBuffer);
+        tstFrameBuffer2.nextSubPass(commandBuffer);
+        final Pipeline testShader = ShaderManager.getInstance().testShader;
+        pushConstants(testShader);
+        testShader.fastBasicDraw(commandBuffer);
+        tstFrameBuffer2.nextSubPass(commandBuffer);
+        ShaderManager.getInstance().tstBlitShader.fastBasicDraw(commandBuffer);
 //            tstFrameBuffer2.nextSubPass(commandBuffer);
 //            ShaderManager.getInstance().tstBlitShader2.fastBasicDraw(commandBuffer);
 
-        }
-
-//        final VkImageCopy.Buffer pRegions = VkImageCopy.calloc(1);
+        //        final VkImageCopy.Buffer pRegions = VkImageCopy.calloc(1);
 //        pRegions.srcSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
 //        pRegions.dstSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
 //        pRegions.extent().set(tstFrameBuffer2.width, tstFrameBuffer2.height, 1);
@@ -659,13 +655,12 @@ public class Drawer {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         PushConstants pushConstants = pipeline.getPushConstants();
-
+        if(pushConstants==null) return;
         try (MemoryStack stack = stackPush()) {
-            ByteBuffer buffer = stack.malloc(pushConstants.getSize());
-            long ptr = MemoryUtil.memAddress0(buffer);
+            long ptr = stack.nmalloc(pushConstants.getSize());
             pushConstants.update(ptr);
 
-            nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), ptr);
+            nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), pushConstants.stage, 0, pushConstants.getSize(), ptr);
         }
 
     }

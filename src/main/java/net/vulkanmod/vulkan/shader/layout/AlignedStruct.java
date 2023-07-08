@@ -1,6 +1,5 @@
 package net.vulkanmod.vulkan.shader.layout;
 
-import net.vulkanmod.vulkan.shader.ManualUBO;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 
 import java.util.ArrayList;
@@ -79,9 +78,9 @@ public abstract class AlignedStruct {
             return new UBO(binding, type, this.currentOffset * 4, this.fields);
         }
 
-        public PushConstants buildPushConstant() {
+        public PushConstants buildPushConstant(int stage) {
             if(this.fields.isEmpty()) return null;
-            return new PushConstants(this.fields, this.currentOffset * 4);
+            return new PushConstants(this.fields, this.currentOffset * 4, stage);
         }
 
     }

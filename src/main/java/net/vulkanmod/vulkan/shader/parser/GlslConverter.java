@@ -8,6 +8,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.StringTokenizer;
 
+import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_FRAGMENT_BIT;
+import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_VERTEX_BIT;
+
 public class GlslConverter {
 
 //    private Queue<Integer> stack = new ArrayDeque<>();
@@ -66,7 +69,7 @@ public class GlslConverter {
 
         fshOut.insert(0, this.inOutParser.createInOutCode());
 
-        String uniformBlock = this.uniformParser.createUniformsCode();
+        String uniformBlock = this.uniformParser.createUniformsCode(shaderStage);
         vshOut.insert(0, uniformBlock);
         fshOut.insert(0, uniformBlock);
 
@@ -128,8 +131,8 @@ public class GlslConverter {
 
     private void feedToken(String token) {
         switch (this.state) {
-            case MATCHING_UNIFORM -> this.uniformParser.parseToken(token);
-            case MATCHING_IN_OUT -> this.inOutParser.parseToken(token);
+            case MATCHING_UNIFORM -> this.uniformParser.parseToken(token, shaderStage);
+            case MATCHING_IN_OUT -> this.inOutParser.parseToken(token, shaderStage);
         }
     }
 
@@ -156,8 +159,15 @@ public class GlslConverter {
     }
 
     enum ShaderStage {
-        Vertex,
-        Fragment
+        Vertex(VK_SHADER_STAGE_VERTEX_BIT),
+        Fragment(VK_SHADER_STAGE_FRAGMENT_BIT);
+
+        final int stageMaskBit;
+
+        ShaderStage(int stageMaskBit) {
+
+            this.stageMaskBit = stageMaskBit;
+        }
     }
 
     enum State {

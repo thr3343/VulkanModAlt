@@ -1,6 +1,5 @@
 package net.vulkanmod.vulkan.shader;
 
-import net.vulkanmod.vulkan.shader.layout.Field;
 import net.vulkanmod.vulkan.shader.layout.UBO;
 import org.lwjgl.system.MemoryUtil;
 
