@@ -312,10 +312,10 @@ public class Drawer {
         final Pipeline testShader = ShaderManager.getInstance().testShader;
         pushConstants(testShader);
         testShader.fastBasicDraw(commandBuffer);
-        superBarrier(commandBuffer, VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
-        ShaderManager.getInstance().tstBlitShader.fastBasicDraw(commandBuffer);
 //            tstFrameBuffer2.nextSubPass(commandBuffer);
 //            ShaderManager.getInstance().tstBlitShader2.fastBasicDraw(commandBuffer);
+
+
 
         //        final VkImageCopy.Buffer pRegions = VkImageCopy.calloc(1);
 //        pRegions.srcSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
@@ -326,8 +326,6 @@ public class Drawer {
 //                Vulkan.getSwapChain().getImageId(Drawer.getCurrentFrame()),
 //                VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
 //                pRegions);
-
-
         vkCmdEndRenderPass(commandBuffer);
 //        vkCmdEndRendering(commandBuffer);
 //        KHRDynamicRendering.vkCmdEndRenderingKHR(commandBuffer);

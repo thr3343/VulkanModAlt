@@ -74,7 +74,7 @@ public class Framebuffer {
 
     public enum AttachmentTypes
     {
-        OUTPUTCOLOR(VK_IMAGE_LAYOUT_PREINITIALIZED, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT),
+        OUTPUTCOLOR(VK_IMAGE_LAYOUT_PREINITIALIZED, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
         COLOR(VK_IMAGE_LAYOUT_PREINITIALIZED, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT),
         DEPTH(getDeviceInfo().depthAttachmentOptimal, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
@@ -218,7 +218,7 @@ public class Framebuffer {
 
                 final int storeOp = switch (attachmentType) {
                     case COLOR -> VK_ATTACHMENT_STORE_OP_NONE;
-                    case DEPTH -> VK_ATTACHMENT_STORE_OP_NONE;
+                    case DEPTH -> VK_ATTACHMENT_STORE_OP_DONT_CARE;
                     case OUTPUTCOLOR -> VK_ATTACHMENT_STORE_OP_STORE;
                 };
 
@@ -236,13 +236,13 @@ public class Framebuffer {
                 colorAttachment.stencilLoadOp(VK_ATTACHMENT_LOAD_OP_DONT_CARE);
                 colorAttachment.stencilStoreOp(VK_ATTACHMENT_STORE_OP_DONT_CARE);
                 final int initialLayout = switch (attachmentType) {
-                    case OUTPUTCOLOR -> VK_IMAGE_LAYOUT_PREINITIALIZED;
-                    case COLOR, DEPTH -> VK_IMAGE_LAYOUT_UNDEFINED;
+                    case OUTPUTCOLOR, COLOR -> VK_IMAGE_LAYOUT_PREINITIALIZED;
+                    case DEPTH -> VK_IMAGE_LAYOUT_UNDEFINED;
                 };
                 colorAttachment.initialLayout(initialLayout);
                 final int value = switch (attachmentType) {
                     case OUTPUTCOLOR -> VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-                    case COLOR -> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    case COLOR -> VK_IMAGE_LAYOUT_PREINITIALIZED;
                     case DEPTH -> DEPTH.layout;
                 };
                 colorAttachment.finalLayout(value);//TODO: Attachment present precedence
