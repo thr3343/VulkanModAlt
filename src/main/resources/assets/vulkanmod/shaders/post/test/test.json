@@ -11,8 +11,7 @@
     "samplers": [
     ],
 	"Inputs": [
-		{ "type": "fragment", "binding": 0, "attachment": 2 },
-		{ "type": "fragment", "binding": 1, "attachment": -1 }
+		{ "type": "fragment", "binding": 0, "attachment": 1 }
 	],
 	"PushConstants": [
         { "name": "Radius", "stage": "fragment", "type": "float", "count": 1, "values": 5.0 }

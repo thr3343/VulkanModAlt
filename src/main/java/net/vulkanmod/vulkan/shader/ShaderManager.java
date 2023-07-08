@@ -33,8 +33,8 @@ public class ShaderManager {
 
         this.terrainDirectShader = createPipeline("terrain_direct", "basic/%s/%s", 0);
 
-        this.testShader = createPipeline("test", "post/%s/%s", 1);
-        this.tstBlitShader = createPipeline("tstBlit", "post/test/tstBlit", 2);
+        this.testShader = createPipeline("test", "post/%s/%s", 0);
+        this.tstBlitShader = createPipeline("tstBlit", "post/test/tstBlit", 1);
 //        this.tstBlitShader2 = createPipeline("tstBlit2", "post/test/tstBlit2", 2);
 //        this.testShader2 = createPipeline("test2", "post/%s/%s", true);
     }

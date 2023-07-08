@@ -11,6 +11,6 @@
     "samplers": [
     ],
 	"Inputs": [
-		{ "type": "fragment", "binding": 0, "attachment": 1 }
+		{ "type": "fragment", "binding": 0, "attachment": 0 }
 	]
 }

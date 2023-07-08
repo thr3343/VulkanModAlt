@@ -6,7 +6,7 @@ layout(location = 0) out vec4 fragColor;
 
 layout(binding = 0) uniform sampler2D DiffuseSampler;
 
-	 vec2 InSize = vec2(1920,1080);
+	 vec2 InSize = textureSize(DiffuseSampler, 0);
 	 vec2 oneTexel = 1/InSize;
     vec2 texCoord = gl_FragCoord.xy/InSize;
 	

@@ -93,7 +93,7 @@ public class Drawer {
 
     static
     {
-        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.OUTPUTCOLOR, AttachmentTypes.COLOR, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
+        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.OUTPUTCOLOR, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
 
     }
     public Drawer(int VBOSize, int UBOSize) {
@@ -254,7 +254,8 @@ public class Drawer {
         }
     }
 
-        public void superBarrier(MemoryStack stack, VkCommandBuffer commandBuffer, int vkImageLayoutGeneral, int vkImageLayoutColorAttachmentOptimal) {
+        public void superBarrier(VkCommandBuffer commandBuffer, int vkImageLayoutGeneral, int vkImageLayoutColorAttachmentOptimal) {
+        try(MemoryStack stack = MemoryStack.stackPush()) {
             VkImageMemoryBarrier.Buffer barrier2 = VkImageMemoryBarrier.callocStack(1, stack);
             final VkImageMemoryBarrier vkImageMemoryBarrier = barrier2.get(0);
             vkImageMemoryBarrier.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
@@ -266,7 +267,7 @@ public class Drawer {
 //            vkImageMemoryBarrier.dstAccessMask(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
             vkImageMemoryBarrier.image(Vulkan.getSwapChain().getImageId(currentFrame));
 //
-            vkImageMemoryBarrier.subresourceRange().set(VK_IMAGE_ASPECT_COLOR_BIT,0,1,0,1);
+            vkImageMemoryBarrier.subresourceRange().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
 //            final VkImageMemoryBarrier vkImageMemoryBarrier2 = barrier2.get(1);
 //            vkImageMemoryBarrier2.sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
 //            vkImageMemoryBarrier2.oldLayout(vkImageLayoutColorAttachmentOptimal);
@@ -291,6 +292,7 @@ public class Drawer {
                     null,
                     barrier2// pImageMemoryBarriers
             );
+        }
 
     }
     public void endRenderPass() {
@@ -305,11 +307,12 @@ public class Drawer {
         VRenderSystem.disableCull();
         //TODO: OutOfOrderExecution...
 
+//        tstFrameBuffer2.nextSubPass(commandBuffer);
         tstFrameBuffer2.nextSubPass(commandBuffer);
         final Pipeline testShader = ShaderManager.getInstance().testShader;
         pushConstants(testShader);
         testShader.fastBasicDraw(commandBuffer);
-        tstFrameBuffer2.nextSubPass(commandBuffer);
+        superBarrier(commandBuffer, VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         ShaderManager.getInstance().tstBlitShader.fastBasicDraw(commandBuffer);
 //            tstFrameBuffer2.nextSubPass(commandBuffer);
 //            ShaderManager.getInstance().tstBlitShader2.fastBasicDraw(commandBuffer);

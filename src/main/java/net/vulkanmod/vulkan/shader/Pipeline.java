@@ -631,7 +631,7 @@ public class Pipeline {
                 imgInfos[i].imageLayout(COLOR.layout);
                 switch (inputAttachment1.attachment()) {
                     case 1 -> imgInfos[i].imageView(Drawer.tstFrameBuffer2.getColorAttachment01().getImageView());
-                    case 2 -> imgInfos[i].imageView(Drawer.tstFrameBuffer2.getColorAttachment02().getImageView());
+//                    case 2 -> imgInfos[i].imageView(Drawer.tstFrameBuffer2.getColorAttachment02().getImageView());
                     case -1 -> imgInfos[i].imageView(Vulkan.getSwapChain().getImageView(Drawer.getOldestFrameIndex()));
                     default -> imgInfos[i].imageView(Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame()));
                 }
@@ -648,11 +648,12 @@ public class Pipeline {
                 ++i;
             }
 
-            for(UBO ubo : UBOs) {
+            for (int j = 0; j < UBOs.size(); j++) {
+                UBO ubo = UBOs.get(j);
 
-                bufferInfos[i] = VkDescriptorBufferInfo.callocStack(1, stack);
-                bufferInfos[i].buffer(this.uniformBufferId);
-                bufferInfos[i].range(ubo.getSize());
+                bufferInfos[j] = VkDescriptorBufferInfo.callocStack(1, stack);
+                bufferInfos[j].buffer(this.uniformBufferId);
+                bufferInfos[j].range(ubo.getSize());
 
                 VkWriteDescriptorSet uboDescriptorWrite = descriptorWrites.get(i);
                 uboDescriptorWrite.sType$Default();
@@ -660,7 +661,7 @@ public class Pipeline {
                 uboDescriptorWrite.dstArrayElement(0);
                 uboDescriptorWrite.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
                 uboDescriptorWrite.descriptorCount(1);
-                uboDescriptorWrite.pBufferInfo(bufferInfos[i]);
+                uboDescriptorWrite.pBufferInfo(bufferInfos[j]);
                 uboDescriptorWrite.dstSet(currentSet);
 
                 ++i;
