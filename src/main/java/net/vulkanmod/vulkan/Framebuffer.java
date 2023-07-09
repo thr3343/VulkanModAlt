@@ -29,7 +29,7 @@ public class Framebuffer {
 //    private final int depthID;
 //    private final int inputID;
     public static final int DEFAULT_FORMAT = SwapChain.isBGRAformat ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R8G8B8A8_UNORM;
-    public int samples= Config.samples;
+    public int samples= VRenderSystem.getSampleCount();
     private long frameBuffer;
 
     private final int format;
@@ -299,7 +299,7 @@ public class Framebuffer {
             VkSubpassDescription subpassColour=subpass.get(0)
                     .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
                     .colorAttachmentCount(1)
-                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_UNDEFINED).attachment(2)))
+                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(2)))
 
                     .pDepthStencilAttachment(attachmentRefs.get(1))
                     .pResolveAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(0)));

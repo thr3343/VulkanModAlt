@@ -26,7 +26,8 @@ public class Config {
             .setPrettyPrinting()
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
-    public static int samples = 1;
+    public static String samples = "Off";
+    public int SampleScaleMultipler = 100;
 
     public static Config load(Path path) {
         Config config;
