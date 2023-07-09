@@ -7,6 +7,7 @@ import net.minecraft.network.chat.contents.LiteralContents;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.VRenderSystem;
 
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WAYLAND;
 
@@ -205,6 +206,17 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
+                new CyclingOption<>("MSAA",
+                        new Integer[]{1,2,4,8},
+                        value -> Component.nullToEmpty(String.valueOf(value)),
+                        value -> {
+                            Config.samples = value;
+//                            VRenderSystem.setMultiSampleState(value);
+                            VRenderSystem.needsReinit(true);
+                        },
+                        () -> Config.samples)
+                        .setTooltip(Component.nullToEmpty("""
+                        MSAA""")),
         };
 
     }

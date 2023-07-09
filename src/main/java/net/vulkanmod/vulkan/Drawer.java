@@ -5,7 +5,8 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.vulkanmod.Initializer;
+
+import net.vulkanmod.config.Config;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -41,7 +42,10 @@ public class Drawer {
     public static boolean vsync;
     private static Drawer INSTANCE;
 
+
+    private static int oldestFrameIndex = 0;
     public static void initDrawer() { INSTANCE = new Drawer(); }
+
 
     private static VkDevice device;
     private static List<VkCommandBuffer> commandBuffers;
@@ -67,6 +71,7 @@ public class Drawer {
 
     public static PipelineState.BlendInfo blendInfo = PipelineState.defaultBlendInfo();
     public static PipelineState.BlendState currentBlendState;
+    public static PipelineState.MultiSampleState currentMultiSampleState = PipelineState.DEFAULT_MULTI_SAMPLE_STATE;
     public static PipelineState.DepthState currentDepthState = PipelineState.DEFAULT_DEPTH_STATE;
     public static PipelineState.LogicOpState currentLogicOpState = PipelineState.DEFAULT_LOGICOP_STATE;
     public static PipelineState.ColorMask currentColorMask = PipelineState.DEFAULT_COLORMASK;
@@ -162,6 +167,12 @@ public class Drawer {
 
     public void initiateRenderPass() {
 
+
+        if(VRenderSystem.reInit)
+        {
+            VRenderSystem.reInit=false;
+            VRenderSystem.setMultiSampleState(Config.samples);
+        }
         Profiler2 p = Profiler2.getMainProfiler();
         p.push("Frame_fence");
         try (MemoryStack stack = stackPush()) {
@@ -577,9 +588,10 @@ public class Drawer {
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
 
         currentDepthState = VRenderSystem.getDepthState();
+        currentMultiSampleState = VRenderSystem.getMultiSampleState();
         currentColorMask = new PipelineState.ColorMask(VRenderSystem.getColorMask());
         currentBlendState = blendInfo.createBlendState();
-        PipelineState currentState = new PipelineState(currentBlendState, currentDepthState, currentLogicOpState, currentColorMask);
+        PipelineState currentState = new PipelineState(currentBlendState, currentMultiSampleState, currentDepthState, currentLogicOpState, currentColorMask);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));
 
         usedPipelines.add(pipeline);
