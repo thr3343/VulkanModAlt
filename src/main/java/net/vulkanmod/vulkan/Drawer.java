@@ -643,7 +643,7 @@ public class Drawer {
         currentColorMask = new PipelineState.ColorMask(VRenderSystem.getColorMask());
         currentBlendState = blendInfo.createBlendState();
         PipelineState currentState = new PipelineState(currentBlendState, currentMultiSampleState, currentDepthState, currentLogicOpState, currentColorMask);
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(tstFrameBuffer2.samples, currentState));
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.getHandle(currentState));
 
         usedPipelines.add(pipeline);
     }

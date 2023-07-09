@@ -259,18 +259,8 @@ public class PipelineState {
         }
     }
 
-    public static class MultiSampleState
-    {
-        public final boolean sampleShadingEnable;
-        public final int sampleCount;
-        public final float minSampleShading;
 
-        public MultiSampleState(boolean sampleShadingEnable, int sampleCount, float minSampleShading) {
-            this.sampleShadingEnable = sampleShadingEnable;
-            this.sampleCount = sampleCount;
-            this.minSampleShading = minSampleShading;
-
-        }
+    public record MultiSampleState(boolean sampleShadingEnable, int sampleCount, float minSampleShading) {
     }
 
     public static class DepthState {
