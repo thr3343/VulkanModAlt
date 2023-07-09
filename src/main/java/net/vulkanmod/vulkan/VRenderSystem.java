@@ -49,8 +49,8 @@ public class VRenderSystem {
 
     private static final float[] depthBias = new float[2];
     private static boolean sampleShadingEnable=false;
-    private static int sampleCount= Config.samples;
-    private static int minSampleShading=1;
+    private static int sampleCount= 1;
+    private static float minSampleShading=1;
     static boolean reInit=false;
 
     public static void initRenderer()
@@ -79,17 +79,17 @@ public class VRenderSystem {
         bufferbuilder.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
         if (p_69349_) {
             bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(0, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).endVertex();
-            bufferbuilder.vertex((double)p_69348_, 0.0D, 0.0D).color(0, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).endVertex();
+            bufferbuilder.vertex(p_69348_, 0.0D, 0.0D).color(0, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).endVertex();
         }
 
         if (p_69350_) {
             bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(0, 0, 0, 255).normal(0.0F, 1.0F, 0.0F).endVertex();
-            bufferbuilder.vertex(0.0D, (double)p_69348_, 0.0D).color(0, 0, 0, 255).normal(0.0F, 1.0F, 0.0F).endVertex();
+            bufferbuilder.vertex(0.0D, p_69348_, 0.0D).color(0, 0, 0, 255).normal(0.0F, 1.0F, 0.0F).endVertex();
         }
 
         if (p_69351_) {
             bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(0, 0, 0, 255).normal(0.0F, 0.0F, 1.0F).endVertex();
-            bufferbuilder.vertex(0.0D, 0.0D, (double)p_69348_).color(0, 0, 0, 255).normal(0.0F, 0.0F, 1.0F).endVertex();
+            bufferbuilder.vertex(0.0D, 0.0D, p_69348_).color(0, 0, 0, 255).normal(0.0F, 0.0F, 1.0F).endVertex();
         }
 
         tesselator.end();
@@ -97,17 +97,17 @@ public class VRenderSystem {
         bufferbuilder.begin(VertexFormat.Mode.LINES, DefaultVertexFormat.POSITION_COLOR_NORMAL);
         if (p_69349_) {
             bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(255, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).endVertex();
-            bufferbuilder.vertex((double)p_69348_, 0.0D, 0.0D).color(255, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).endVertex();
+            bufferbuilder.vertex(p_69348_, 0.0D, 0.0D).color(255, 0, 0, 255).normal(1.0F, 0.0F, 0.0F).endVertex();
         }
 
         if (p_69350_) {
             bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(0, 255, 0, 255).normal(0.0F, 1.0F, 0.0F).endVertex();
-            bufferbuilder.vertex(0.0D, (double)p_69348_, 0.0D).color(0, 255, 0, 255).normal(0.0F, 1.0F, 0.0F).endVertex();
+            bufferbuilder.vertex(0.0D, p_69348_, 0.0D).color(0, 255, 0, 255).normal(0.0F, 1.0F, 0.0F).endVertex();
         }
 
         if (p_69351_) {
             bufferbuilder.vertex(0.0D, 0.0D, 0.0D).color(127, 127, 255, 255).normal(0.0F, 0.0F, 1.0F).endVertex();
-            bufferbuilder.vertex(0.0D, 0.0D, (double)p_69348_).color(127, 127, 255, 255).normal(0.0F, 0.0F, 1.0F).endVertex();
+            bufferbuilder.vertex(0.0D, 0.0D, p_69348_).color(127, 127, 255, 255).normal(0.0F, 0.0F, 1.0F).endVertex();
         }
 
         tesselator.end();
@@ -157,6 +157,10 @@ public class VRenderSystem {
 
     public static MappedBuffer getMVP() {
         return MVP;
+    }
+
+    public static int getSampleCount() {
+        return sampleCount;
     }
 
     public static void setChunkOffset(float f1, float f2, float f3) {
@@ -304,15 +308,31 @@ public class VRenderSystem {
         return new PipelineState.MultiSampleState(sampleShadingEnable, sampleCount, minSampleShading);
     }
 
-    public static void setMultiSampleState(int sampleCnt) {
-        sampleShadingEnable=sampleCnt>1;
-        minSampleShading=1;
-        sampleCount=sampleCnt;
-        System.out.println("RESAMPLE! -> "+sampleCnt);
-        Drawer.tstFrameBuffer2.reInit(sampleCnt);
+    public static void setMultiSampleState() {
+        sampleShadingEnable=sampleCount>1;
+//        sampleCount=sampleCnt;
+        System.out.println("RESAMPLE! -> "+sampleCount);
+        Drawer.tstFrameBuffer2.reInit(sampleCount);
     }
 
-    public static void needsReinit(boolean b) {
-        reInit=b;
+    public static void setSampleState(String s) {
+        sampleCount= switch (s) {
+            case "Off" -> 1;
+            case "2x" -> 2;
+            case "4x" -> 4;
+            case "8x" -> 8;
+
+            default -> throw new IllegalStateException("Unexpected value: " + s);
+        };
+        reInit=true;
+    }
+
+    public static void setMinSampleShading(int value) {
+        minSampleShading=0.01f*value;
+        /*switch (value)
+        {
+            case 0 -> Float.intBitsToFloat((0x3e000001));
+            default -> Float.intBitsToFloat((0x3e000001)) + (0.0875f*value);
+        };*/
     }
 }

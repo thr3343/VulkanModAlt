@@ -171,7 +171,7 @@ public class Drawer {
         if(VRenderSystem.reInit)
         {
             VRenderSystem.reInit=false;
-            VRenderSystem.setMultiSampleState(Config.samples);
+            VRenderSystem.setMultiSampleState();
         }
         Profiler2 p = Profiler2.getMainProfiler();
         p.push("Frame_fence");

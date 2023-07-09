@@ -3,10 +3,7 @@ package net.vulkanmod.config;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.contents.LiteralContents;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
 
 import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WAYLAND;
@@ -207,16 +204,28 @@ public class Options {
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
                 new CyclingOption<>("MSAA",
-                        new Integer[]{1,2,4,8},
+                        new String[]{"Off", "2x", "4x", "8x"},
                         value -> Component.nullToEmpty(String.valueOf(value)),
                         value -> {
-                            Config.samples = value;
+                            final String s = String.valueOf(value);
+                            Config.samples = s;
+
 //                            VRenderSystem.setMultiSampleState(value);
-                            VRenderSystem.needsReinit(true);
+                            VRenderSystem.setSampleState(s);
                         },
                         () -> Config.samples)
                         .setTooltip(Component.nullToEmpty("""
                         MSAA""")),
+                new RangeOption("sampleShadingMultiplier (Smoothness)", 0, 100, 1,
+                        value -> {
+                            config.SampleScaleMultipler =value;
+                            VRenderSystem.setMinSampleShading(value);
+                        },
+                        () -> config.SampleScaleMultipler)
+                        .setTooltip(Component.nullToEmpty("""
+                        MSAA Specific Option:
+                        Controls the Tradeoff between Sharpness and Smoothness with MSAA
+                        Higher Values improve smoothness, but at the cost of GPU Utilisation""")),
         };
 
     }

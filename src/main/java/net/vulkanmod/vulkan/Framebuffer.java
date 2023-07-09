@@ -28,7 +28,7 @@ public class Framebuffer {
     private static final int colorID=0;
     private static final int depthID=1;
     public static final int DEFAULT_FORMAT = SwapChain.isBGRAformat ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R8G8B8A8_UNORM;
-    public int samples= Config.samples;
+    public int samples= VRenderSystem.getSampleCount();
     private long frameBuffer;
 
     private final int format;
