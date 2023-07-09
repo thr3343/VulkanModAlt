@@ -27,6 +27,7 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.*;
 
+import static net.vulkanmod.vulkan.Framebuffer.DEFAULT_FORMAT;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.system.MemoryStack.stackGet;
@@ -82,6 +83,13 @@ public class Drawer {
     public Drawer()
     {
         this(2000000, 200000);
+    }
+    public static final Framebuffer tstFrameBuffer2;
+
+    static
+    {
+        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent(), Framebuffer.AttachmentTypes.OUTPUTCOLOR, Framebuffer.AttachmentTypes.DEPTH, Framebuffer.AttachmentTypes.COLOR);
+
     }
 
     public Drawer(int VBOSize, int UBOSize) {
@@ -241,6 +249,33 @@ public class Drawer {
         if(skipRendering) return;
 
         VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
+
+
+
+
+        VRenderSystem.disableDepthTest();
+        VRenderSystem.disableCull();
+        //TODO: OutOfOrderExecution...
+
+//        tstFrameBuffer2.nextSubPass(commandBuffer);
+//        tstFrameBuffer2.nextSubPass(commandBuffer);
+//        final Pipeline testShader = ShaderManager.getInstance().testShader;
+//        pushConstants(testShader);
+//        testShader.fastBasicDraw(commandBuffer);
+////            tstFrameBuffer2.nextSubPass(commandBuffer);
+//            ShaderManager.getInstance().tstBlitShader2.fastBasicDraw(commandBuffer);
+
+
+
+        //        final VkImageCopy.Buffer pRegions = VkImageCopy.calloc(1);
+//        pRegions.srcSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
+//        pRegions.dstSubresource().set(VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1);
+//        pRegions.extent().set(tstFrameBuffer2.width, tstFrameBuffer2.height, 1);
+//
+//        vkCmdCopyImage(commandBuffer, tstFrameBuffer2.getColorAttachment().getId(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+//                Vulkan.getSwapChain().getImageId(Drawer.getCurrentFrame()),
+//                VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_TRANSFER_DST_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+//                pRegions);
 
         vkCmdEndRenderPass(commandBuffer);
 //        vkCmdEndRendering(commandBuffer);

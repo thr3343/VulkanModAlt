@@ -20,6 +20,7 @@ public class ShaderManager {
     Pipeline terrainShader;
     public Pipeline terrainDirectShader;
 
+
     public ShaderManager() {
         createBasicPipelines();
     }
@@ -28,6 +29,11 @@ public class ShaderManager {
         this.terrainShader = createPipeline("terrain");
 
         this.terrainDirectShader = createPipeline("terrain_direct");
+
+//        this.testShader = createPipeline("test", "post/%s/%s", 0);
+//        this.tstBlitShader = createPipeline("tstBlit", "post/test/tstBlit", 1);
+//        this.tstBlitShader2 = createPipeline("tstBlit2", "post/test/tstBlit2", 2);
+//        this.testShader2 = createPipeline("test2", "post/%s/%s", true);
     }
 
     private Pipeline createPipeline(String name) {

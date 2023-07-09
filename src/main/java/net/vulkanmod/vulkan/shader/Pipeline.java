@@ -156,8 +156,9 @@ public class Pipeline {
 
             VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.callocStack(stack);
             multisampling.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-            multisampling.sampleShadingEnable(false);
-            multisampling.rasterizationSamples(VK_SAMPLE_COUNT_1_BIT);
+            multisampling.sampleShadingEnable(true);
+            multisampling.rasterizationSamples(VK_SAMPLE_COUNT_8_BIT);
+            multisampling.minSampleShading(Float.intBitsToFloat(0x3e000001));
 
             // ===> DEPTH TEST <===
 
@@ -215,8 +216,9 @@ public class Pipeline {
             pipelineInfo.pColorBlendState(colorBlending);
             pipelineInfo.pDynamicState(dynamicStates);
             pipelineInfo.layout(pipelineLayout);
-            pipelineInfo.renderPass(Vulkan.getSwapChain().getFramebuffer().renderPass);
-//            pipelineInfo.subpass(0);
+
+            pipelineInfo.renderPass(Drawer.tstFrameBuffer2.renderPass); //Can render to a different renderPass, even if !begin
+            pipelineInfo.subpass(0);
             pipelineInfo.basePipelineHandle(VK_NULL_HANDLE);
             pipelineInfo.basePipelineIndex(-1);
 

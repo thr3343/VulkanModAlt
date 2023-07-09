@@ -32,7 +32,7 @@ public class VulkanImage {
 
     private long id;
     private long allocation;
-    private long imageView;
+    public long imageView;
 
     private final Byte2LongMap samplers = new Byte2LongArrayMap();
     private Sampler textureSampler;
@@ -46,7 +46,7 @@ public class VulkanImage {
 
     private int currentLayout;
 
-    private VulkanImage(int format, int mipLevels, int width, int height, int usage, int formatSize) {
+    public VulkanImage(int format, int mipLevels, int width, int height, int usage, int formatSize) {
         this.mipLevels = mipLevels;
         this.width = width;
         this.height = height;
@@ -58,17 +58,17 @@ public class VulkanImage {
     public static VulkanImage createTextureImage(int format, int mipLevels, int width, int height, int usage, int formatSize, boolean blur, boolean clamp) {
         VulkanImage image = new VulkanImage(format, mipLevels, width, height, usage, formatSize);
 
-        image.createImage(mipLevels, width, height, format, usage);
+        image.createImage(mipLevels, width, height, format, usage, VK_SAMPLE_COUNT_1_BIT);
         image.imageView = createImageView(image.id, format, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
         image.createTextureSampler(blur, clamp, mipLevels > 1);
 
         return image;
     }
 
-    public static VulkanImage createDepthImage(int format, int width, int height, int usage, boolean blur, boolean clamp) {
+    public static VulkanImage createDepthImage(int format, int width, int height, int usage, boolean blur, boolean clamp, int vkSampleCount1Bit) {
         VulkanImage image = new VulkanImage(format, 1, width, height, usage, 0);
 
-        image.createImage(1, width, height, format, usage);
+        image.createImage(1, width, height, format, usage, vkSampleCount1Bit);
         image.imageView = createImageView(image.id, format, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
         image.createTextureSampler(blur, clamp, false);
 
@@ -88,7 +88,8 @@ public class VulkanImage {
         }
     }
 
-    private void createImage(int mipLevels, int width, int height, int format, int usage) {
+
+    public void createImage(int mipLevels, int width, int height, int format, int usage, int vkSampleCount1Bit) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -100,7 +101,7 @@ public class VulkanImage {
                     usage,
                     VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
                     pTextureImage,
-                    pAllocation);
+                    pAllocation, vkSampleCount1Bit);
 
             id = pTextureImage.get(0);
             allocation = pAllocation.get(0);
