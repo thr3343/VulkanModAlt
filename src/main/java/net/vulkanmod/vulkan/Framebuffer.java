@@ -91,7 +91,7 @@ public class Framebuffer {
     {
         //|TODO ---------------------------------->
         OUTPUTCOLOR(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_STORAGE_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
-        COLOR(VK_IMAGE_LAYOUT_PREINITIALIZED, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_SAMPLED_BIT),
+        COLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_SAMPLED_BIT),
         DEPTH(getDeviceInfo().depthAttachmentOptimal, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
         private final int layout, format, usage;
@@ -224,7 +224,7 @@ public class Framebuffer {
 
 
                 final int loadOp = switch (attachmentType) {
-                    case OUTPUTCOLOR -> VK_ATTACHMENT_LOAD_OP_CLEAR;
+                    case OUTPUTCOLOR -> VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                     case COLOR -> VK_ATTACHMENT_LOAD_OP_CLEAR;
                     case DEPTH -> VK_ATTACHMENT_LOAD_OP_CLEAR;
                 };
@@ -258,7 +258,6 @@ public class Framebuffer {
                     .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
                     .colorAttachmentCount(1)
                     .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(2)))
-
                     .pDepthStencilAttachment(attachmentRefs.get(1))
                     .pResolveAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(0)));
             //                    .put(1, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_PREINITIALIZED).attachment(2));
@@ -329,15 +328,16 @@ public class Framebuffer {
 
         VkRenderPassAttachmentBeginInfo vkRenderPassAttachmentBeginInfo = VkRenderPassAttachmentBeginInfo.calloc(stack)
                 .sType$Default()
-
                 .pAttachments(stack.longs(Vulkan.getSwapChain().getImageView(Drawer.getCurrentFrame()), depthAttachment.getImageView(), colorAttachment.getImageView()));
         //Clear Color value is ignored if Load Op is Not set to Clear
 
         VkClearValue.Buffer clearValues = VkClearValue.malloc(this.attachmentTypes.length, stack);
 
+//        clearValues.get(inputID).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
+//        clearValues.get(0).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
 
-        clearValues.get(0).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
         clearValues.get(1).depthStencil().set(1.0f, 0);
+        clearValues.get(2).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
 
         VkRenderPassBeginInfo renderingInfo = VkRenderPassBeginInfo.calloc(stack)
                 .sType$Default()
