@@ -157,8 +157,10 @@ public class Pipeline {
 
             VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.callocStack(stack);
             multisampling.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-            multisampling.sampleShadingEnable(state.multiSampleState.sampleShadingEnable);
-            multisampling.rasterizationSamples(state.multiSampleState.sampleCount);
+
+            multisampling.sampleShadingEnable(state.multiSampleState.sampleShadingEnable());
+            multisampling.rasterizationSamples(state.multiSampleState.sampleCount());
+
 //            final int i = switch (Drawer.tstFrameBuffer2.samples) {
 //                case VK_SAMPLE_COUNT_8_BIT -> 0x800000*Integer.numberOfTrailingZeros(8);
 //                case VK_SAMPLE_COUNT_4_BIT -> 0x800000*Integer.numberOfTrailingZeros(4);
@@ -167,7 +169,7 @@ public class Pipeline {
 //                default -> throw new IllegalStateException("Unexpected value: " + Drawer.tstFrameBuffer2.samples);
 //            };
 //            final float value = Float.intBitsToFloat((0x3f800000 - i) + 1);
-            multisampling.minSampleShading(state.multiSampleState.minSampleShading);
+            multisampling.minSampleShading(state.multiSampleState.minSampleShading());
 
             // ===> DEPTH TEST <===
 
