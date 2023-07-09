@@ -93,7 +93,7 @@ public class Drawer {
 
     static
     {
-        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.OUTPUTCOLOR, AttachmentTypes.COLOR, AttachmentTypes.DEPTH);
+        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, AttachmentTypes.OUTPUTCOLOR, AttachmentTypes.DEPTH, AttachmentTypes.COLOR);
 
     }
     public Drawer(int VBOSize, int UBOSize) {
@@ -308,11 +308,11 @@ public class Drawer {
         //TODO: OutOfOrderExecution...
 
 //        tstFrameBuffer2.nextSubPass(commandBuffer);
-        tstFrameBuffer2.nextSubPass(commandBuffer);
-        final Pipeline testShader = ShaderManager.getInstance().testShader;
-        pushConstants(testShader);
-        testShader.fastBasicDraw(commandBuffer);
-//            tstFrameBuffer2.nextSubPass(commandBuffer);
+//        tstFrameBuffer2.nextSubPass(commandBuffer);
+//        final Pipeline testShader = ShaderManager.getInstance().testShader;
+//        pushConstants(testShader);
+//        testShader.fastBasicDraw(commandBuffer);
+////            tstFrameBuffer2.nextSubPass(commandBuffer);
 //            ShaderManager.getInstance().tstBlitShader2.fastBasicDraw(commandBuffer);
 
 
