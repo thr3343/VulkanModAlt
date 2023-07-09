@@ -3,6 +3,7 @@ package net.vulkanmod.mixin;
 import com.mojang.blaze3d.platform.*;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
+import net.minecraft.server.packs.PackResources;
 import net.minecraft.server.packs.resources.IoSupplier;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
@@ -17,6 +18,7 @@ import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GLCapabilities;
 import org.lwjgl.stb.STBImage;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -31,6 +33,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -55,7 +59,6 @@ public abstract class WindowMixin {
     @Shadow private int width;
     @Shadow private int height;
 
-    @Shadow @Nullable protected abstract ByteBuffer readIconPixels(IoSupplier<InputStream> ioSupplier, IntBuffer intBuffer, IntBuffer intBuffer2, IntBuffer intBuffer3) throws IOException;
 
     @Redirect(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V"))
     private void redirect(int hint, int value) { }
@@ -83,9 +86,8 @@ public abstract class WindowMixin {
      * @reason
      */
     @Overwrite
-    public void setIcon(IoSupplier<InputStream> ioSupplier, IoSupplier<InputStream> ioSupplier2) {
-
-
+    public void setIcon(PackResources packResources, IconSet iconSet) throws IOException {
+        
     }
 
     /**
