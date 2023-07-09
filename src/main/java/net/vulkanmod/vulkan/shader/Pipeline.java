@@ -73,6 +73,7 @@ public class Pipeline {
 
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
+    private int samples;
 
     public Pipeline(int b, List<InputAttachment> inputAttachments, VertexFormat vertexFormat, int colorFormat, int depthFormat, List<UBO> UBOs, ManualUBO manualUBO, List<Sampler> samplers, PushConstants pushConstants, long vertSpirv, long fragSpirv) {
         this.inputAttachments = inputAttachments;
@@ -91,7 +92,7 @@ public class Pipeline {
         createPipelineLayout();
         createShaderModules(vertSpirv, fragSpirv);
 
-        graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK),
+        graphicsPipelines.computeIfAbsent(new PipelineState(DEFAULT_BLEND_STATE, DEFAULT_MULTI_SAMPLE_STATE, DEFAULT_DEPTH_STATE, DEFAULT_LOGICOP_STATE, DEFAULT_COLORMASK),
                 this::createGraphicsPipeline);
         createDescriptorSets();
         //allocateDescriptorSets();
@@ -173,9 +174,17 @@ public class Pipeline {
 
             VkPipelineMultisampleStateCreateInfo multisampling = VkPipelineMultisampleStateCreateInfo.callocStack(stack);
             multisampling.sType(VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO);
-            multisampling.sampleShadingEnable(true);
-            multisampling.rasterizationSamples(VK_SAMPLE_COUNT_8_BIT);
-            multisampling.minSampleShading(Float.intBitsToFloat(0x3e000001));
+            multisampling.sampleShadingEnable(state.multiSampleState.sampleShadingEnable);
+            multisampling.rasterizationSamples(state.multiSampleState.sampleCount);
+//            final int i = switch (Drawer.tstFrameBuffer2.samples) {
+//                case VK_SAMPLE_COUNT_8_BIT -> 0x800000*Integer.numberOfTrailingZeros(8);
+//                case VK_SAMPLE_COUNT_4_BIT -> 0x800000*Integer.numberOfTrailingZeros(4);
+//                case VK_SAMPLE_COUNT_2_BIT -> 0x800000;
+//                case VK_SAMPLE_COUNT_1_BIT -> 0;
+//                default -> throw new IllegalStateException("Unexpected value: " + Drawer.tstFrameBuffer2.samples);
+//            };
+//            final float value = Float.intBitsToFloat((0x3f800000 - i) + 1);
+            multisampling.minSampleShading(state.multiSampleState.minSampleShading);
 
             // ===> DEPTH TEST <===
 
@@ -509,8 +518,9 @@ public class Pipeline {
 
     }
 
-    public long getHandle(PipelineState state) {
+    public long getHandle(int samples, PipelineState state) {
 //        this.subIndex=currentSubPassIndex;
+        this.samples=samples;
         return graphicsPipelines.computeIfAbsent(state, this::createGraphicsPipeline);
     }
 

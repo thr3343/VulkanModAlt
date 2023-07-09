@@ -1,6 +1,7 @@
 package net.vulkanmod.vulkan;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.config.Config;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.jetbrains.annotations.NotNull;
@@ -28,6 +29,7 @@ public class Framebuffer {
 //    private final int depthID;
 //    private final int inputID;
     public static final int DEFAULT_FORMAT = SwapChain.isBGRAformat ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R8G8B8A8_UNORM;
+    public int samples= Config.samples;
     private long frameBuffer;
 
     private final int format;
@@ -35,7 +37,7 @@ public class Framebuffer {
     private static final ObjectArrayList<FramebufferInfo> frameBuffers = new ObjectArrayList<>(8);
 
     public int width, height;
-    public final long renderPass;
+    public long renderPass;
 
 
 //    private List<VulkanImage> images;
@@ -50,6 +52,29 @@ public class Framebuffer {
     public void nextSubPass(VkCommandBuffer commandBuffer) {
         vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
         currentSubPassIndex++;
+    }
+
+    public void reInit(int sampleCnt) {
+        vkDeviceWaitIdle(getDevice());
+        samples=sampleCnt;
+        vkDestroyRenderPass(getDevice(), renderPass, null);
+//        vkDestroyFramebuffer(getDevice(), frameBuffer, null);
+        //Avoid potential crashes due to mismatched SampleCounts
+        for (final FramebufferInfo a : frameBuffers) {
+            vkDestroyFramebuffer(getDevice(), a.frameBuffer, null);
+        }
+        frameBuffers.clear();
+
+        if(colorAttachment01 !=null) this.colorAttachment01.free();
+//        if(colorAttachment02 !=null) this.colorAttachment02.free();
+        this.colorAttachment01=initColorAttachment(width, height);
+        this.depthAttachment.free();
+        createDepthResources(false);
+
+        this.renderPass=createRenderPass(attachmentTypes);
+        this.frameBuffer=createFramebuffers(this.attachmentTypes);
+
+
     }
 
 
@@ -142,7 +167,7 @@ public class Framebuffer {
 
     private VulkanImage initColorAttachment(int width, int height) {
         VulkanImage colorAttachment011 = new VulkanImage(this.format, 1, width, height, COLOR.usage, 0);
-        colorAttachment011.createImage(1, width, height, format,  COLOR.usage, VK_SAMPLE_COUNT_8_BIT);
+        colorAttachment011.createImage(1, width, height, format,  COLOR.usage, samples);
         colorAttachment011.imageView = createImageView(colorAttachment011.getId(), format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
         return colorAttachment011;
     }
@@ -222,7 +247,7 @@ public class Framebuffer {
 
                 final int loadOp = switch (attachmentType) {
                     case OUTPUTCOLOR -> VK_ATTACHMENT_LOAD_OP_CLEAR;
-                    case COLOR -> VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+                    case COLOR -> VK_ATTACHMENT_LOAD_OP_CLEAR;
                     case DEPTH -> VK_ATTACHMENT_LOAD_OP_CLEAR;
                 };
 
@@ -230,8 +255,8 @@ public class Framebuffer {
                 colorAttachment.format(attachmentType.format);
                 final int vkSampleCount1Bit = switch (attachmentType) {
                     case OUTPUTCOLOR -> VK_SAMPLE_COUNT_1_BIT;
-                    case COLOR -> VK_SAMPLE_COUNT_8_BIT;
-                    case DEPTH -> VK_SAMPLE_COUNT_8_BIT;
+                    case COLOR -> samples;
+                    case DEPTH -> samples;
                 };
                 colorAttachment.samples(vkSampleCount1Bit);
                 colorAttachment.loadOp(loadOp);
@@ -326,7 +351,7 @@ public class Framebuffer {
 
         this.depthAttachment = VulkanImage.createDepthImage(depthFormat, this.width, this.height,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT/* | VK_IMAGE_USAGE_SAMPLED_BIT*/,
-                blur, false, VK_SAMPLE_COUNT_8_BIT);
+                blur, false, samples);
 
 //        VkCommandBuffer commandBuffer = Vulkan.beginImmediateCmd();
 //        //Not Sure if we need this

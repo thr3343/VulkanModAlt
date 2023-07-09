@@ -9,6 +9,7 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
+import net.vulkanmod.config.Config;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -47,6 +48,10 @@ public class VRenderSystem {
     public static float alphaCutout = 0.0f;
 
     private static final float[] depthBias = new float[2];
+    private static boolean sampleShadingEnable=false;
+    private static int sampleCount= Config.samples;
+    private static int minSampleShading=1;
+    static boolean reInit=false;
 
     public static void initRenderer()
     {
@@ -293,5 +298,21 @@ public class VRenderSystem {
 
     public static void blendFuncSeparate(int srcFactorRGB, int dstFactorRGB, int srcFactorAlpha, int dstFactorAlpha) {
         Drawer.blendInfo.setBlendFuncSeparate(srcFactorRGB, dstFactorRGB, srcFactorAlpha, dstFactorAlpha);
+    }
+
+    public static PipelineState.MultiSampleState getMultiSampleState() {
+        return new PipelineState.MultiSampleState(sampleShadingEnable, sampleCount, minSampleShading);
+    }
+
+    public static void setMultiSampleState(int sampleCnt) {
+        sampleShadingEnable=sampleCnt>1;
+        minSampleShading=1;
+        sampleCount=sampleCnt;
+        System.out.println("RESAMPLE! -> "+sampleCnt);
+        Drawer.tstFrameBuffer2.reInit(sampleCnt);
+    }
+
+    public static void needsReinit(boolean b) {
+        reInit=b;
     }
 }
