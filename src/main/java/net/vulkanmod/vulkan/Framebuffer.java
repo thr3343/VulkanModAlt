@@ -98,7 +98,7 @@ public class Framebuffer {
     public enum AttachmentTypes
     {
         OUTPUTCOLOR(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT|VK_IMAGE_USAGE_STORAGE_BIT|VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
-        COLOR(VK_IMAGE_LAYOUT_PREINITIALIZED, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_SAMPLED_BIT),
+        COLOR(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, DEFAULT_FORMAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT|VK_IMAGE_USAGE_SAMPLED_BIT),
         DEPTH(getDeviceInfo().depthAttachmentOptimal, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
 
@@ -246,7 +246,7 @@ public class Framebuffer {
                 };
 
                 final int loadOp = switch (attachmentType) {
-                    case OUTPUTCOLOR -> VK_ATTACHMENT_LOAD_OP_CLEAR;
+                    case OUTPUTCOLOR -> VK_ATTACHMENT_LOAD_OP_DONT_CARE;
                     case COLOR -> VK_ATTACHMENT_LOAD_OP_CLEAR;
                     case DEPTH -> VK_ATTACHMENT_LOAD_OP_CLEAR;
                 };
@@ -299,7 +299,7 @@ public class Framebuffer {
             VkSubpassDescription subpassColour=subpass.get(0)
                     .pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS)
                     .colorAttachmentCount(1)
-                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(2)))
+                    .pColorAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_UNDEFINED).attachment(2)))
 
                     .pDepthStencilAttachment(attachmentRefs.get(1))
                     .pResolveAttachments(VkAttachmentReference.malloc(1, stack).put(0, VkAttachmentReference.malloc(stack).layout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL).attachment(0)));
@@ -374,8 +374,9 @@ public class Framebuffer {
         VkClearValue.Buffer clearValues = VkClearValue.calloc(attachments.length, stack);
 
 //        clearValues.get(inputID).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
-        clearValues.get(0).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
+//        clearValues.get(0).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
         clearValues.get(1).depthStencil().set(1.0f, 0);
+        clearValues.get(2).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
 
         VkRenderPassBeginInfo vkRenderPassBeginInfo = VkRenderPassBeginInfo.calloc(stack)
                 .sType(VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO)
