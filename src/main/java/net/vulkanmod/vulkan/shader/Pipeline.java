@@ -75,7 +75,7 @@ public class Pipeline {
     private long fragShaderModule = 0;
     private int samples;
 
-    public Pipeline(int b, List<InputAttachment> inputAttachments, VertexFormat vertexFormat, int colorFormat, int depthFormat, List<UBO> UBOs, ManualUBO manualUBO, List<Sampler> samplers, PushConstants pushConstants, long vertSpirv, long fragSpirv) {
+    public Pipeline(int b, List<InputAttachment> inputAttachments, VertexFormat vertexFormat, int colorFormat, int depthFormat, List<UBO> UBOs, ManualUBO manualUBO, List<Sampler> samplers, PushConstants pushConstants, ShaderSPIRVUtils.SPIRV vertSpirv, ShaderSPIRVUtils.SPIRV fragSpirv) {
         this.inputAttachments = inputAttachments;
         this.subIndex=b;
         this.UBOs = UBOs;
@@ -345,9 +345,9 @@ public class Pipeline {
         }
     }
 
-    private void createShaderModules(long vertSpirv, long fragSpirv) {
-        this.vertShaderModule = createShaderModule(vertSpirv);
-        this.fragShaderModule = createShaderModule(fragSpirv);
+    private void createShaderModules(ShaderSPIRVUtils.SPIRV vertSpirv, ShaderSPIRVUtils.SPIRV fragSpirv) {
+        this.vertShaderModule = createShaderModule(vertSpirv.bytecode());
+        this.fragShaderModule = createShaderModule(fragSpirv.bytecode());
     }
 
     public void cleanUp() {
@@ -474,20 +474,18 @@ public class Pipeline {
         return attributeDescriptions.rewind();
     }
 
-    private static long createShaderModule(long spirvCode) {
+    private static long createShaderModule(ByteBuffer spirvCode) {
 
         try(MemoryStack stack = stackPush()) {
 
             VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.callocStack(stack);
 
             createInfo.sType(VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);
-            long struct = createInfo.address();
-            memPutAddress(struct + VkShaderModuleCreateInfo.PCODE, invokePP(spirvCode, Shaderc.Functions.result_get_bytes));
-            VkShaderModuleCreateInfo.ncodeSize(struct, ShaderSPIRVUtils.shaderc_compilation_result_output_data_size(spirvCode));
+            createInfo.pCode(spirvCode);
 
             LongBuffer pShaderModule = stack.mallocLong(1);
 
-            if(nvkCreateShaderModule(DEVICE, createInfo.address(), NULL, memAddress0(pShaderModule)) != VK_SUCCESS) {
+            if(vkCreateShaderModule(DEVICE, createInfo, null, pShaderModule) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create shader module");
             }
 
@@ -797,8 +795,8 @@ public class Pipeline {
         private List<Sampler> samplers;
         private int currentBinding;
 
-        private long vertShaderSPIRV;
-        private long fragShaderSPIRV;
+        private ShaderSPIRVUtils.SPIRV vertShaderSPIRV;
+        private ShaderSPIRVUtils.SPIRV fragShaderSPIRV;
 
         private Framebuffer framebuffer;
 
@@ -814,7 +812,7 @@ public class Pipeline {
 
         public Pipeline createPipeline(int b) {
             Validate.isTrue(this.samplers != null && this.UBOs != null
-                    && this.vertShaderSPIRV != NULL && this.fragShaderSPIRV != NULL,
+                    && this.vertShaderSPIRV != null && this.fragShaderSPIRV != null,
                     "Cannot create Pipeline: resources missing");
 
             if(this.framebuffer == null)
