@@ -28,7 +28,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class SwapChain {
 
-    final Framebuffer fakeFBO;
+//    final Framebuffer fakeFBO;
     private long swapChain = VK_NULL_HANDLE;
     private List<Long> swapChainImages;
     private VkExtent2D extent2D;
@@ -47,7 +47,7 @@ public class SwapChain {
         createSwapChain(this.framesNum);
         MemoryManager.createInstance(this.swapChainImages.size());
 
-        this.fakeFBO=new Framebuffer(this.swapChainFormat, extent2D, Framebuffer.AttachmentTypes.COLOR, Framebuffer.AttachmentTypes.DEPTH);
+//        this.fakeFBO=new Framebuffer(this.swapChainFormat, extent2D.width(), extent2D.height(), true, Framebuffer.AttachmentTypes.COLOR, Framebuffer.AttachmentTypes.DEPTH);
 
 
     }
@@ -63,7 +63,7 @@ public class SwapChain {
             MemoryManager.createInstance(framesNum);
         }
 
-        this.fakeFBO.recreate(extent2D.width(), extent2D.height());
+        Drawer.tstFrameBuffer2.recreate(extent2D.width(), extent2D.height());
     }
     private void createSwapChain(int preferredImageCount) {
 
@@ -215,7 +215,7 @@ public class SwapChain {
         vkDestroySwapchainKHR(device, this.swapChain, null);
         imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
 
-        this.fakeFBO.cleanUp();
+        Drawer.tstFrameBuffer2.cleanUp();
     }
 
     private void createImageViews(int format) {
@@ -241,10 +241,6 @@ public class SwapChain {
 
     public VkExtent2D getExtent() {
         return extent2D;
-    }
-
-    public Framebuffer getFramebuffer() {
-        return fakeFBO;
     }
 
     public List<Long> getImageViews() {
@@ -301,8 +297,20 @@ public class SwapChain {
     }
 
     private int chooseSwapPresentMode(IntBuffer availablePresentModes) {
+        return vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
+//
+//        //fifo mode is the only mode that has to be supported
+//        if(requestedMode == VK_PRESENT_MODE_FIFO_KHR) return VK_PRESENT_MODE_FIFO_KHR;
+//
+//        for(int i = 0;i < availablePresentModes.capacity();i++) {
+//            if(availablePresentModes.get(i) == requestedMode) {
+//                return requestedMode;
+//            }
+//        }
+//
+//        Initializer.LOGGER.warn("Requested mode not supported: using fallback VK_PRESENT_MODE_FIFO_KHR");
+//        return VK_PRESENT_MODE_FIFO_KHR;
 
-        return vsync? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
 
     }
 

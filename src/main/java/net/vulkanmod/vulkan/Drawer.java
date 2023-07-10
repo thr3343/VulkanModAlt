@@ -93,7 +93,7 @@ public class Drawer {
 
     static
     {
-        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent(), Framebuffer.AttachmentTypes.OUTPUTCOLOR, Framebuffer.AttachmentTypes.DEPTH, Framebuffer.AttachmentTypes.COLOR);
+        tstFrameBuffer2=new Framebuffer(DEFAULT_FORMAT, getSwapchainExtent().width(), getSwapchainExtent().height(), true, Framebuffer.AttachmentTypes.OUTPUTCOLOR, Framebuffer.AttachmentTypes.DEPTH, Framebuffer.AttachmentTypes.COLOR);
 
     }
 
@@ -237,19 +237,19 @@ public class Drawer {
             }
 
 
-            Framebuffer framebuffer = getSwapChain().fakeFBO;
 
-            framebuffer.beginRendering(commandBuffer, stack, getSwapChain().getImageView(currentFrame));
-            this.boundFramebuffer = framebuffer;
+
+            tstFrameBuffer2.beginRendering(commandBuffer, stack);
+            this.boundFramebuffer = tstFrameBuffer2;
 
 //            renderPassInfo.framebuffer(getSwapChainFramebuffers().get(currentFrame));
 //
 //            vkCmdBeginRenderPass(commandBuffer, renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-            VkViewport.Buffer pViewport = framebuffer.viewport(stack);
+            VkViewport.Buffer pViewport = tstFrameBuffer2.viewport(stack);
             vkCmdSetViewport(commandBuffer, 0, pViewport);
 
-            VkRect2D.Buffer pScissor = framebuffer.scissor(stack);
+            VkRect2D.Buffer pScissor = tstFrameBuffer2.scissor(stack);
             vkCmdSetScissor(commandBuffer, 0, pScissor);
 
             vkCmdSetDepthBias(commandBuffer, 0.0F, 0.0F, 0.0F);
@@ -310,7 +310,7 @@ public class Drawer {
             this.endRendering();
 //--->
             try (MemoryStack stack = stackPush()) {
-                framebuffer.beginRendering(commandBuffers.get(currentFrame), stack, framebuffer.getColorAttachment().getImageView());
+                framebuffer.beginRendering(commandBuffers.get(currentFrame), stack);
             }
 
             this.boundFramebuffer = framebuffer;
