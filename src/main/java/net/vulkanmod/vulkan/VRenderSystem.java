@@ -171,6 +171,14 @@ public class VRenderSystem {
         return MVP;
     }
 
+    public static boolean isSampleShadingEnable() {
+        return sampleShadingEnable;
+    }
+
+    public static float getMinSampleShading() {
+        return minSampleShading;
+    }
+
     public static int getSampleCount() {
         return sampleCount;
     }
