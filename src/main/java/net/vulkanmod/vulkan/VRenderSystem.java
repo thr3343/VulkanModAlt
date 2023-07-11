@@ -9,7 +9,7 @@ import com.mojang.blaze3d.vertex.Tesselator;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.vulkanmod.config.Config;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -48,9 +48,21 @@ public class VRenderSystem {
     public static float alphaCutout = 0.0f;
 
     private static final float[] depthBias = new float[2];
-    private static boolean sampleShadingEnable=false;
-    private static int sampleCount= 1;
-    private static float minSampleShading=1;
+    private static boolean sampleShadingEnable=Initializer.CONFIG.samples>1;
+    private static int sampleCount= Initializer.CONFIG.samples;
+    private static float minSampleShading;
+
+    static {
+        final int i = switch (Initializer.CONFIG.samples) {
+            case 8 -> 0x3e000001;
+            case 4 -> 0x3e800001;
+            case 2 -> 0x3f000001;
+            case 1 -> 0;
+            default -> throw new IllegalStateException("Unexpected value: " + Initializer.CONFIG.samples);
+        };
+        minSampleShading = Initializer.CONFIG.msaaQuality ? 1 : Float.intBitsToFloat(i);
+    }
+
     static boolean reInit=false;
 
     public static void initRenderer()
@@ -309,26 +321,20 @@ public class VRenderSystem {
     }
 
     public static void setMultiSampleState() {
-        sampleShadingEnable=sampleCount>1;
+//        sampleShadingEnable=sampleCount>1;
 //        sampleCount=sampleCnt;
         System.out.println("RESAMPLE! -> "+sampleCount);
         Drawer.tstFrameBuffer2.reInit(sampleCount);
     }
 
-    public static void setSampleState(String s) {
-        sampleCount= switch (s) {
-            case "Off" -> 1;
-            case "2x" -> 2;
-            case "4x" -> 4;
-            case "8x" -> 8;
-
-            default -> throw new IllegalStateException("Unexpected value: " + s);
-        };
+    public static void setSampleState(int s) {
+        sampleCount= s;
         reInit=true;
     }
 
-    public static void setMinSampleShading(int value) {
-        minSampleShading=0.01f*value;
+    public static void setMinSampleShading(float value) {
+        minSampleShading=value;
+        reInit=true;
         /*switch (value)
         {
             case 0 -> Float.intBitsToFloat((0x3e000001));

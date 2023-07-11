@@ -203,29 +203,47 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
-                new CyclingOption<>("MSAA",
-                        new String[]{"Off", "2x", "4x", "8x"},
-                        value -> Component.nullToEmpty(String.valueOf(value)),
+                new RangeOption("MSAA", 0, 8, 2,
+                        value -> switch (value) {
+                            case 2 -> "2x MSAA";
+                            case 4 -> "4x MSAA";
+                            case 6,8 -> "8x MSAA";
+                            default -> "Off";
+                        },
+
                         value -> {
-                            final String s = String.valueOf(value);
-                            Config.samples = s;
+
+                            config.samples = switch (value) {
+                                case 2 -> 2;
+                                case 4 -> 4;
+                                case 6,8 -> 8;
+                                default -> 1;
+                            };
 
 //                            VRenderSystem.setMultiSampleState(value);
-                            VRenderSystem.setSampleState(s);
+                            VRenderSystem.setSampleState(config.samples);
                         },
-                        () -> Config.samples)
+                        () -> config.samples)
                         .setTooltip(Component.nullToEmpty("""
                         MSAA""")),
-                new RangeOption("sampleShadingMultiplier (Smoothness)", 0, 100, 1,
+                new SwitchOption("MaximiseMSAAQuality",
                         value -> {
-                            config.SampleScaleMultipler =value;
-                            VRenderSystem.setMinSampleShading(value);
+                            config.msaaQuality = value;
+                            final int i = switch (config.samples) {
+                                    case 8 -> 0x3e000001;
+                                    case 4 -> 0x3e800001;
+                                    case 2 -> 0x3f000001;
+                                    case 1 -> 0;
+                                    default -> throw new IllegalStateException("Unexpected value: " + config.samples);
+                            };
+
+                            VRenderSystem.setMinSampleShading(value ? 1 : Float.intBitsToFloat(i));
                         },
-                        () -> config.SampleScaleMultipler)
+                        () -> config.msaaQuality)
                         .setTooltip(Component.nullToEmpty("""
                         MSAA Specific Option:
-                        Controls the Tradeoff between Sharpness and Smoothness with MSAA
-                        Higher Values improve smoothness, but at the cost of GPU Utilisation""")),
+                        Further Improves MSAA Quality when enabled
+                        But also increases GPU utilisation""")),
         };
 
     }

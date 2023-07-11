@@ -160,6 +160,7 @@ public class Pipeline {
 
             multisampling.sampleShadingEnable(state.multiSampleState.sampleShadingEnable());
             multisampling.rasterizationSamples(state.multiSampleState.sampleCount());
+            multisampling.minSampleShading(state.multiSampleState.minSampleShading());
 
 //            final int i = switch (Drawer.tstFrameBuffer2.samples) {
 //                case VK_SAMPLE_COUNT_8_BIT -> 0x800000*Integer.numberOfTrailingZeros(8);
