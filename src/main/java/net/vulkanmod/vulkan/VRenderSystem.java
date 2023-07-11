@@ -48,17 +48,17 @@ public class VRenderSystem {
     public static float alphaCutout = 0.0f;
 
     private static final float[] depthBias = new float[2];
-    private static boolean sampleShadingEnable=Initializer.CONFIG.samples>1;
-    private static int sampleCount= Initializer.CONFIG.samples;
+    private static boolean sampleShadingEnable=Initializer.CONFIG.msaaPreset >1;
+    private static int sampleCount= getS(Initializer.CONFIG.msaaPreset);
     private static float minSampleShading;
 
     static {
-        final int i = switch (Initializer.CONFIG.samples) {
-            case 8 -> 0x3e000001;
-            case 4 -> 0x3e800001;
-            case 2 -> 0x3f000001;
-            case 1 -> 0;
-            default -> throw new IllegalStateException("Unexpected value: " + Initializer.CONFIG.samples);
+        final int i = switch (Initializer.CONFIG.msaaPreset) {
+            case 3 -> 0x3e000001;
+            case 2 -> 0x3e800001;
+            case 1 -> 0x3f000001;
+            case 0 -> 0;
+            default -> throw new IllegalStateException("Unexpected value: " + Initializer.CONFIG.msaaPreset);
         };
         minSampleShading = Initializer.CONFIG.msaaQuality ? 1 : Float.intBitsToFloat(i);
     }
@@ -321,15 +321,24 @@ public class VRenderSystem {
     }
 
     public static void setMultiSampleState() {
-//        sampleShadingEnable=sampleCount>1;
+        sampleShadingEnable=sampleCount>1;
 //        sampleCount=sampleCnt;
         System.out.println("RESAMPLE! -> "+sampleCount);
         Drawer.tstFrameBuffer2.reInit(sampleCount);
     }
 
     public static void setSampleState(int s) {
-        sampleCount= s;
+        sampleCount= getS(s);
         reInit=true;
+    }
+
+    private static int getS(int s) {
+        return switch (s) {
+            case 1 -> 2;
+            case 2 -> 4;
+            case 3 -> 8;
+            default -> 1;
+        };
     }
 
     public static void setMinSampleShading(float value) {

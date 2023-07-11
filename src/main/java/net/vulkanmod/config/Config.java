@@ -26,7 +26,7 @@ public class Config {
             .setPrettyPrinting()
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
-    public int samples = 1;
+    public int msaaPreset = 0;
     public boolean msaaQuality=false;
 
     public static Config load(Path path) {

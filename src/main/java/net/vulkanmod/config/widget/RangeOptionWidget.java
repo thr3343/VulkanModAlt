@@ -1,10 +1,13 @@
 package net.vulkanmod.config.widget;
 
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.vulkanmod.config.RangeOption;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.glfw.GLFW;
 
 public class RangeOptionWidget extends OptionWidget {
@@ -27,7 +30,17 @@ public class RangeOptionWidget extends OptionWidget {
     protected int getYImage(boolean hovered) {
         return 0;
     }
+    public void renderBackground(GuiGraphics matrices, Minecraft client, int mouseX, int mouseY) {
+        RenderSystem.setShaderTexture(0, WIDGETS_TEXTURE);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        int i = (this.isHovered() ? 2 : 1) * 20;
+        matrices.fill(this.controlX + (int)(this.value * (this.controlWidth - 8)), this.y, 0, 46 + i, 4, 20);
+        matrices.fill(this.controlX + (int)(this.value * (this.controlWidth - 8)) + 4, this.y, 196, 46 + i, 4, 20);
 
+        int color = this.controlHovered ? VUtil.packColor(1.0f, 1.0f, 1.0f, 1.0f) : VUtil.packColor(1.0f, 1.0f, 1.0f, 0.8f);
+
+        matrices.fill(this.controlX + (int)(this.value * (this.controlWidth - 8)), this.y + 20, this.controlX + (int)(this.value * (this.controlWidth - 8)) + 8, this.y, color);
+    }
     @Override
     public void onClick(double mouseX, double mouseY) {
         this.setValueFromMouse(mouseX);

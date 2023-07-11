@@ -6,8 +6,6 @@ import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.vulkan.VRenderSystem;
 
-import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WAYLAND;
-
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
@@ -203,38 +201,33 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
-                new RangeOption("MSAA", 0, 8, 2,
+                new RangeOption("MSAA", 0, 3, 1,
                         value -> switch (value) {
-                            case 2 -> "2x MSAA";
-                            case 4 -> "4x MSAA";
-                            case 6,8 -> "8x MSAA";
+                            case 1 -> "2x MSAA";
+                            case 2 -> "4x MSAA";
+                            case 3 -> "8x MSAA";
                             default -> "Off";
                         },
 
                         value -> {
 
-                            config.samples = switch (value) {
-                                case 2 -> 2;
-                                case 4 -> 4;
-                                case 6,8 -> 8;
-                                default -> 1;
-                            };
+                            config.msaaPreset = value;
 
 //                            VRenderSystem.setMultiSampleState(value);
-                            VRenderSystem.setSampleState(config.samples);
+                            VRenderSystem.setSampleState(config.msaaPreset);
                         },
-                        () -> config.samples)
+                        () -> config.msaaPreset)
                         .setTooltip(Component.nullToEmpty("""
                         MSAA""")),
                 new SwitchOption("MaximiseMSAAQuality",
                         value -> {
                             config.msaaQuality = value;
-                            final int i = switch (config.samples) {
-                                    case 8 -> 0x3e000001;
-                                    case 4 -> 0x3e800001;
-                                    case 2 -> 0x3f000001;
-                                    case 1 -> 0;
-                                    default -> throw new IllegalStateException("Unexpected value: " + config.samples);
+                            final int i = switch (config.msaaPreset) {
+                                    case 3 -> 0x3e000001;
+                                    case 2 -> 0x3e800001;
+                                    case 1 -> 0x3f000001;
+                                    case 0 -> 0;
+                                    default -> throw new IllegalStateException("Unexpected value: " + config.msaaPreset);
                             };
 
                             VRenderSystem.setMinSampleShading(value ? 1 : Float.intBitsToFloat(i));
