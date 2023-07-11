@@ -75,10 +75,14 @@ public abstract class OptionWidget
             matrices.fill(this.x - 2, this.y - 2, this.x + this.width + 2, this.y + this.height + 2, 0x28000000);
         matrices.fill(this.controlX, this.y, this.controlX + this.controlWidth, this.y + height, color);
 //TODO --->!
-//        this.renderBackground(matrices, minecraftClient, mouseX, mouseY);
+        this.renderBackground(matrices, minecraftClient, mouseX, mouseY);
         int j = this.active ? 0xFFFFFF : 0xA0A0A0;
         matrices.drawString(textRenderer, this.getName().getVisualOrderText(), this.x, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0f) << 24);
         matrices.drawCenteredString(textRenderer, this.getDisplayedValue(), this.controlX + this.controlWidth / 2, this.y + (this.height - 8) / 2, j | Mth.ceil(this.alpha * 255.0f) << 24);
+    }
+
+    public void renderBackground(GuiGraphics matrices, Minecraft minecraftClient, int mouseX, int mouseY) {
+
     }
 
 
