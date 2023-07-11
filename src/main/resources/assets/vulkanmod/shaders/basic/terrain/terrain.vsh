@@ -18,8 +18,8 @@ layout(binding = 2) uniform UniformBufferObject2 {
 layout(binding = 4) uniform sampler2D Sampler2;
 
 layout(location = 0) out float vertexDistance;
-layout(location = 1) out vec4 vertexColor;
-layout(location = 2) out vec2 texCoord0;
+layout(location = 1) out sample vec4 vertexColor;
+layout(location = 2) out sample vec2 texCoord0;
 //layout(location = 3) out vec4 normal;
 
 //Compressed Vertex

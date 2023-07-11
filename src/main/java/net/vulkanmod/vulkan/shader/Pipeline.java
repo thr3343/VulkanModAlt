@@ -169,7 +169,6 @@ public class Pipeline {
 //                default -> throw new IllegalStateException("Unexpected value: " + Drawer.tstFrameBuffer2.samples);
 //            };
 //            final float value = Float.intBitsToFloat((0x3f800000 - i) + 1);
-            multisampling.minSampleShading(state.multiSampleState.minSampleShading());
 
             // ===> DEPTH TEST <===
 
