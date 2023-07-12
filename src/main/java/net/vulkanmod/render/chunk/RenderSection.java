@@ -14,10 +14,7 @@ import net.vulkanmod.render.chunk.build.TaskDispatcher;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import javax.annotation.Nullable;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class RenderSection {
     static final Map<RenderSection, Set<BlockEntity>> globalBlockEntitiesMap = new Reference2ReferenceOpenHashMap<>();
@@ -41,7 +38,7 @@ public class RenderSection {
 //            Arrays.stream(TerrainRenderType.VALUES)
 //                    .map(terrainRenderType -> new DrawBuffers.DrawParameters(terrainRenderType == TerrainRenderType.TRANSLUCENT))
 //                    .toArray(DrawBuffers.DrawParameters[]::new);
-    private final DrawBuffers.DrawParameters[] drawParametersArray;
+    public final DrawBuffers.DrawParameters[] drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.values().length];
 
     //Graph-info
     public Direction mainDir;
@@ -56,9 +53,8 @@ public class RenderSection {
         this.yOffset = y;
         this.zOffset = z;
 
-        this.drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.VALUES.length];
-        for(int i = 0; i < this.drawParametersArray.length; ++i) {
-            this.drawParametersArray[i] = new DrawBuffers.DrawParameters(TerrainRenderType.VALUES[i] == TerrainRenderType.TRANSLUCENT);
+        for(int i = 0; i < TerrainRenderType.values().length; ++i) {
+            this.drawParametersArray[i] = new DrawBuffers.DrawParameters(TerrainRenderType.values()[i]);
         }
     }
 
@@ -177,10 +173,6 @@ public class RenderSection {
 
     public int zOffset() {
         return zOffset;
-    }
-
-    public DrawBuffers.DrawParameters getDrawParameters(TerrainRenderType renderType) {
-        return drawParametersArray[renderType.ordinal()];
     }
 
     public void setNeighbour(int index, @Nullable RenderSection chunk) {
