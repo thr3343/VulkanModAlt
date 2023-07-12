@@ -6,11 +6,13 @@ import org.lwjgl.system.MemoryUtil;
 
 public class ManualUBO extends UBO {
 
-    private long srcPtr;
-    private int srcSize;
+    public final long srcPtr;
+    private final int srcSize;
 
     public ManualUBO(int binding, int type, int size) {
         super(binding, type, size * 4, null);
+        srcPtr=MemoryUtil.nmemAlloc(size);
+        srcSize = size;
     }
 
     public void update() {
@@ -23,8 +25,4 @@ public class ManualUBO extends UBO {
         MemoryUtil.memCopy(this.srcPtr, ptr, this.srcSize);
     }
 
-    public void setSrc(long ptr, int size) {
-        this.srcPtr = ptr;
-        this.srcSize = size;
-    }
 }

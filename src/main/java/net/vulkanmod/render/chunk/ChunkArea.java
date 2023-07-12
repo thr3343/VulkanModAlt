@@ -1,7 +1,7 @@
 package net.vulkanmod.render.chunk;
 
 import net.minecraft.core.BlockPos;
-import net.vulkanmod.render.chunk.util.ResettableQueue;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.joml.FrustumIntersection;
 import org.joml.Vector3i;
 
@@ -12,15 +12,19 @@ public class ChunkArea {
     private final byte[] inFrustum = new byte[64];
 
     final Vector3i position;
+//    public ResettableQueue<DrawBuffers.DrawParameters> indirectCommands = new ResettableQueue<>();
 
-    DrawBuffers drawBuffers;
+    final DrawBuffers drawBuffers;
+    public final DrawBuffers.DrawParameters[] drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.values().length];
 
-    final ResettableQueue<RenderSection> sectionQueue = new ResettableQueue<>();
 
     public ChunkArea(int i, Vector3i origin) {
         this.index = i;
         this.position = origin;
         this.drawBuffers = new DrawBuffers();
+        for(int xii = 0; xii < TerrainRenderType.values().length; ++xii) {
+            this.drawParametersArray[xii] = new DrawBuffers.DrawParameters(TerrainRenderType.values()[xii]);
+        }
     }
 
     public void updateFrustum(VFrustum frustum) {
@@ -116,18 +120,6 @@ public class ChunkArea {
             drawBuffers.allocateBuffers();
 
         return this.drawBuffers;
-    }
-
-    private void allocateDrawBuffers() {
-        this.drawBuffers = new DrawBuffers();
-    }
-
-    public void addSection(RenderSection section) {
-        this.sectionQueue.add(section);
-    }
-
-    public void resetQueue() {
-        this.sectionQueue.clear();
     }
 
     public void setPosition(int x, int y, int z) {

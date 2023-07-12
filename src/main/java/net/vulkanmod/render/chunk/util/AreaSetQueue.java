@@ -4,12 +4,11 @@ import net.vulkanmod.render.chunk.ChunkArea;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 
 public class AreaSetQueue {
     private final int size;
     int[] set;
-    ResettableQueue<ChunkArea> queue;
+    public final ResettableQueue<ChunkArea> queue;
 
     public AreaSetQueue(int size) {
         this.size = size;
