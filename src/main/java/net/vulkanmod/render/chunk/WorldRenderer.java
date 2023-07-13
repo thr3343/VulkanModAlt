@@ -576,7 +576,7 @@ public class WorldRenderer {
 
         p.push("draw batches");
 
-        ObjectArrayList<TerrainRenderType> renderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES;
+        final Set<TerrainRenderType> renderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES;
 
         if(renderTypes.contains(layerName)) {
 //            Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);

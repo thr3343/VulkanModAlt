@@ -1,8 +1,10 @@
 package net.vulkanmod.render.vertex;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.vulkan.VRenderSystem;
+
+import java.util.EnumSet;
+import java.util.Set;
 
 public enum TerrainRenderType {
     SOLID(RenderType.solid(), 0.0f),
@@ -11,16 +13,9 @@ public enum TerrainRenderType {
     TRANSLUCENT(RenderType.translucent(), 0.0f),
     TRIPWIRE(RenderType.tripwire(), 0.1f);
 
-    public static final ObjectArrayList<TerrainRenderType> COMPACT_RENDER_TYPES = new ObjectArrayList<>();
-    public static final ObjectArrayList<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = new ObjectArrayList<>();
+    public static final Set<TerrainRenderType> COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT_MIPPED, TRANSLUCENT);
+    public static final Set<TerrainRenderType> SEMI_COMPACT_RENDER_TYPES = EnumSet.of(CUTOUT, CUTOUT_MIPPED, TRANSLUCENT);
 
-    static {
-        SEMI_COMPACT_RENDER_TYPES.add(CUTOUT);
-        COMPACT_RENDER_TYPES.add(CUTOUT_MIPPED);
-        SEMI_COMPACT_RENDER_TYPES.add(CUTOUT_MIPPED);
-        COMPACT_RENDER_TYPES.add(TRANSLUCENT);
-        SEMI_COMPACT_RENDER_TYPES.add(TRANSLUCENT);
-    }
 
 //    final RenderType renderType;
     final float alphaCutout;
@@ -32,6 +27,18 @@ public enum TerrainRenderType {
         this.alphaCutout = alphaCutout;
         this.name=renderType.name;
         this.maxSize=renderType.bufferSize();
+    }
+
+    public static RenderType to(TerrainRenderType renderType2) {
+        return switch (renderType2)
+        {
+
+            case SOLID -> RenderType.solid();
+            case CUTOUT_MIPPED -> RenderType.cutoutMipped();
+            case CUTOUT -> RenderType.cutout();
+            case TRANSLUCENT -> RenderType.translucent();
+            case TRIPWIRE -> RenderType.tripwire();
+        };
     }
 
     public void setCutoutUniform() {
