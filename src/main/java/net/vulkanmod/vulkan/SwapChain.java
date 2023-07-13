@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.minecraft.util.Mth;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.texture.VulkanImage;
