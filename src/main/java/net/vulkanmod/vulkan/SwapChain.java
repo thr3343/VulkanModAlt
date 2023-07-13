@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan;
 
 import net.minecraft.util.Mth;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -72,7 +73,7 @@ public class SwapChain {
             SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device.getPhysicalDevice(), stack);
 
             VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-            int presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
+            int presentMode = chooseSwapPresentMode();
             VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
             //Workaround for Mesa
@@ -296,8 +297,8 @@ public class SwapChain {
         return format;
     }
 
-    private int chooseSwapPresentMode(IntBuffer availablePresentModes) {
-        return vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_MAILBOX_KHR;
+    private int chooseSwapPresentMode() {
+        return vsync ? VK_PRESENT_MODE_FIFO_KHR : VideoResolution.isWayLand() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
 //
 //        //fifo mode is the only mode that has to be supported
 //        if(requestedMode == VK_PRESENT_MODE_FIFO_KHR) return VK_PRESENT_MODE_FIFO_KHR;

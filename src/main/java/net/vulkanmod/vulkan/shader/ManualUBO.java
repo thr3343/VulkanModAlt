@@ -11,8 +11,8 @@ public class ManualUBO extends UBO {
 
     public ManualUBO(int binding, int type, int size) {
         super(binding, type, size * 4, null);
-        srcPtr=MemoryUtil.nmemAlloc(size);
-        srcSize = size;
+        srcPtr=MemoryUtil.nmemAlloc(size*4L);
+        srcSize = size*4;
     }
 
     public void update() {

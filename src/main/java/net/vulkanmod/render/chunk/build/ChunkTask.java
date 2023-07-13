@@ -32,6 +32,8 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
+
 public class ChunkTask {
     private static TaskDispatcher taskDispatcher;
 
@@ -203,7 +205,7 @@ public class ChunkTask {
                     TerrainBufferBuilder.RenderedBuffer renderedBuffer = chunkBufferBuilderPack.builder(renderType2).endOrDiscardIfEmpty();
                     if (renderedBuffer != null) {
                         UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
-                        compileResults.renderedLayers.put(TerrainRenderType.get(renderType2), uploadBuffer);
+                        compileResults.renderedLayers.put(TerrainRenderType.get(renderType2.name), uploadBuffer);
                     }
 
                     if(renderedBuffer != null)
@@ -289,7 +291,7 @@ public class ChunkTask {
                 float f1 = (float)vec3.y;
                 float f2 = (float)vec3.z;
                 TerrainBufferBuilder.SortState transparencyState = this.compiledSection.transparencyState;
-                if (transparencyState != null && this.compiledSection.renderTypes.contains(TerrainRenderType.TRANSLUCENT)) {
+                if (transparencyState != null && this.compiledSection.renderTypes.contains(TRANSLUCENT)) {
                     TerrainBufferBuilder bufferbuilder = builderPack.builder(RenderType.translucent());
                     bufferbuilder.begin(VertexFormat.Mode.QUADS, ShaderManager.TERRAIN_VERTEX_FORMAT);
                     bufferbuilder.restoreSortState(transparencyState);
@@ -302,7 +304,7 @@ public class ChunkTask {
                     } else {
 
                         UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
-                        taskDispatcher.scheduleUploadChunkLayer(renderSection, TerrainRenderType.get(RenderType.translucent()), uploadBuffer);
+                        taskDispatcher.scheduleUploadChunkLayer(renderSection, TRANSLUCENT, uploadBuffer);
                         renderedBuffer.release();
                         return CompletableFuture.completedFuture(Result.SUCCESSFUL);
 
