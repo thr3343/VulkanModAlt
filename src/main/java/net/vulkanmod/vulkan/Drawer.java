@@ -398,10 +398,13 @@ public class Drawer {
 
 
 
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
+            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), -1,
                     imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
 
+            if(vkResult == VK_NOT_READY) {
+                skipRendering=true; return;
+            }
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
                 shouldRecreate = false;
                 recreateSwapChain();
@@ -444,6 +447,9 @@ public class Drawer {
 
             vkResult = callPPI(getPresentQueue(), presentInfo.address(), device.getCapabilities().vkQueuePresentKHR);
 
+            if(vkResult == VK_NOT_READY ) {
+                skipRendering=true; return;
+            }
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
                 shouldRecreate = false;
                 recreateSwapChain();
