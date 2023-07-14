@@ -104,8 +104,14 @@ public class QueueFamilyIndices {
             if (computeFamily == -1)
                 throw new RuntimeException("Unable to find queue family with compute support.");
 
+            System.out.println("-==Queue Family Configuration==-");
+            System.out.println("    graphicsFamily -> "+graphicsFamily);
+            System.out.println("    transferFamily -> "+transferFamily);
+            System.out.println("    presentFamily  -> "+presentFamily);
+            System.out.println("    computeFamily  -> "+computeFamily);
+
         }
-        return isSuitable();
+        return isComplete();
     }
 
     public static boolean isComplete() {
