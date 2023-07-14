@@ -6,8 +6,8 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.render.vertex.CustomVertexFormat;
 
 public class ShaderManager {
-//    public static final VertexFormat TERRAIN_VERTEX_FORMAT = CustomVertexFormat.COMPRESSED_TERRAIN;
-    public static final VertexFormat TERRAIN_VERTEX_FORMAT = DefaultVertexFormat.BLOCK;
+    public static final VertexFormat TERRAIN_VERTEX_FORMAT = CustomVertexFormat.COMPRESSED_TERRAIN;
+//    public static final VertexFormat TERRAIN_VERTEX_FORMAT = DefaultVertexFormat.BLOCK;
 
     public static ShaderManager shaderManager;
 
