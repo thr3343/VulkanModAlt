@@ -37,15 +37,8 @@ public class AreaBuffer {
     }
 
     private Buffer allocateBuffer(int size) {
-        int bufferSize = size;
 
-        Buffer buffer;
-        if(this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT) {
-            buffer = new VertexBuffer(bufferSize, memoryType);
-        } else {
-            buffer = new IndexBuffer(bufferSize, memoryType);
-        }
-        return buffer;
+        return this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ? new VertexBuffer(size, memoryType) : new IndexBuffer(size, memoryType);
     }
 
     public synchronized void upload(ByteBuffer byteBuffer, Segment uploadSegment) {
@@ -72,7 +65,7 @@ public class AreaBuffer {
 
         uploadSegment.offset = segment.offset;
         uploadSegment.size = size;
-        uploadSegment.status = Segment.PENDING_BIT;
+        uploadSegment.status = false;
 
         this.used += size;
 
@@ -154,11 +147,9 @@ public class AreaBuffer {
     }
 
     public static class Segment {
-        public static final byte PENDING_BIT = 0x1;
-        public static final byte READY_BIT = 0x2;
 
         int offset, size;
-        byte status;
+        boolean status = false;
 
         public Segment() {
             reset();
@@ -167,13 +158,13 @@ public class AreaBuffer {
         private Segment(int offset, int size) {
             this.offset = offset;
             this.size = size;
-            this.status = 0;
+            this.status = false;
         }
 
         public void reset() {
             this.offset = -1;
             this.size = -1;
-            this.status = 0;
+            this.status = false;
         }
 
         public int getOffset() {
@@ -185,19 +176,19 @@ public class AreaBuffer {
         }
 
         void setPending() {
-            this.status = PENDING_BIT;
+            this.status = false;
         }
 
         public boolean isPending() {
-            return (this.status & PENDING_BIT) != 0;
+            return (!this.status);
         }
 
         public void setReady() {
-            this.status = READY_BIT;
+            this.status = true;
         }
 
         public boolean isReady() {
-            return (this.status & READY_BIT) != 0;
+            return (this.status);
         }
 
     }

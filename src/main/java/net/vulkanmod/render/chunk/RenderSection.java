@@ -52,9 +52,10 @@ public class RenderSection {
         this.xOffset = x;
         this.yOffset = y;
         this.zOffset = z;
-
-        for(int i = 0; i < TerrainRenderType.values().length; ++i) {
-            this.drawParametersArray[i] = new DrawBuffers.DrawParameters(TerrainRenderType.values()[i]);
+//        Arrays.fill( a -> new DrawBuffers.DrawParameters(xOffset, yOffset, zOffset, a));
+        for(var a : TerrainRenderType.values())
+        {
+            this.drawParametersArray[a.ordinal()] = new DrawBuffers.DrawParameters(xOffset, yOffset, zOffset, a);
         }
     }
 
@@ -64,6 +65,9 @@ public class RenderSection {
         this.xOffset = x;
         this.yOffset = y;
         this.zOffset = z;
+        for(int i = 0; i < TerrainRenderType.values().length; ++i) {
+            this.drawParametersArray[i].resetOrigin(x,y,z);
+        }
 
     }
 

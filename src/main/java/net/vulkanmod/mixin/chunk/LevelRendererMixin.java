@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.profiling.Profiler2;
+import net.vulkanmod.vulkan.util.VBOUtil;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.Final;
@@ -98,7 +99,13 @@ public abstract class LevelRendererMixin {
      */
     @Overwrite
     private void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix) {
-        this.worldRenderer.renderChunkLayer(renderType, poseStack, camX, camY, camZ, projectionMatrix);
+
+        if(renderType==RenderType.solid())
+        {
+            VBOUtil.updateCamTranslation(poseStack, camX, camY, camZ, projectionMatrix);
+        }
+
+        this.worldRenderer.renderChunkLayer(renderType, camX, camY, camZ, projectionMatrix);
     }
 
     /**

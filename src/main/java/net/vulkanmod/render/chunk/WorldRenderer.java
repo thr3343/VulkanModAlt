@@ -40,6 +40,7 @@ import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
+import net.vulkanmod.vulkan.util.VBOUtil;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 
@@ -47,6 +48,7 @@ import javax.annotation.Nullable;
 import java.util.*;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
+import static net.vulkanmod.vulkan.util.VBOUtil.*;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -465,6 +467,7 @@ public class WorldRenderer {
     }
 
     public void allChanged() {
+        resetOrigin();
         if (this.level != null) {
 //            this.graphicsChanged();
             this.level.clearTintCaches();
@@ -503,6 +506,11 @@ public class WorldRenderer {
         }
     }
 
+    private void resetOrigin() {
+        originX=originX-Mth.floor(originX);
+        originZ=originZ-Mth.floor(originZ);
+    }
+
     public void setLevel(@Nullable ClientLevel level) {
         this.lastCameraX = Float.MIN_VALUE;
         this.lastCameraY = Float.MIN_VALUE;
@@ -529,7 +537,7 @@ public class WorldRenderer {
 
     }
 
-    public void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projection) {
+    public void renderChunkLayer(RenderType renderType, double camX, double camY, double camZ, Matrix4f projection) {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
         Profiler2 p = Profiler2.getMainProfiler();
@@ -569,7 +577,7 @@ public class WorldRenderer {
         boolean flag = renderType == RenderType.translucent();
         boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
-        VRenderSystem.applyMVP(poseStack.last().pose(), projection);
+        VRenderSystem.applyMVP(translationOffset, projection);
 
         Drawer drawer = Drawer.getInstance();
         Pipeline pipeline = ShaderManager.getInstance().getTerrainShader();
@@ -600,15 +608,15 @@ public class WorldRenderer {
         p.pop();
 
         //Need to reset push constant in case the pipeline will still be used for rendering
-        if(!indirectDraw) {
-            VRenderSystem.setChunkOffset(0, 0, 0);
-            drawer.pushConstants(pipeline);
-        }
+//        if(!indirectDraw) {
+//            VRenderSystem.setChunkOffset(0, 0, 0);
+//            drawer.pushConstants(pipeline);
+//        }
 
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
 
-        VRenderSystem.applyMVP(RenderSystem.getModelViewMatrix(), RenderSystem.getProjectionMatrix());
+        VRenderSystem.applyModelViewMatrix(RenderSystem.getModelViewMatrix());
 
         switch (layerName) {
             case CUTOUT -> {

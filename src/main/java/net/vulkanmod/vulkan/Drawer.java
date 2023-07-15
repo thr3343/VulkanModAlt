@@ -4,7 +4,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -46,6 +45,8 @@ public class Drawer {
 
 
     private static int oldestFrameIndex = 0;
+    private static final int UINT16_T_IDX_LIMIT = 96384;
+
     public static void initDrawer() { INSTANCE = new Drawer(); }
 
 
@@ -109,7 +110,7 @@ public class Drawer {
         }
 
         uniformBuffers = new UniformBuffers(UBOSize);
-        quadsIndexBuffer = new AutoIndexBuffer(100000, AutoIndexBuffer.DrawType.QUADS);
+        quadsIndexBuffer = new AutoIndexBuffer(UINT16_T_IDX_LIMIT, AutoIndexBuffer.DrawType.QUADS);
         triangleFanIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_FAN);
         triangleStripIndexBuffer = new AutoIndexBuffer(1000, AutoIndexBuffer.DrawType.TRIANGLE_STRIP);
 
