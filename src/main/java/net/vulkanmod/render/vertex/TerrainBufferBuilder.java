@@ -340,11 +340,10 @@ public class TerrainBufferBuilder implements VertexConsumer {
 
 	public void vertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
 //		this.defaultVertex(x, y, z, red, green, blue, alpha, u, v, overlay, light, normalX, normalY, normalZ);
-		this.defaultVertex2(x, y, z, red, green, blue, alpha, u, v, overlay, light, normalX, normalY, normalZ);
-//		this.compressedVertex(x, y, z, red, green, blue, alpha, u, v, light);
+		this.compressedVertex(x, y, z, red, green, blue, alpha, u, v, light);
 	}
 
-	private void defaultVertex2(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
+	private void defaultVertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
         this.putFloat(0, x);
         this.putFloat(4, y);
         this.putFloat(8, z);
@@ -362,24 +361,6 @@ public class TerrainBufferBuilder implements VertexConsumer {
         this.putByte(i + 4, BufferVertexConsumer.normalIntValue(normalX));
         this.putByte(i + 5, BufferVertexConsumer.normalIntValue(normalY));
         this.putByte(i + 6, BufferVertexConsumer.normalIntValue(normalZ));
-        this.nextElementByte += i + 8;
-        this.endVertex();
-	}	private void defaultVertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
-        this.putFloat(0, x);
-        this.putFloat(4, y);
-        this.putFloat(8, z);
-        this.putByte(12, (byte)((int)(red * 255.0F)));
-        this.putByte(13, (byte)((int)(green * 255.0F)));
-        this.putByte(14, (byte)((int)(blue * 255.0F)));
-        this.putByte(15, (byte)((int)(alpha * 255.0F)));
-        this.putFloat(16, u);
-        this.putFloat(20, v);
-        byte i;
-        i = 24;
-
-        this.putShort(i, (short)(light & '\uffff'));
-        this.putShort(i + 2, (short)(light >> 16 & '\uffff'));
-
         this.nextElementByte += i + 8;
         this.endVertex();
 	}
