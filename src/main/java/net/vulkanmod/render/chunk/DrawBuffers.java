@@ -168,9 +168,8 @@ public class DrawBuffers {
 
 
 
-            long ptr = bufferPtr + (drawCount * 20L);
-            MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
-            MemoryUtil.memPutInt(ptr + 4, 1);
+            long ptr = bufferPtr + (drawCount * 20L); //TODO: For some reason, this line increased Performance (i.e. reduced CPU Overhead) by at least 10%
+            MemoryUtil.memPutLong(ptr, (long) 1 <<32 | drawParameters.indexCount);
             MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
             //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE);
             MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
