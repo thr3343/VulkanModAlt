@@ -197,6 +197,7 @@ public class Drawer {
 
         if(skipRendering) return;
 
+        nvkWaitForFences(device, 1, frameFences.address(currentFrame), 0, VUtil.UINT64_MAX);
 
         p.pop();
         p.start();
@@ -205,9 +206,6 @@ public class Drawer {
         AreaUploadManager.INSTANCE.updateFrame(currentFrame);
 
         MemoryManager.getInstance().initFrame(currentFrame);
-
-        nvkWaitForFences(device, 1, frameFences.address(currentFrame), 0, VUtil.UINT64_MAX);
-
 
 //        this.vertexBuffers[currentFrame].reset();
 //        this.uniformBuffers.reset();

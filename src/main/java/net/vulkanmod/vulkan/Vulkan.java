@@ -194,7 +194,7 @@ public class Vulkan {
 
         GraphicsQueue.cleanUp();
         TransferQueue.cleanUp();
-        ComputeQueue.cleanUp();
+        PresentQueue.cleanUp();
 
         Pipeline.destroyPipelineCache();
         swapChain.cleanUp();
@@ -659,7 +659,7 @@ public class Vulkan {
 
     public static long getSurface() { return surface; }
 
-    public static long getPresentQueue() { return ComputeQueue.Queue; }
+    public static long getPresentQueue() { return PresentQueue.Queue; }
 
     public static long getGraphicsQueue() { return GraphicsQueue.Queue; }
 
