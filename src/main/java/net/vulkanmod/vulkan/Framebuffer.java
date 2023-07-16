@@ -90,7 +90,7 @@ public class Framebuffer {
         this.frameBuffer=createFramebuffers(this.attachmentTypes);
     }
 
-    protected Framebuffer(int swapChainFormat, int width, int height, boolean isSwapChain, AttachmentTypes... attachmentTypes)
+    public Framebuffer(int swapChainFormat, int width, int height, boolean isSwapChain, AttachmentTypes... attachmentTypes)
     {
         this.width = width;
         this.height = height;

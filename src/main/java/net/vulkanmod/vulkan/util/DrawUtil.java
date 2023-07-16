@@ -12,16 +12,16 @@ import org.lwjgl.system.MemoryStack;
 public class DrawUtil {
 
     public static void drawFramebuffer(Framebuffer framebuffer) {
-        Drawer drawer = Drawer.getInstance();
+//        Drawer drawer = Drawer.getInstance();
 
-        Matrix4f matrix4f = new Matrix4f().setOrtho(0.0F, 1.0F, 1.0F, 0.0F, 0.0F, 1.0F);
-//        matrix4f.setIdentity();
-        RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.DISTANCE_TO_ORIGIN);
-        PoseStack posestack = RenderSystem.getModelViewStack();
-        posestack.pushPose();
-        posestack.setIdentity();
-        RenderSystem.applyModelViewMatrix();
-        posestack.popPose();
+//        Matrix4f matrix4f = new Matrix4f().setOrtho(0.0F, 1.0F, 1.0F, 0.0F, 0.0F, 1.0F);
+////        matrix4f.setIdentity();
+//        RenderSystem.setProjectionMatrix(matrix4f, VertexSorting.DISTANCE_TO_ORIGIN);
+//        PoseStack posestack = RenderSystem.getModelViewStack();
+//        posestack.pushPose();
+//        posestack.setIdentity();
+//        RenderSystem.applyModelViewMatrix();
+//        posestack.popPose();
 
 //        drawer.uploadAndBindUBOs(drawer.blitShader);
 
@@ -29,25 +29,25 @@ public class DrawUtil {
             framebuffer.bindAsTexture();
         }
 
-        ShaderInstance shaderInstance = Minecraft.getInstance().gameRenderer.blitShader;
-        RenderSystem.setShader(() -> shaderInstance);
-
-        Tesselator tesselator = RenderSystem.renderThreadTesselator();
-        BufferBuilder bufferBuilder = tesselator.getBuilder();
-//        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
-//        bufferBuilder.vertex(0.0D, 0.0D, 0.0D).uv(0.0F, 1.0F).endVertex();
-//        bufferBuilder.vertex(1.0D, 0.0D, 0.0D).uv(1.0F, 1.0F).endVertex();
-//        bufferBuilder.vertex(1.0D, 1.0D, 0.0D).uv(1.0F, 0.0F).endVertex();
-//        bufferBuilder.vertex(0.0D, 1.0D, 0.0D).uv(0.0F, 0.0F).endVertex();
-        //TODO: Use FullScreenQuadMethod
-        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
-        bufferBuilder.vertex(0.0D, 0.0D, 0.0D).uv(0.0F, 0.0F).color(255, 255, 255, 255).endVertex();
-        bufferBuilder.vertex(1.0D, 0.0D, 0.0D).uv(1.0F, 0.0F).color(255, 255, 255, 255).endVertex();
-        bufferBuilder.vertex(1.0D, 1.0D, 0.0D).uv(1.0F, 0.0F).color(255, 255, 255, 255).endVertex();
-        bufferBuilder.vertex(0.0D, 1.0D, 0.0D).uv(0.0F, 0.0F).color(255, 255, 255, 255).endVertex();
-//        bufferBuilder.end();
-//        BufferUploader._endInternal(bufferBuilder);
-        BufferUploader.draw(bufferBuilder.end());
+//        ShaderInstance shaderInstance = Minecraft.getInstance().gameRenderer.blitShader;
+//        RenderSystem.setShader(() -> shaderInstance);
+//
+//        Tesselator tesselator = RenderSystem.renderThreadTesselator();
+//        BufferBuilder bufferBuilder = tesselator.getBuilder();
+////        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
+////        bufferBuilder.vertex(0.0D, 0.0D, 0.0D).uv(0.0F, 1.0F).endVertex();
+////        bufferBuilder.vertex(1.0D, 0.0D, 0.0D).uv(1.0F, 1.0F).endVertex();
+////        bufferBuilder.vertex(1.0D, 1.0D, 0.0D).uv(1.0F, 0.0F).endVertex();
+////        bufferBuilder.vertex(0.0D, 1.0D, 0.0D).uv(0.0F, 0.0F).endVertex();
+//        //TODO: Use FullScreenQuadMethod
+//        bufferBuilder.begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX_COLOR);
+//        bufferBuilder.vertex(0.0D, 0.0D, 0.0D).uv(0.0F, 0.0F).color(255, 255, 255, 255).endVertex();
+//        bufferBuilder.vertex(1.0D, 0.0D, 0.0D).uv(1.0F, 0.0F).color(255, 255, 255, 255).endVertex();
+//        bufferBuilder.vertex(1.0D, 1.0D, 0.0D).uv(1.0F, 0.0F).color(255, 255, 255, 255).endVertex();
+//        bufferBuilder.vertex(0.0D, 1.0D, 0.0D).uv(0.0F, 0.0F).color(255, 255, 255, 255).endVertex();
+////        bufferBuilder.end();
+////        BufferUploader._endInternal(bufferBuilder);
+//        BufferUploader.draw(bufferBuilder.end());
 
         //Draw buffer
 //        Pair<BufferBuilder.DrawState, ByteBuffer> pair = bufferBuilder.popNextBuffer();

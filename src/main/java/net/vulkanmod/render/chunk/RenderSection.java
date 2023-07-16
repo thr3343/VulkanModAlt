@@ -283,6 +283,10 @@ public class RenderSection {
         return res;
     }
 
+    public DrawBuffers.DrawParameters getBuffer(TerrainRenderType rType) {
+        return drawParametersArray[rType.ordinal()];
+    }
+
     static class CompileStatus {
         CompiledSection compiledSection = CompiledSection.UNCOMPILED;
         ChunkTask.BuildTask rebuildTask;

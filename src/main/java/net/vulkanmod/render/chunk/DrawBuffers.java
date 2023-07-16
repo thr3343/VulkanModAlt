@@ -112,7 +112,6 @@ public class DrawBuffers {
         final int size = this.sectionQueue.size();
         if(size ==0) return 0;
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            ByteBuffer byteBuffer = stack.malloc(20 * size);
 
             renderType.setCutoutUniform();
 //
@@ -122,7 +121,7 @@ public class DrawBuffers {
 
 //        var iterator = queue.iterator(isTranslucent);
 
-            drawCount = getDrawCount(renderType, byteBuffer, indirectBuffer);
+            drawCount = getDrawCount(renderType, stack.malloc(20 * size), indirectBuffer);
 
 //            if (drawCount == 0) return 0;
 
@@ -167,16 +166,7 @@ public class DrawBuffers {
             //            }
 
 
-            if (drawParameters.indexCount == 0) {
-                continue;
-            }
 
-            //TODO
-            if (!drawParameters.ready && drawParameters.vertexBufferSegment.getOffset() != -1) {
-                if (!drawParameters.vertexBufferSegment.isReady())
-                    continue;
-                drawParameters.ready = true;
-            }
 
             long ptr = bufferPtr + (drawCount * 20L);
             MemoryUtil.memPutInt(ptr, drawParameters.indexCount);
@@ -248,22 +238,16 @@ public class DrawBuffers {
             vkCmdBindIndexBuffer(Drawer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
         }
 
-        VkCommandBuffer commandBuffer = Drawer.getCommandBuffer();
-
-        Pipeline pipeline = ShaderManager.shaderManager.terrainDirectShader;
-//        Drawer.getInstance().bindPipeline(pipeline);
-        pipeline.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
+        //        Drawer.getInstance().bindPipeline(pipeline);
+        ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
 
         for (RenderSection section : this.sectionQueue) {
                 DrawParameters drawParameters = section.drawParametersArray[renderType.ordinal()];
 
-                if (drawParameters.indexCount == 0) {
-                    continue;
-                }
 
 //                callPJPV(commandBuffer.address(), pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, new float[]{(float) ((double) section.xOffset - camX), (float) ((double) section.yOffset - camY), (float) ((double) section.zOffset - camZ)}, commandBuffer.getCapabilities().vkCmdPushConstants);
 
-                vkCmdDrawIndexed(commandBuffer, drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, 0);
+                vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, 0);
 
 
             }
@@ -288,6 +272,10 @@ public class DrawBuffers {
         return allocated;
     }
 
+    public void addSection(RenderSection renderSection) {
+        this.sectionQueue.add(renderSection);
+    }
+
     public static class DrawParameters {
         private int xOffset, yOffset, zOffset;
 //        private final TerrainRenderType r;
@@ -296,7 +284,7 @@ public class DrawBuffers {
         int vertexOffset;
         AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment();
         AreaBuffer.Segment indexBufferSegment;
-        boolean ready = false;
+//        boolean ready = false;
 
         DrawParameters(int xOffset, int yOffset, int zOffset, TerrainRenderType translucent) {
             this.xOffset = xOffset;
@@ -333,7 +321,7 @@ public class DrawBuffers {
             this.drawParameters.indexCount = indexCount;
             this.drawParameters.firstIndex = firstIndex;
             this.drawParameters.vertexOffset = vertexOffset;
-            this.drawParameters.ready = true;
+//            this.drawParameters.ready = true;
         }
     }
 
