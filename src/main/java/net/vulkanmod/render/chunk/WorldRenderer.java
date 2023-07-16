@@ -90,7 +90,8 @@ public class WorldRenderer {
 
     RenderRegionCache renderRegionCache;
     int nonEmptyChunks;
-    private static final ObjectArrayList<RenderSection> SolidVBOs = new ObjectArrayList<>(1024);
+//    private static final ObjectArrayList<RenderSection> SolidVBOs = new ObjectArrayList<>(1024);
+    private int VBOCnt = 0;
 
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
@@ -296,13 +297,18 @@ public class WorldRenderer {
 
         if(rebuildLimit == 0)
             this.needsUpdate = true;
-
+        VBOCnt=chunkQueue.size();
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            renderSection.getChunkArea().drawBuffers.sectionQueue.add(renderSection);
+            for(DrawBuffers.DrawParameters drawParameters :  renderSection.getChunkArea().drawParametersArray) {
+                if (drawParameters.indexCount != 0) {
+                    final DrawBuffers drawBuffers = renderSection.getChunkArea().drawBuffers;
+                    (drawParameters.r == TRANSLUCENT ? drawBuffers.TsectionQueue : drawBuffers.SsectionQueue).add(drawParameters);
+                }
+            }
 
-            SolidVBOs.add(renderSection);
+//            SolidVBOs.add(renderSection);
 
             if(!renderSection.isCompletelyEmpty()) {
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
@@ -345,10 +351,12 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            renderSection.getChunkArea().getDrawBuffers().sectionQueue.add(renderSection);
+            final ChunkArea chunkArea = renderSection.getChunkArea();
+            chunkArea.drawBuffers.SsectionQueue.add( chunkArea.drawParametersArray[CUTOUT_MIPPED.ordinal()]);
+            chunkArea.drawBuffers.TsectionQueue.add( chunkArea.drawParametersArray[TRANSLUCENT.ordinal()]);
 
             if(!renderSection.isCompletelyEmpty()) {
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
+                this.chunkAreaQueue.add(chunkArea);
                 this.nonEmptyChunks++;
             }
 

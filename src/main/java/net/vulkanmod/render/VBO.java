@@ -75,7 +75,7 @@ public class VBO {
 
             if(indexBuffer != null && !this.autoIndexed) indexBuffer.freeBuffer();
 
-            autoIndexBuffer.checkCapacity(vertexCount);
+//            autoIndexBuffer.checkCapacity(vertexCount);
             indexBuffer = autoIndexBuffer.getIndexBuffer();
             this.autoIndexed = true;
 

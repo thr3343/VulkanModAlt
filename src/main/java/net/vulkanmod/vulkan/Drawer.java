@@ -164,7 +164,7 @@ public class Drawer {
             default -> throw new RuntimeException(String.format("unknown drawMode: %s", mode));
         }
 
-        autoIndexBuffer.checkCapacity(vertexCount);
+//        autoIndexBuffer.checkCapacity(vertexCount);
 
         drawIndexed(vertexBuffer, autoIndexBuffer.getIndexBuffer(), indexCount);
     }

@@ -15,16 +15,16 @@ public class ChunkArea {
 //    public ResettableQueue<DrawBuffers.DrawParameters> indirectCommands = new ResettableQueue<>();
 
     final DrawBuffers drawBuffers;
-//    public final DrawBuffers.DrawParameters[] drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.values().length];
+    public final DrawBuffers.DrawParameters[] drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.values().length];
 
 
     public ChunkArea(int i, Vector3i origin) {
         this.index = i;
         this.position = origin;
         this.drawBuffers = new DrawBuffers(position);
-//        for(int xii = 0; xii < TerrainRenderType.values().length; ++xii) {
-//            this.drawParametersArray[xii] = new DrawBuffers.DrawParameters(xOffset, yOffset, zOffset, TerrainRenderType.values()[xii]);
-//        }
+        for(int xii = 0; xii < TerrainRenderType.values().length; ++xii) {
+            this.drawParametersArray[xii] = new DrawBuffers.DrawParameters(origin.x, origin.y, origin.z, TerrainRenderType.values()[xii]);
+        }
     }
 
     public void updateFrustum(VFrustum frustum) {
@@ -128,5 +128,12 @@ public class ChunkArea {
 
     public void releaseBuffers() {
         this.drawBuffers.releaseBuffers();
+    }
+
+    void resetDrawParameters() {
+        for(DrawBuffers.DrawParameters drawParameters : this.drawParametersArray) {
+            drawParameters.reset(this);
+
+        }
     }
 }

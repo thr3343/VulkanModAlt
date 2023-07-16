@@ -43,17 +43,17 @@ public class AutoIndexBuffer {
         MemoryUtil.memFree(buffer);
     }
 
-    public void checkCapacity(int vertexCount) {
-        if(vertexCount > this.vertexCount) {
-            int newVertexCount = this.vertexCount * 2;
-            System.out.println("Reallocating AutoIndexBuffer from " + this.vertexCount + " to " + newVertexCount);
-
-            //TODO: free old
-            //Can't know when VBO will stop using it
-            indexBuffer.freeBuffer();
-            createIndexBuffer(newVertexCount);
-        }
-    }
+//    public void checkCapacity(int vertexCount) {
+//        if(vertexCount > this.vertexCount) {
+//            int newVertexCount = this.vertexCount * 2;
+//            System.out.println("Reallocating AutoIndexBuffer from " + this.vertexCount + " to " + newVertexCount);
+//
+//            //TODO: free old
+//            //Can't know when VBO will stop using it
+//            indexBuffer.freeBuffer();
+//            createIndexBuffer(newVertexCount);
+//        }
+//    }
 
     public static ByteBuffer genQuadIdxs(int vertexCount) {
         //short[] idxs = {0, 1, 2, 0, 2, 3};

@@ -132,15 +132,14 @@ public class TaskDispatcher {
         return flag;
     }
 
-    public void scheduleSectionUpdate(RenderSection section, EnumMap<TerrainRenderType, UploadBuffer> uploadBuffers) {
+    public void scheduleSectionUpdate(ChunkArea section, EnumMap<TerrainRenderType, UploadBuffer> uploadBuffers) {
         this.toUpload.add(
                 () -> this.doSectionUpdate(section, uploadBuffers)
         );
     }
 
-    private void doSectionUpdate(RenderSection section, EnumMap<TerrainRenderType, UploadBuffer> uploadBuffers) {
-        ChunkArea renderArea = section.getChunkArea();
-        DrawBuffers drawBuffers = renderArea.getDrawBuffers();
+    private void doSectionUpdate(ChunkArea section, EnumMap<TerrainRenderType, UploadBuffer> uploadBuffers) {
+        DrawBuffers drawBuffers = section.getDrawBuffers();
 
         for(TerrainRenderType renderType : TerrainRenderType.values()) {
             UploadBuffer uploadBuffer = uploadBuffers.get(renderType);
@@ -148,19 +147,19 @@ public class TaskDispatcher {
             if(uploadBuffer != null) {
                 drawBuffers.upload(uploadBuffer, section.drawParametersArray[renderType.ordinal()]);
             } else {
-                section.drawParametersArray[renderType.ordinal()].reset(renderArea);
+                section.drawParametersArray[renderType.ordinal()].reset(section);
             }
         }
     }
 
-    public void scheduleUploadChunkLayer(RenderSection section, TerrainRenderType renderType, UploadBuffer uploadBuffer) {
+    public void scheduleUploadChunkLayer(ChunkArea section, TerrainRenderType renderType, UploadBuffer uploadBuffer) {
         this.toUpload.add(
                 () -> this.doUploadChunkLayer(section, renderType, uploadBuffer)
         );
     }
 
-    private void doUploadChunkLayer(RenderSection section, TerrainRenderType renderType, UploadBuffer uploadBuffer) {
-        ChunkArea renderArea = section.getChunkArea();
+    private void doUploadChunkLayer(ChunkArea section, TerrainRenderType renderType, UploadBuffer uploadBuffer) {
+        ChunkArea renderArea = section;
         DrawBuffers drawBuffers = renderArea.getDrawBuffers();
 
         drawBuffers.upload(uploadBuffer, section.drawParametersArray[renderType.ordinal()]);
