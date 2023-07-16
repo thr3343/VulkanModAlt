@@ -90,7 +90,6 @@ public class WorldRenderer {
 
     RenderRegionCache renderRegionCache;
     int nonEmptyChunks;
-    private static final ObjectArrayList<RenderSection> SolidVBOs = new ObjectArrayList<>(1024);
 
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
@@ -586,18 +585,12 @@ public class WorldRenderer {
 
         p.push("draw batches");
 
-        final Set<TerrainRenderType> renderTypes = Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES;
-
-        if(renderTypes.contains(layerName)) {
+        if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(layerName)) {
 //            Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
             for(ChunkArea chunkArea : this.chunkAreaQueue.queue) {
 //                ChunkArea chunkArea = iterator.next();
-
-                if(indirectDraw) {
-                    chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Drawer.getCurrentFrame()], layerName, camX, camY, camZ);
-                } else {
-                    chunkArea.getDrawBuffers().buildDrawBatchesDirect(layerName, camX, camY, camZ);
-                }
+                if(indirectDraw) chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Drawer.getCurrentFrame()], layerName, camX, camY, camZ);
+                else chunkArea.getDrawBuffers().buildDrawBatchesDirect(layerName, camX, camY, camZ);
             }
         }
 

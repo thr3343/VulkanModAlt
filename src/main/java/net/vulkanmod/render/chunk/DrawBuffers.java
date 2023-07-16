@@ -229,30 +229,45 @@ public class DrawBuffers {
         renderType.setCutoutUniform();
 
         try(MemoryStack stack = MemoryStack.stackPush()) {
-            nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, (stack.npointer(vertexBuffer.getId())), (stack.npointer(0)));
-        }
 
 
-        if (renderType == TerrainRenderType.TRANSLUCENT) {
-            vkCmdBindIndexBuffer(Drawer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-        }
+//            if (renderType == TerrainRenderType.TRANSLUCENT) {
+//                vkCmdBindIndexBuffer(Drawer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
+//            }
 
-        //        Drawer.getInstance().bindPipeline(pipeline);
-        ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
+            //        Drawer.getInstance().bindPipeline(pipeline);
+            ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
 
-        for (RenderSection section : this.sectionQueue) {
+            final long npointer = stack.npointer(vertexBuffer.getId());
+            for (RenderSection section : this.sectionQueue) {
                 DrawParameters drawParameters = section.drawParametersArray[renderType.ordinal()];
 
-
+                final int value = drawParameters.vertexOffset << 5;
+                nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, npointer, (stack.npointer(value)));
 //                callPJPV(commandBuffer.address(), pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, new float[]{(float) ((double) section.xOffset - camX), (float) ((double) section.yOffset - camY), (float) ((double) section.zOffset - camZ)}, commandBuffer.getCapabilities().vkCmdPushConstants);
 
-                vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, 0);
+                vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount, 1, 0, 0, 0);
+                //                drawIndexedBindless(drawParameters);
 
 
             }
+        }
 
 
 
+    }
+
+    private void drawIndexedBindless(DrawParameters drawParameters) {
+        vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, 0);
+
+    }
+
+    private void drawIndexed2(MemoryStack stack, DrawParameters drawParameters) {
+        final int value = drawParameters.vertexOffset << 5;
+        nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, (stack.npointer(vertexBuffer.getId())), (stack.npointer(value)));
+//                callPJPV(commandBuffer.address(), pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, new float[]{(float) ((double) section.xOffset - camX), (float) ((double) section.yOffset - camY), (float) ((double) section.zOffset - camZ)}, commandBuffer.getCapabilities().vkCmdPushConstants);
+
+        vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount, 1, 0, 0, 0);
     }
 
     public void releaseBuffers() {
