@@ -23,7 +23,6 @@ import static net.vulkanmod.vulkan.Vulkan.getDevice;
 import static net.vulkanmod.vulkan.Vulkan.getDeviceInfo;
 import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.util.vma.Vma.VMA_MEMORY_USAGE_CPU_ONLY;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanImage {
@@ -171,7 +170,7 @@ public class VulkanImage {
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
                     pStagingBuffer,
-                    pStagingAllocation, VMA_MEMORY_USAGE_CPU_ONLY);
+                    pStagingAllocation);
 
             copyImageToBuffer(pStagingBuffer.get(0), image, 0, width, height, 0, 0, 0, 0, 0);
 

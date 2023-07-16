@@ -8,8 +8,6 @@ import org.lwjgl.vulkan.VkMemoryType;
 import java.nio.ByteBuffer;
 
 import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
-import static org.lwjgl.util.vma.Vma.*;
-import static org.lwjgl.util.vma.Vma.VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class MemoryTypes {
@@ -61,7 +59,7 @@ public class MemoryTypes {
         void createBuffer(Buffer buffer, int size) {
             MemoryManager.getInstance().createBuffer(buffer, size,
                     VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | buffer.usage,
-                    VK_MEMORY_HEAP_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+                    VK_MEMORY_HEAP_DEVICE_LOCAL_BIT);
         }
 
         @Override
@@ -129,7 +127,7 @@ public class MemoryTypes {
 
             MemoryManager.getInstance().createBuffer(buffer, size,
                     buffer.usage,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
         }
 
         void copyToBuffer(Buffer buffer, long dstOffset, long bufferSize, ByteBuffer byteBuffer) {
@@ -149,7 +147,7 @@ public class MemoryTypes {
         void createBuffer(Buffer buffer, int size) {
             MemoryManager.getInstance().createBuffer(buffer, size,
                     buffer.usage,
-                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
+                    VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
         }
     }
 
@@ -158,7 +156,7 @@ public class MemoryTypes {
         void createBuffer(Buffer buffer, int size) {
             MemoryManager.getInstance().createBuffer(buffer, size,
                     buffer.usage,
-                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_HOST);
+                    VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
         }
     }
 }

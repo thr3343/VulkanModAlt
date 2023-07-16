@@ -32,16 +32,13 @@ public class RenderSection {
     private boolean completelyEmpty = true;
     private long visibility;
 
-    public final int index;
-    int xOffset;
-    int yOffset;
-    int zOffset;
+    int xOffset, yOffset, zOffset;
 
 //    private final DrawBuffers.DrawParameters[] drawParametersArray =
 //            Arrays.stream(TerrainRenderType.VALUES)
 //                    .map(terrainRenderType -> new DrawBuffers.DrawParameters(terrainRenderType == TerrainRenderType.TRANSLUCENT))
 //                    .toArray(DrawBuffers.DrawParameters[]::new);
-//    public final DrawBuffers.DrawParameters[] drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.values().length];
+    public final DrawBuffers.DrawParameters[] drawParametersArray = new DrawBuffers.DrawParameters[TerrainRenderType.values().length];
 
     //Graph-info
     public Direction mainDir;
@@ -52,15 +49,14 @@ public class RenderSection {
 
 
     public RenderSection(int index, int x, int y, int z) {
-        this.index = index;
         this.xOffset = x;
         this.yOffset = y;
         this.zOffset = z;
 //        Arrays.fill( a -> new DrawBuffers.DrawParameters(xOffset, yOffset, zOffset, a));
-//        for(var a : TerrainRenderType.values())
-//        {
-//            this.drawParametersArray[a.ordinal()] = new DrawBuffers.DrawParameters(xOffset, yOffset, zOffset, a);
-//        }
+        for(var a : TerrainRenderType.values())
+        {
+            this.drawParametersArray[a.ordinal()] = new DrawBuffers.DrawParameters(xOffset, yOffset, zOffset, a);
+        }
     }
 
     public void setOrigin(int x, int y, int z) {
@@ -69,9 +65,9 @@ public class RenderSection {
         this.xOffset = x;
         this.yOffset = y;
         this.zOffset = z;
-//        for(int i = 0; i < TerrainRenderType.values().length; ++i) {
-//            this.drawParametersArray[i].resetOrigin(x,y,z);
-//        }
+        for(int i = 0; i < TerrainRenderType.values().length; ++i) {
+            this.drawParametersArray[i].resetOrigin(x,y,z);
+        }
 
     }
 
@@ -261,9 +257,15 @@ public class RenderSection {
         this.visibility = 0;
         this.completelyEmpty = true;
 
-        this.chunkArea.resetDrawParameters();
+        this.resetDrawParameters();
     }
 
+    private void resetDrawParameters() {
+        for(DrawBuffers.DrawParameters drawParameters : this.drawParametersArray) {
+            drawParameters.reset(this.chunkArea);
+
+        }
+    }
 
     public void setDirty(boolean playerChanged) {
         this.playerChanged = playerChanged || this.dirty && this.playerChanged;

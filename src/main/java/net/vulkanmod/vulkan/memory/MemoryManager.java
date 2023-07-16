@@ -2,6 +2,7 @@ package net.vulkanmod.vulkan.memory;
 
 import it.unimi.dsi.fastutil.longs.Long2ReferenceOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import jdk.jfr.StackTrace;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.apache.commons.lang3.Validate;
@@ -88,7 +89,7 @@ public class MemoryManager {
         images.values().forEach(image -> image.doFree(this));
     }
 
-    public void createBuffer(long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory, int vmaMemoryUsageCpuOnly) {
+    public void createBuffer(long size, int usage, int properties, LongBuffer pBuffer, PointerBuffer pBufferMemory) {
 
         try(MemoryStack stack = stackPush()) {
 
@@ -96,10 +97,10 @@ public class MemoryManager {
             bufferInfo.sType(VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO);
             bufferInfo.size(size);
             bufferInfo.usage(usage);
-            bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
+            //bufferInfo.sharingMode(VK_SHARING_MODE_EXCLUSIVE);
 //
             VmaAllocationCreateInfo allocationInfo  = VmaAllocationCreateInfo.callocStack(stack);
-            allocationInfo.usage(vmaMemoryUsageCpuOnly);
+            //allocationInfo.usage(VMA_MEMORY_USAGE_CPU_ONLY);
             allocationInfo.requiredFlags(properties);
 
             int result = vmaCreateBuffer(allocator, bufferInfo, allocationInfo, pBuffer, pBufferMemory, null);
@@ -110,7 +111,7 @@ public class MemoryManager {
         }
     }
 
-    public synchronized void createBuffer(Buffer buffer, int size, int usage, int properties, int vmaMemoryUsageCpuOnly) {
+    public synchronized void createBuffer(Buffer buffer, int size, int usage, int properties) {
 
         try (MemoryStack stack = stackPush()) {
             buffer.setBufferSize(size);
@@ -118,7 +119,7 @@ public class MemoryManager {
             LongBuffer pBuffer = stack.mallocLong(1);
             PointerBuffer pAllocation = stack.pointers(VK_NULL_HANDLE);
 
-            this.createBuffer(size, usage, properties, pBuffer, pAllocation, vmaMemoryUsageCpuOnly);
+            this.createBuffer(size, usage, properties, pBuffer, pAllocation);
 
             buffer.setId(pBuffer.get(0));
             buffer.setAllocation(pAllocation.get(0));

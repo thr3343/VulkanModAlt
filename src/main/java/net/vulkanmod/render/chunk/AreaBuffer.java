@@ -33,7 +33,7 @@ public class AreaBuffer {
         this.buffer = this.allocateBuffer(size);
         this.size = size;
 
-        freeSegments.add(new Segment(-1, 0, size));
+        freeSegments.add(new Segment(0, size));
     }
 
     private Buffer allocateBuffer(int size) {
@@ -41,24 +41,24 @@ public class AreaBuffer {
         return this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ? new VertexBuffer(size, memoryType) : new IndexBuffer(size, memoryType);
     }
 
-    public synchronized void upload(int index, ByteBuffer byteBuffer, Segment uploadSegment) {
+    public synchronized void upload(ByteBuffer byteBuffer, Segment uploadSegment) {
         //free old segment
-        final boolean b= uploadSegment.offset != -1 && testSegment(uploadSegment);
-        if(!b) this.setSegmentFree(uploadSegment);
-
+        if(uploadSegment.offset != -1) {
+            this.setSegmentFree(uploadSegment);
+        }
 
         int size = byteBuffer.remaining();
 
         if(size % elementSize != 0)
             throw new RuntimeException("unaligned byteBuffer");
 
-        Segment segment = b ? uploadSegment : findSegment(index, size);
+        Segment segment = findSegment(size);
 
         if(segment.size - size > 0) {
-            freeSegments.add(new Segment(index, segment.offset + size, segment.size - size));
+            freeSegments.add(new Segment(segment.offset + size, segment.size - size));
         }
 
-        usedSegments.put(uploadSegment, new Segment(index, segment.offset, size));
+        usedSegments.put(uploadSegment, new Segment(segment.offset, size));
 
         Buffer dst = this.buffer;
         AreaUploadManager.INSTANCE.uploadAsync(uploadSegment, dst.getId(), segment.offset, size, byteBuffer);
@@ -71,18 +71,7 @@ public class AreaBuffer {
 
     }
 
-    private boolean testSegment(Segment uploadSegment) {
-        for(Segment segment1 : freeSegments) {
-
-            if(segment1.index == uploadSegment.index) {
-               if(segment1.size>=uploadSegment.size)
-                   return true;
-            }
-        }
-        return false;
-    }
-
-    public Segment findSegment(int index, int size) {
+    public Segment findSegment(int size) {
         Segment segment = null;
         int i = 0;
         int idx = 0;
@@ -98,7 +87,7 @@ public class AreaBuffer {
         }
 
         if(segment == null) {
-            return this.reallocate(index, size);
+            return this.reallocate(size);
         }
 
         freeSegments.remove(idx);
@@ -106,7 +95,7 @@ public class AreaBuffer {
         return segment;
     }
 
-    public Segment reallocate(int index, int uploadSize) {
+    public Segment reallocate(int uploadSize) {
         int oldSize = this.size;
         int increment = this.size >> 1;
 
@@ -134,7 +123,8 @@ public class AreaBuffer {
 
         int offset = Util.align(oldSize, elementSize);
 
-        return new Segment(index, offset, increment);
+        Segment segment = new Segment(offset, increment);
+        return segment;
     }
 
     public synchronized void setSegmentFree(Segment uploadSegment) {
@@ -158,24 +148,20 @@ public class AreaBuffer {
 
     public static class Segment {
 
-        private int index;
-        int offset;
-        int size;
+        int offset, size;
         boolean status = false;
 
         public Segment() {
             reset();
         }
 
-        private Segment(int index, int offset, int size) {
-            this.index = index;
+        private Segment(int offset, int size) {
             this.offset = offset;
             this.size = size;
             this.status = false;
         }
 
         public void reset() {
-            this.index = -1;
             this.offset = -1;
             this.size = -1;
             this.status = false;

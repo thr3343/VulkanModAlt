@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -115,7 +116,7 @@ public class ChunkTask {
                     if(!compileResults.renderedLayers.isEmpty())
                         compiledChunk.isCompletelyEmpty = false;
 
-                    taskDispatcher.scheduleSectionUpdate(renderSection.getChunkArea(), compileResults.renderedLayers);
+                    taskDispatcher.scheduleSectionUpdate(renderSection, compileResults.renderedLayers);
                     compiledChunk.renderTypes.addAll(compileResults.renderedLayers.keySet());
 
                     this.renderSection.setCompiledSection(compiledChunk);
@@ -201,7 +202,7 @@ public class ChunkTask {
                 for(TerrainRenderType renderType2 : set) {
                     TerrainBufferBuilder.RenderedBuffer renderedBuffer = chunkBufferBuilderPack.builder(renderType2).endOrDiscardIfEmpty();
                     if (renderedBuffer != null) {
-                        UploadBuffer uploadBuffer = new UploadBuffer(this.renderSection.index, renderType2, renderedBuffer);
+                        UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
                         compileResults.renderedLayers.put(TerrainRenderType.get(renderType2.name), uploadBuffer);
                     }
 
@@ -301,8 +302,8 @@ public class ChunkTask {
                         return CompletableFuture.completedFuture(Result.CANCELLED);
                     } else {
 
-                        UploadBuffer uploadBuffer = new UploadBuffer(this.renderSection.xOffset(), TRANSLUCENT, renderedBuffer);
-                        taskDispatcher.scheduleUploadChunkLayer(renderSection.getChunkArea(), TRANSLUCENT, uploadBuffer);
+                        UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
+                        taskDispatcher.scheduleUploadChunkLayer(renderSection, TRANSLUCENT, uploadBuffer);
                         renderedBuffer.release();
                         return CompletableFuture.completedFuture(Result.SUCCESSFUL);
 

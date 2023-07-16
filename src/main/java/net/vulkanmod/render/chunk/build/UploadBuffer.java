@@ -2,7 +2,6 @@ package net.vulkanmod.render.chunk.build;
 
 import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
-import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
@@ -14,23 +13,25 @@ public class UploadBuffer {
     public final boolean indexOnly;
     private final ByteBuffer vertexBuffer;
     private final ByteBuffer indexBuffer;
-    public final int index;
-    private final TerrainRenderType renderType2;
 
     //debug
     private boolean released = false;
 
-    public UploadBuffer(int index, TerrainRenderType renderType2, TerrainBufferBuilder.RenderedBuffer renderedBuffer) {
-        this.index = index;
-        this.renderType2 = renderType2;
+    public UploadBuffer(TerrainBufferBuilder.RenderedBuffer renderedBuffer) {
         TerrainBufferBuilder.DrawState drawState = renderedBuffer.drawState();
         this.indexCount = drawState.indexCount();
         this.autoIndices = drawState.sequentialIndex();
         this.indexOnly = drawState.indexOnly();
 
-        this.vertexBuffer = !this.indexOnly ? Util.createCopy(renderedBuffer.vertexBuffer()) : null;
+        if(!this.indexOnly)
+            this.vertexBuffer = Util.createCopy(renderedBuffer.vertexBuffer());
+        else
+            this.vertexBuffer = null;
 
-        this.indexBuffer = !drawState.sequentialIndex() ? Util.createCopy(renderedBuffer.indexBuffer()) : null;
+        if(!drawState.sequentialIndex())
+            this.indexBuffer = Util.createCopy(renderedBuffer.indexBuffer());
+        else
+            this.indexBuffer = null;
     }
 
     public int indexCount() { return indexCount; }
