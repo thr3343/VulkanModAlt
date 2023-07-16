@@ -118,7 +118,7 @@ public class SwapChain {
 
 
             //Nvidia bug: With MAILBOX: if prior SwapChain was created with FIFO, it is considered retired, even if vkCreateSwapchainKHR has not been called yet
-            createInfo.oldSwapchain(swapChain);
+            createInfo.oldSwapchain(oldSwapChain);
 
             LongBuffer pSwapChain = stack.longs(VK_NULL_HANDLE);
 
@@ -134,7 +134,8 @@ public class SwapChain {
 //                swapChain=oldSwapChain;
 //                oldSwapChain=VK_NULL_HANDLE;
 //            }
-//TODO:--->!            vkGetSwapchainImagesKHR(device, swapChain, imageCount, null);
+
+            vkGetSwapchainImagesKHR(device, swapChain, imageCount, null);
 
             LongBuffer pSwapchainImages = stack.mallocLong(imageCount.get(0));
 
@@ -147,6 +148,7 @@ public class SwapChain {
             }
 
             if(oldSwapChain != VK_NULL_HANDLE && oldSwapChain!=swapChain) {
+                vkDestroySwapchainKHR(device, oldSwapChain, null);
                 this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
 //                if(modeChange) retiredSwapChains.add(oldSwapChain);
             }
