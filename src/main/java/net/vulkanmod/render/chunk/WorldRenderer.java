@@ -581,7 +581,7 @@ public class WorldRenderer {
         Drawer drawer = Drawer.getInstance();
         Pipeline pipeline = ShaderManager.getInstance().getTerrainShader();
         drawer.bindPipeline(pipeline);
-        drawer.bindAutoIndexBuffer(Drawer.getCommandBuffer(), 7);
+        if(layerName==CUTOUT_MIPPED) drawer.bindAutoIndexBuffer(Drawer.getCommandBuffer(), 7);
 
         p.push("draw batches");
 

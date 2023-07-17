@@ -1,16 +1,14 @@
 package net.vulkanmod.vulkan.util;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexFormatElement;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.render.VirtualBuffer;
+import net.vulkanmod.render.VkBufferPointer;
+import net.vulkanmod.render.chunk.DrawBuffers;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.VRenderSystem;
 import org.joml.Matrix4f;
 
-import java.io.IOException;
-
-import static com.mojang.blaze3d.vertex.DefaultVertexFormat.BLOCK;
+import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 //Use smaller class instead of WorldRenderer in case it helps GC/Heap fragmentation e.g.
@@ -20,7 +18,7 @@ public class VBOUtil {
 //    public static final ObjectArrayList<VBO> cutoutChunks = new ObjectArrayList<>(1024);
 ////    public static final ObjectArrayList<VBO> cutoutMippedChunks = new ObjectArrayList<>(1024);
 //    public static final ObjectArrayList<VBO> translucentChunks = new ObjectArrayList<>(1024);
-//    public static final VirtualBuffer virtualBufferIdx=new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+    public static final VirtualBuffer virtualBufferIdx=new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
     public static final VirtualBuffer virtualBufferVtx=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 //    public static final VirtualBuffer virtualBufferVtx2=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     public static Matrix4f translationOffset;
@@ -69,6 +67,10 @@ public class VBOUtil {
 
 
 
+    }
+
+    public static VkBufferPointer addSubSection(DrawBuffers.DrawParameters index, int size) {
+        return (index.r == TerrainRenderType.TRANSLUCENT ? virtualBufferIdx : virtualBufferVtx).addSubIncr(index.index, size);
     }
 
 //    public static void removeVBO(VBO vbo) {

@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk;
 
 import net.vulkanmod.render.chunk.build.UploadBuffer;
-import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Drawer;
@@ -9,7 +8,6 @@ import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
 import net.vulkanmod.vulkan.util.VUtil;
-import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -26,6 +24,8 @@ import static org.lwjgl.vulkan.VK10.vkCmdBindDescriptorSets;
 public class DrawBuffers {
 
     private static final int VERTEX_SIZE = ShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
+
+    private static final int INDEX_SIZE = Short.BYTES;
     private final int index;
     private static final long aLong = MemoryUtil.nmemAlignedAlloc(8, 8);
     private static final long aLong2 = MemoryUtil.nmemAlignedAlloc(8, 8);
@@ -36,7 +36,7 @@ public class DrawBuffers {
     }
     private boolean allocated = false;
     AreaBuffer vertexBuffer;
-//    AreaBuffer indexBuffer;
+    AreaBuffer indexBuffer;
 
     final StaticQueue<DrawParameters> sectionQueue = new StaticQueue<>(512);
     final StaticQueue<DrawParameters> TsectionQueue = new StaticQueue<>(512);
@@ -49,7 +49,7 @@ public class DrawBuffers {
 
     public void allocateBuffers() {
         this.vertexBuffer = new AreaBuffer(index, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2056192, VERTEX_SIZE);
-//        this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 96384, INDEX_SIZE);
+        this.indexBuffer = new AreaBuffer(index, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 96384, INDEX_SIZE);
 
         this.allocated = true;
     }
@@ -62,7 +62,7 @@ public class DrawBuffers {
         {
             translateVBO(buffer, drawParameters, drawParameters.indexCount);
 
-            this.vertexBuffer.upload(buffer.getVertexBuffer(), drawParameters);
+            this.vertexBuffer.upload(buffer.getVertexBuffer(), drawParameters, virtualBufferVtx);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
             vertexOffset = drawParameters.vertexOffset / VERTEX_SIZE;
 
@@ -72,11 +72,11 @@ public class DrawBuffers {
 //            }
         }
 
-//        if(!buffer.autoIndices) {
-//            this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.indexBufferSegment);
-////            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
-//            firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
-//        }
+        if(!buffer.autoIndices) {
+            this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters, virtualBufferIdx);
+//            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
+            firstIndex = drawParameters.firstIndex / INDEX_SIZE;
+        }
 
 //        AreaUploadManager.INSTANCE.enqueueParameterUpdate(
 //                new ParametersUpdate(drawParameters, buffer.indexCount, firstIndex, vertexOffset));
@@ -236,9 +236,9 @@ public class DrawBuffers {
         renderType.setCutoutUniform();
 
 
-//            if (renderType == TerrainRenderType.TRANSLUCENT) {
-//                vkCmdBindIndexBuffer(Drawer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-//            }
+            if (renderType == TerrainRenderType.TRANSLUCENT) {
+                vkCmdBindIndexBuffer(Drawer.getCommandBuffer(), virtualBufferIdx.bufferPointerSuperSet, 0, VK_INDEX_TYPE_UINT16);
+            }
 
         //        Drawer.getInstance().bindPipeline(pipeline);
         ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
@@ -250,7 +250,7 @@ public class DrawBuffers {
             nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, aLong, aLong2);
 //                callPJPV(commandBuffer.address(), pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, new float[]{(float) ((double) section.xOffset - camX), (float) ((double) section.yOffset - camY), (float) ((double) section.zOffset - camZ)}, commandBuffer.getCapabilities().vkCmdPushConstants);
 
-            vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount, 1, 0, 0, 0);
+            vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount, 1, drawParameters.firstIndex, 0, 0);
             //                drawIndexedBindless(drawParameters);
 
 
@@ -298,16 +298,16 @@ public class DrawBuffers {
         private int xOffset;
         private int yOffset;
         private int zOffset;
-        final int index;
-        //        private final TerrainRenderType r;
+        public final int index;
+                public final TerrainRenderType r;
         int indexCount;
         int firstIndex;
         int vertexOffset;
 //        AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment(-1);
-//        AreaBuffer.Segment indexBufferSegment;
+        AreaBuffer.Segment indexBufferSegment;
         boolean ready = false;
 
-        DrawParameters(int xOffset, int yOffset, int zOffset, int index) {
+        DrawParameters(int xOffset, int yOffset, int zOffset, int index, TerrainRenderType r) {
             this.xOffset = xOffset;
             this.yOffset = yOffset;
             this.zOffset = zOffset;
@@ -316,6 +316,7 @@ public class DrawBuffers {
 //                indexBufferSegment = new AreaBuffer.Segment(-1);
 //            }
             this.index = index;
+            this.r = r;
         }
 
         public void reset(ChunkArea chunkArea) {

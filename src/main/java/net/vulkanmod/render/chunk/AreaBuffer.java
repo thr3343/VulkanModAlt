@@ -1,12 +1,15 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.VkBufferPointer;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.util.VBOUtil;
 
 import java.nio.ByteBuffer;
 
+import static net.vulkanmod.vulkan.util.VBOUtil.virtualBufferVtx;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 public class AreaBuffer {
@@ -42,7 +45,7 @@ public class AreaBuffer {
         return this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ? new VertexBuffer(size, memoryType) : new IndexBuffer(size, memoryType);
     }
 
-    public synchronized void upload(ByteBuffer byteBuffer, DrawBuffers.DrawParameters uploadSegment) {
+    public synchronized void upload(ByteBuffer byteBuffer, DrawBuffers.DrawParameters uploadSegment, VirtualBuffer virtualBuffer) {
         //free old segment
 
         int size = byteBuffer.remaining();
@@ -53,18 +56,19 @@ public class AreaBuffer {
 //        {
 //            this
 //        }
-        var section = VBOUtil.virtualBufferVtx.addSubIncr(uploadSegment.index, size);
+        var section = virtualBuffer.addSubIncr(uploadSegment.index, size);
 
 
 //        final Segment v = new Segment(section.i2(), section.size_t());
         usedSegments.put(section.i2(), section);
 
 //        Buffer dst = this.buffer;
-        AreaUploadManager.INSTANCE.uploadAsync(section, VBOUtil.virtualBufferVtx.bufferPointerSuperSet, section.i2(), section.size_t(), byteBuffer);
+        final boolean b = uploadSegment.r == TerrainRenderType.TRANSLUCENT;
+        AreaUploadManager.INSTANCE.uploadAsync(section, virtualBuffer.bufferPointerSuperSet, section.i2(), section.size_t(), byteBuffer);
 
         uploadSegment.vertexOffset = section.i2();
         uploadSegment.size = section.size_t();
-//        uploadSegment.status = false;
+        uploadSegment.firstIndex= b ? section.i2() : 0;
         uploadSegment.ready = true;
 
         this.used += size;
@@ -74,20 +78,20 @@ public class AreaBuffer {
     public synchronized void setSegmentFree(int offset) {
         if(usedSegments.isEmpty()) return;
         VkBufferPointer segment = usedSegments.remove(offset);
-        VBOUtil.virtualBufferVtx.addFreeableRange(segment);
+        virtualBufferVtx.addFreeableRange(segment);
 
         //        this.freeSegments.add(segment);
         this.used -= segment!=null ? segment.size_t() : 0;
     }
 
     public long getId() {
-        return VBOUtil.virtualBufferVtx.bufferPointerSuperSet;
+        return virtualBufferVtx.bufferPointerSuperSet;
     }
 
     public void freeBuffer() {
         for(var a : usedSegments.values())
         {
-            VBOUtil.virtualBufferVtx.addFreeableRange(a);
+            virtualBufferVtx.addFreeableRange(a);
         }
         usedSegments.clear();
 //        this.globalBuffer.freeSubAllocation(subAllocation);
