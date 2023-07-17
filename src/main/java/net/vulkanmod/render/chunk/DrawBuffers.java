@@ -64,7 +64,7 @@ public class DrawBuffers {
 
             this.vertexBuffer.upload(buffer.getVertexBuffer(), drawParameters);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
-            vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
+            vertexOffset = drawParameters.vertexOffset / VERTEX_SIZE;
 
             //debug
 //            if(drawParameters.vertexBufferSegment.getOffset() % VERTEX_SIZE != 0) {
@@ -293,6 +293,8 @@ public class DrawBuffers {
     }
 
     public static class DrawParameters {
+        public int size;
+//        public boolean status;
         private int xOffset;
         private int yOffset;
         private int zOffset;
@@ -301,9 +303,9 @@ public class DrawBuffers {
         int indexCount;
         int firstIndex;
         int vertexOffset;
-        AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment(-1);
+//        AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment(-1);
 //        AreaBuffer.Segment indexBufferSegment;
-//        boolean ready = false;
+        boolean ready = false;
 
         DrawParameters(int xOffset, int yOffset, int zOffset, int index) {
             this.xOffset = xOffset;
@@ -321,9 +323,8 @@ public class DrawBuffers {
             this.firstIndex = 0;
             this.vertexOffset = 0;
 
-            int segmentOffset = this.vertexBufferSegment.getOffset();
-            if(chunkArea != null && chunkArea.drawBuffers.isAllocated() && segmentOffset != -1) {
-                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(segmentOffset);
+            if(chunkArea != null && chunkArea.drawBuffers.isAllocated() && ready) {
+                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vertexOffset);
 //                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vertexBufferSegment);
             }
         }
