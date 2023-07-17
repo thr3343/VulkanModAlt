@@ -3,7 +3,6 @@ package net.vulkanmod.render;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.memory.MemoryManager;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.vma.*;
@@ -199,7 +198,7 @@ public final class VirtualBuffer {
         {
             return true;
         }
-        addFreeableRange(index, vkBufferPointer);
+        addFreeableRange(vkBufferPointer);
         return false;
 
     }
@@ -222,7 +221,7 @@ public final class VirtualBuffer {
         allocMax=vmaStatistics.allocationSizeMax();
     }
 
-    public void addFreeableRange(int index, VkBufferPointer bufferPointer)
+    public void addFreeableRange(VkBufferPointer bufferPointer)
     {
         if(usedBytes==0)return;
         if(bufferPointer==null) return;
@@ -231,7 +230,7 @@ public final class VirtualBuffer {
         Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation());
         for (int i = 0; i < activeRanges.size(); i++) {
             VkBufferPointer vkBufferPointer = activeRanges.get(i);
-            if (vkBufferPointer.index() == index) {
+            if (vkBufferPointer.index() == bufferPointer.index()) {
                 activeRanges.remove(i);
                 break;
             }

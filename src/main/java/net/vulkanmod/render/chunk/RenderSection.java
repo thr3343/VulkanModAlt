@@ -55,7 +55,7 @@ public class RenderSection {
 //        Arrays.fill( a -> new DrawBuffers.DrawParameters(xOffset, yOffset, zOffset, a));
         for(var a : TerrainRenderType.values())
         {
-            this.drawParametersArray[a.ordinal()] = new DrawBuffers.DrawParameters(xOffset, yOffset, zOffset, a);
+            this.drawParametersArray[a.ordinal()] = new DrawBuffers.DrawParameters(xOffset, yOffset, zOffset, index);
         }
     }
 
