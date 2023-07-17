@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk;
 
 import net.minecraft.core.BlockPos;
-import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.joml.FrustumIntersection;
 import org.joml.Vector3i;
 
@@ -21,7 +20,7 @@ public class ChunkArea {
     public ChunkArea(int i, Vector3i origin) {
         this.index = i;
         this.position = origin;
-        this.drawBuffers = new DrawBuffers(i, position);
+        this.drawBuffers = new DrawBuffers(i);
 //        for(int xii = 0; xii < TerrainRenderType.values().length; ++xii) {
 //            this.drawParametersArray[xii] = new DrawBuffers.DrawParameters(xOffset, yOffset, zOffset, TerrainRenderType.values()[xii]);
 //        }

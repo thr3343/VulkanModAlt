@@ -5,7 +5,6 @@ import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -40,7 +39,6 @@ import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
-import net.vulkanmod.vulkan.util.VBOUtil;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 
@@ -297,8 +295,11 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            if (renderSection.getCompiledSection().renderTypes.stream().anyMatch(rType -> renderSection.getBuffer(rType).indexCount!=0)) {
-                renderSection.getChunkArea().getDrawBuffers().addSection(renderSection);
+            for (TerrainRenderType rType : renderSection.getCompiledSection().renderTypes) {
+                final DrawBuffers.DrawParameters buffer = renderSection.drawParametersArray[rType.ordinal()];
+                if (buffer.indexCount != 0) {
+                    (rType!=TRANSLUCENT ? renderSection.getChunkArea().getDrawBuffers().sectionQueue : renderSection.getChunkArea().getDrawBuffers().TsectionQueue).add(buffer);
+                }
             }
 
 //            SolidVBOs.add(renderSection);
@@ -332,38 +333,38 @@ public class WorldRenderer {
     }
 
     private void updateRenderChunksSpectator() {
-        int maxDirectionsChanges = Initializer.CONFIG.advCulling;
-
-        this.initUpdate();
-
-        int rebuildLimit = taskDispatcher.getIdleThreadsCount();
-
-        if(rebuildLimit == 0)
-            this.needsUpdate = true;
-
-        while(this.chunkQueue.hasNext()) {
-            RenderSection renderSection = this.chunkQueue.poll();
-
-            renderSection.getChunkArea().getDrawBuffers().sectionQueue.add(renderSection);
-
-            if(!renderSection.isCompletelyEmpty()) {
-                this.chunkAreaQueue.add(renderSection.getChunkArea());
-                this.nonEmptyChunks++;
-            }
-
-            if(this.scheduleUpdate(renderSection, rebuildLimit))
-                rebuildLimit--;
-
-            for(Direction direction : Util.DIRECTIONS) {
-                RenderSection relativeChunk = renderSection.getNeighbour(direction);
-
-                if (relativeChunk != null && !renderSection.hasDirection(direction.getOpposite())) {
-
-                    this.addNode(renderSection, relativeChunk, direction);
-
-                }
-            }
-        }
+//        int maxDirectionsChanges = Initializer.CONFIG.advCulling;
+//
+//        this.initUpdate();
+//
+//        int rebuildLimit = taskDispatcher.getIdleThreadsCount();
+//
+//        if(rebuildLimit == 0)
+//            this.needsUpdate = true;
+//
+//        while(this.chunkQueue.hasNext()) {
+//            RenderSection renderSection = this.chunkQueue.poll();
+//
+//            renderSection.getChunkArea().getDrawBuffers().sectionQueue.add(renderSection);
+//
+//            if(!renderSection.isCompletelyEmpty()) {
+//                this.chunkAreaQueue.add(renderSection.getChunkArea());
+//                this.nonEmptyChunks++;
+//            }
+//
+//            if(this.scheduleUpdate(renderSection, rebuildLimit))
+//                rebuildLimit--;
+//
+//            for(Direction direction : Util.DIRECTIONS) {
+//                RenderSection relativeChunk = renderSection.getNeighbour(direction);
+//
+//                if (relativeChunk != null && !renderSection.hasDirection(direction.getOpposite())) {
+//
+//                    this.addNode(renderSection, relativeChunk, direction);
+//
+//                }
+//            }
+//        }
 
     }
 

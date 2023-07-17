@@ -1,6 +1,7 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.render.VkBufferPointer;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
@@ -21,7 +22,7 @@ public class AreaUploadManager {
     }
 
 //    final Reference2LongOpenHashMap<ArrayList<AreaBuffer.Segment>> map = new Reference2LongOpenHashMap<>();
-    final ObjectArrayList<AreaBuffer.Segment>[] recordedUploads;
+    final ObjectArrayList<VkBufferPointer>[] recordedUploads;
 //    final ObjectArrayList<UploadData>[] recordedUploads;
 //    final ObjectArrayList<DrawBuffers.UploadData>[] recordedUploads;
     final ObjectArrayList<DrawBuffers.ParametersUpdate>[] updatedParameters;
@@ -52,7 +53,7 @@ public class AreaUploadManager {
         TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
     }
 
-    public void uploadAsync(AreaBuffer.Segment uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
+    public void uploadAsync(VkBufferPointer uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
         Validate.isTrue(currentFrame == Drawer.getCurrentFrame());
 
         if(commandBuffers[currentFrame] == null)
@@ -111,9 +112,9 @@ public class AreaUploadManager {
             return;
         Synchronization.waitFence(commandBuffers[frame].getFence());
 
-        for(AreaBuffer.Segment uploadSegment : this.recordedUploads[frame]) {
-            uploadSegment.setReady();
-        }
+//        for(AreaBuffer.Segment uploadSegment : this.recordedUploads[frame]) {
+//            uploadSegment.setReady();
+//        }
 
         for(DrawBuffers.ParametersUpdate parametersUpdate : this.updatedParameters[frame]) {
             parametersUpdate.setDrawParameters();
