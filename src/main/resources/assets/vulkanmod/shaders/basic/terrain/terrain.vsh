@@ -11,11 +11,8 @@ layout(binding = 0) uniform UniformBufferObject {
    mat4 ModelViewMat;
 };
 
-layout(binding = 2) uniform UniformBufferObject2 {
-    vec3 ChunkOffset[MAX_OFFSET_COUNT];
-};
 
-layout(binding = 4) uniform sampler2D Sampler2;
+layout(binding = 3) uniform sampler2D Sampler2;
 
 layout(location = 0) out float vertexDistance;
 layout(location = 1) out vec4 vertexColor;

@@ -589,7 +589,7 @@ public class Drawer {
         }
         IndexBuffer indexBuffer = autoIndexBuffer.getIndexBuffer();
 
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), indexBuffer.getOffset(), VK_INDEX_TYPE_UINT16);
+        vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
     }
 
     public void pushConstants(Pipeline pipeline) {
