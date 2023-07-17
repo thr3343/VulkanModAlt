@@ -1,17 +1,28 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.Reference2ReferenceOpenHashMap;
+import net.vulkanmod.render.VkBufferPointer;
 import net.vulkanmod.render.chunk.util.Util;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.*;
+import net.vulkanmod.vulkan.queue.CommandPool;
+import net.vulkanmod.vulkan.util.VBOUtil;
+import net.vulkanmod.vulkan.util.VUtil;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VK10;
+import org.lwjgl.vulkan.VkBufferCopy;
 
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
 
 import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
+import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+import static org.lwjgl.vulkan.VK10.vkCmdCopyBuffer;
 
 public class AreaBuffer {
     private final MemoryType memoryType;
+    private final int index;
     private final int usage;
 
     private final LinkedList<Segment> freeSegments = new LinkedList<>();
@@ -19,21 +30,22 @@ public class AreaBuffer {
 
     private final int elementSize;
 
-    private Buffer buffer;
+    private VkBufferPointer buffer;
 
     int size;
     int used;
 
-    public AreaBuffer(int usage, int size, int elementSize) {
+    public AreaBuffer(int index, int usage, int size, int elementSize) {
+        this.index = index;
 
         this.usage = usage;
         this.elementSize = elementSize;
         this.memoryType = MemoryTypes.GPU_MEM;
 
-        this.buffer = this.allocateBuffer(size);
+        this.buffer = VBOUtil.virtualBufferVtx.addSubIncr(index, size);
         this.size = size;
 
-        freeSegments.add(new Segment(0, size));
+        freeSegments.add(new Segment(this.buffer.i2(), this.buffer.size_t()));
     }
 
     private Buffer allocateBuffer(int size) {
@@ -60,8 +72,8 @@ public class AreaBuffer {
 
         usedSegments.put(uploadSegment, new Segment(segment.offset, size));
 
-        Buffer dst = this.buffer;
-        AreaUploadManager.INSTANCE.uploadAsync(uploadSegment, dst.getId(), segment.offset, size, byteBuffer);
+//        Buffer dst = this.buffer;
+        AreaUploadManager.INSTANCE.uploadAsync(uploadSegment, VBOUtil.virtualBufferVtx.bufferPointerSuperSet, segment.offset, size, byteBuffer);
 
         uploadSegment.offset = segment.offset;
         uploadSegment.size = size;
@@ -109,22 +121,39 @@ public class AreaBuffer {
         int newSize = oldSize + increment;
 
 
-        Buffer buffer = this.allocateBuffer(newSize);
+        VBOUtil.virtualBufferVtx.addFreeableRange(this.index, this.buffer);
+
+
+        final var vkBufferPointer = VBOUtil.virtualBufferVtx.addSubIncr(this.index, newSize);
+        this.buffer = vkBufferPointer;
 
         AreaUploadManager.INSTANCE.submitUploads();
         AreaUploadManager.INSTANCE.waitAllUploads();
 
-        //Sync upload
-        TransferQueue.uploadBufferImmediate(this.buffer.getId(), 0, buffer.getId(), 0, this.buffer.getBufferSize());
-        this.buffer.freeBuffer();
-        this.buffer = buffer;
+//        //Sync upload
+//        long dstBuffer = VBOUtil.virtualBufferVtx.bufferPointerSuperSet;
+//
+//        try (MemoryStack stack = stackPush()) {
+//            CommandPool.CommandBuffer commandBuffer = TransferQueue.beginCommands();
+//
+//            VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+//            copyRegion.size(this.buffer.size_t());
+//            copyRegion.srcOffset(this.buffer.i2());
+//            copyRegion.dstOffset(0);
+//
+//            vkCmdCopyBuffer(commandBuffer.getHandle(), VBOUtil.virtualBufferVtx.bufferPointerSuperSet, dstBuffer, copyRegion);
+//
+//            TransferQueue.submitCommands(commandBuffer);
+//            VK10.vkWaitForFences(Vulkan.getDevice(), commandBuffer.getFence(), true, VUtil.UINT64_MAX);
+//            commandBuffer.reset();
+//        }
+//
 
-        this.size = newSize;
 
-        int offset = Util.align(oldSize, elementSize);
 
-        Segment segment = new Segment(offset, increment);
-        return segment;
+        this.size = vkBufferPointer.size_t();
+
+        return new Segment(vkBufferPointer.i2(), vkBufferPointer.size_t());
     }
 
     public synchronized void setSegmentFree(Segment uploadSegment) {
@@ -138,11 +167,11 @@ public class AreaBuffer {
     }
 
     public long getId() {
-        return this.buffer.getId();
+        return VBOUtil.virtualBufferVtx.bufferPointerSuperSet;
     }
 
     public void freeBuffer() {
-        this.buffer.freeBuffer();
+        VBOUtil.virtualBufferVtx.addFreeableRange(this.index, this.buffer);
 //        this.globalBuffer.freeSubAllocation(subAllocation);
     }
 
@@ -151,8 +180,8 @@ public class AreaBuffer {
         int offset, size;
         boolean status = false;
 
-        public Segment() {
-            reset();
+        public Segment(int offset1) {
+            reset(offset1);
         }
 
         private Segment(int offset, int size) {
@@ -161,8 +190,8 @@ public class AreaBuffer {
             this.status = false;
         }
 
-        public void reset() {
-            this.offset = -1;
+        public void reset(int offset1) {
+            this.offset = offset1;
             this.size = -1;
             this.status = false;
         }
