@@ -14,8 +14,7 @@ import static org.lwjgl.glfw.GLFW.*;
 public class VideoResolution {
     private static final int[] plats = new int[]{
             GLFW_PLATFORM_WIN32  ,
-            GLFW_PLATFORM_WAYLAND,
-            GLFW_PLATFORM_X11};
+            GLFW_PLATFORM_WAYLAND};
     private static final int activePlat = getSupportedPlat();
     private static VideoResolution[] videoResolutions;
 

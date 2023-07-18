@@ -11,9 +11,8 @@ import net.vulkanmod.vulkan.shader.Pipeline;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFWNativeWayland;
-import org.lwjgl.glfw.GLFWNativeWin32;
+import org.lwjgl.glfw.GLFWVulkan;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.windows.WinBase;
 import org.lwjgl.util.vma.VmaAllocatorCreateInfo;
 import org.lwjgl.util.vma.VmaVulkanFunctions;
 import org.lwjgl.vulkan.*;
@@ -27,7 +26,7 @@ import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.queue.Queues.*;
 import static net.vulkanmod.vulkan.util.VUtil.asPointerBuffer;
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.glfw.GLFWVulkan.glfwGetRequiredInstanceExtensions;
+import static org.lwjgl.glfw.GLFWVulkan.glfwCreateWindowSurface;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -197,7 +196,7 @@ public class Vulkan {
 
         GraphicsQueue.cleanUp();
         TransferQueue.cleanUp();
-        ComputeQueue.cleanUp();
+        PresentQueue.cleanUp();
 
         Pipeline.destroyPipelineCache();
         swapChain.cleanUp();
@@ -252,11 +251,10 @@ public class Vulkan {
             PointerBuffer result;
             System.out.println("Selecting Platform (Via GLFW): "+ getPlat());
 
-            PointerBuffer glfwExtensions = glfwGetRequiredInstanceExtensions();
+            PointerBuffer glfwExtensions = GLFWVulkan.glfwGetRequiredInstanceExtensions();
 
 
-
-            glfwExtensions.put(1, stack.UTF8(surfaceExt));
+            validatePlat(glfwExtensions);
 
             if(ENABLE_VALIDATION_LAYERS) {
 
@@ -293,6 +291,15 @@ public class Vulkan {
 
             instance = new VkInstance(instancePtr.get(0), createInfo);
         }
+    }
+
+    private static void validatePlat(PointerBuffer value) {
+        final String stringUTF8 = value.getStringUTF8(1);
+        if(stringUTF8.equals(getSurfaceKhr()))
+        {
+            System.out.println("Platform OK!: "+stringUTF8);
+        }
+        else throw new IllegalStateException("Bad Platform! "+stringUTF8+"!="+getSurfaceKhr());
     }
 
     @NotNull
@@ -352,58 +359,17 @@ public class Vulkan {
         try(MemoryStack stack = stackPush()) {
 
             LongBuffer pSurface = stack.longs(VK_NULL_HANDLE);
-            boolean isSupported = switch (surfaceExt)
-            {
-                case "VK_KHR_win32_surface" -> KHRWin32Handle(handle, stack, pSurface);
-                case "VK_KHR_wayland_surface" -> KHRWaylandHandle(handle, stack, pSurface);
-                default -> throw new IllegalStateException("Unrecognised Platform: "+getPlat());
-            };
-            if(!isSupported) throw new RuntimeException("Unable to Use Platform: "+getPlat()+" Presentation Not Supported!");
+
+            if(!createSurface(handle, pSurface)) throw new RuntimeException("Unable to Use Platform: "+getPlat()+" Presentation Not Supported!");
 
             surface = pSurface.get(0);
         }
     }
 
-//    private static boolean KHRX11Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
-//        VkXlibSurfaceCreateInfoKHR createSurfaceInfo = VkXlibSurfaceCreateInfoKHR.calloc(stack)
-//                .sType(KHRXlibSurface.VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR)
-//                .pNext(VK_NULL_HANDLE)
-//                .flags(0)
-//                .dpy(GLFWNativeX11.glfwGetX11Display())
-//                .window(GLFWNativeX11.glfwGetX11Window(handle));
-//
-//        KHRXlibSurface.vkCreateXlibSurfaceKHR( instance, createSurfaceInfo, null, pSurface);
-//    }
-    private static boolean KHRWaylandHandle(long handle, MemoryStack stack, LongBuffer pSurface) {
-
-        final long wlDisplay = GLFWNativeWayland.glfwGetWaylandDisplay();
-        boolean Supported = KHRWaylandSurface.vkGetPhysicalDeviceWaylandPresentationSupportKHR(physicalDevice, QueueFamilyIndices.presentFamily, wlDisplay);
+    private static boolean createSurface(long handle, LongBuffer pSurface) {
+        boolean Supported = GLFWVulkan.glfwGetPhysicalDevicePresentationSupport(instance, physicalDevice, QueueFamilyIndices.presentFamily);
         if(Supported) {
-            VkWaylandSurfaceCreateInfoKHR createSurfaceInfo = VkWaylandSurfaceCreateInfoKHR.calloc(stack)
-                    .sType(KHRWaylandSurface.VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR)
-                    .pNext(VK_NULL_HANDLE)
-                    .flags(0)
-                    .surface(GLFWNativeWayland.glfwGetWaylandWindow(handle))
-                    .display(wlDisplay);
-
-
-            KHRWaylandSurface.vkCreateWaylandSurfaceKHR(instance, createSurfaceInfo, null, pSurface);
-        }
-        return Supported;
-    }
-
-    private static boolean KHRWin32Handle(long handle, MemoryStack stack, LongBuffer pSurface) {
-        boolean Supported = KHRWin32Surface.vkGetPhysicalDeviceWin32PresentationSupportKHR(physicalDevice, QueueFamilyIndices.presentFamily);
-        if(Supported) {
-            VkWin32SurfaceCreateInfoKHR createSurfaceInfo = VkWin32SurfaceCreateInfoKHR.calloc(stack)
-                    .sType(KHRWin32Surface.VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR)
-                    .pNext(VK_NULL_HANDLE)
-                    .flags(0)
-                    .hinstance(WinBase.nGetModuleHandle(NULL))
-                    .hwnd(GLFWNativeWin32.glfwGetWin32Window(handle));
-
-
-            KHRWin32Surface.vkCreateWin32SurfaceKHR(instance, createSurfaceInfo, null, pSurface);
+            glfwCreateWindowSurface(instance, handle, null, pSurface);
         }
         return Supported;
     }
@@ -735,7 +701,7 @@ public class Vulkan {
 
     public static long getSurface() { return surface; }
 
-    public static long getPresentQueue() { return ComputeQueue.Queue; }
+    public static long getPresentQueue() { return PresentQueue.Queue; }
 
     public static long getGraphicsQueue() { return GraphicsQueue.Queue; }
 

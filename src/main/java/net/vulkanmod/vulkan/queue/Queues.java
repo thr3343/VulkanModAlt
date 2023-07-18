@@ -9,7 +9,6 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkBufferCopy;
 import org.lwjgl.vulkan.VkDevice;
-import org.lwjgl.vulkan.VkQueue;
 
 import static org.lwjgl.system.JNI.callPPV;
 import static org.lwjgl.system.MemoryStack.stackPush;
@@ -20,7 +19,7 @@ public enum Queues {
 
     GraphicsQueue(QueueFamilyIndices.graphicsFamily),
     TransferQueue(QueueFamilyIndices.transferFamily),
-    ComputeQueue(QueueFamilyIndices.presentFamily);
+    PresentQueue(QueueFamilyIndices.presentFamily);
 
     public final CommandPool commandPool;
     public final long Queue;
