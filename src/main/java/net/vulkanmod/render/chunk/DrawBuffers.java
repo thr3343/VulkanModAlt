@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk;
 
+import net.vulkanmod.render.VkBufferPointer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -276,10 +277,10 @@ public class DrawBuffers {
         if(!this.allocated)
             return;
 
-        this.vertexBuffer.freeBuffer();
-//        this.indexBuffer.freeBuffer();
+        this.vertexBuffer.freeBuffer(virtualBufferVtx);
+        this.indexBuffer.freeBuffer(virtualBufferIdx);
 
-        this.vertexBuffer = null;
+//        this.vertexBuffer = null;
 //        this.indexBuffer = null;
         this.allocated = false;
     }
@@ -294,7 +295,9 @@ public class DrawBuffers {
 
     public static class DrawParameters {
         public int size;
-//        public boolean status;
+        public int i2;
+        public VkBufferPointer vtx;
+        //        public boolean status;
         private int xOffset;
         private int yOffset;
         private int zOffset;
@@ -303,8 +306,6 @@ public class DrawBuffers {
         int indexCount;
         int firstIndex;
         int vertexOffset;
-//        AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment(-1);
-        AreaBuffer.Segment indexBufferSegment;
         boolean ready = false;
 
         DrawParameters(int xOffset, int yOffset, int zOffset, int index, TerrainRenderType r) {
@@ -325,7 +326,8 @@ public class DrawBuffers {
             this.vertexOffset = 0;
 
             if(chunkArea != null && chunkArea.drawBuffers.isAllocated() && ready) {
-                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vertexOffset);
+                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vtx.index(), virtualBufferVtx);
+               if(r==TerrainRenderType.TRANSLUCENT) chunkArea.drawBuffers.indexBuffer.setSegmentFree(this.vtx.index(), virtualBufferIdx);
 //                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vertexBufferSegment);
             }
         }

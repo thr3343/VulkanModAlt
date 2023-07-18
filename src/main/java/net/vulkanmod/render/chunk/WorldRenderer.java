@@ -563,7 +563,8 @@ public class WorldRenderer {
         }
 
 
-
+        final boolean contains = (Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(layerName);
+        if(!contains) return;
 
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
@@ -585,13 +586,11 @@ public class WorldRenderer {
 
         p.push("draw batches");
 
-        if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(layerName)) {
-//            Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
-            for(ChunkArea chunkArea : this.chunkAreaQueue.queue) {
+        //            Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
+        for(ChunkArea chunkArea : this.chunkAreaQueue.queue) {
 //                ChunkArea chunkArea = iterator.next();
-                if(indirectDraw) chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Drawer.getCurrentFrame()], layerName, camX, camY, camZ);
-                else chunkArea.getDrawBuffers().buildDrawBatchesDirect(layerName, camX, camY, camZ);
-            }
+            if(indirectDraw) chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Drawer.getCurrentFrame()], layerName, camX, camY, camZ);
+            else chunkArea.getDrawBuffers().buildDrawBatchesDirect(layerName, camX, camY, camZ);
         }
 
         if(layerName.equals(CUTOUT) || layerName.equals(TRIPWIRE)) {
@@ -609,7 +608,7 @@ public class WorldRenderer {
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
 
-        VRenderSystem.applyModelViewMatrix(RenderSystem.getModelViewMatrix());
+        VRenderSystem.applyProjectionMatrix(RenderSystem.getProjectionMatrix());
 
         switch (layerName) {
             case CUTOUT -> {

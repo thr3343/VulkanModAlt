@@ -1,11 +1,12 @@
 package net.vulkanmod.render.chunk;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.VkBufferPointer;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.memory.*;
-import net.vulkanmod.vulkan.util.VBOUtil;
 
 import java.nio.ByteBuffer;
 
@@ -18,12 +19,12 @@ public class AreaBuffer {
     private final int usage;
 
 //    private final LinkedList<Segment> freeSegments = new LinkedList<>();
-    final Int2ReferenceOpenHashMap<VkBufferPointer> usedSegments = new Int2ReferenceOpenHashMap<>();
+    final Int2ObjectArrayMap<VkBufferPointer> usedSegments = new Int2ObjectArrayMap<>();
 
     private final int elementSize;
 
 //    private VkBufferPointer buffer;
-
+        //TODO: DefragThreshold
     int maxSize;
     int used;
 
@@ -60,7 +61,7 @@ public class AreaBuffer {
 
 
 //        final Segment v = new Segment(section.i2(), section.size_t());
-        usedSegments.put(section.i2(), section);
+        usedSegments.put(section.index(), section);
 
 //        Buffer dst = this.buffer;
         final boolean b = uploadSegment.r == TerrainRenderType.TRANSLUCENT;
@@ -70,28 +71,30 @@ public class AreaBuffer {
         uploadSegment.size = section.size_t();
         uploadSegment.firstIndex= b ? section.i2() : 0;
         uploadSegment.ready = true;
+        uploadSegment.i2 = section.i2();
+        uploadSegment.vtx=section;
 
         this.used += size;
 
     }
 
-    public synchronized void setSegmentFree(int offset) {
+    public synchronized void setSegmentFree(int offset, VirtualBuffer virtualBufferVtx1) {
         if(usedSegments.isEmpty()) return;
         VkBufferPointer segment = usedSegments.remove(offset);
-        virtualBufferVtx.addFreeableRange(segment);
+        virtualBufferVtx1.addFreeableRange(segment);
 
         //        this.freeSegments.add(segment);
-        this.used -= segment!=null ? segment.size_t() : 0;
+        this.used -= segment.size_t();
     }
 
     public long getId() {
         return virtualBufferVtx.bufferPointerSuperSet;
     }
 
-    public void freeBuffer() {
+    public void freeBuffer(VirtualBuffer virtualBuffer) {
         for(var a : usedSegments.values())
         {
-            virtualBufferVtx.addFreeableRange(a);
+            virtualBuffer.addFreeableRange(a);
         }
         usedSegments.clear();
 //        this.globalBuffer.freeSubAllocation(subAllocation);

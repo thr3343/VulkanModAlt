@@ -65,7 +65,7 @@ public abstract class DebugHudM {
         strings.add(String.format("Off-heap: " + getOffHeapMemory() + "MB"));
         strings.add("NativeMemory: " + MemoryManager.getInstance().getNativeMemoryMB() + "MB");
         strings.add("DeviceMemory: " + MemoryManager.getInstance().getDeviceMemoryMB() + "MB");
-        strings.add("DeviceMemory2: " + (VBOUtil.virtualBufferVtx.size_t >> 20) + "MB");
+        strings.add("DeviceMemory2: " + (VBOUtil.virtualBufferVtx.size_t >> 20) + "+"+(VBOUtil.virtualBufferIdx.size_t >> 20) + "MB");
         strings.add("");
         strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + DeviceInfo.cpuInfo);
@@ -93,7 +93,25 @@ public abstract class DebugHudM {
         strings.add("maxVBOSize: " + VBOUtil.virtualBufferVtx.allocMax);
         strings.add("unusedBytes: " + (VBOUtil.virtualBufferVtx.size_t- VBOUtil.virtualBufferVtx.usedBytes >> 20) + "MB");
 //        strings.add("freeRanges: " + (VBOUtil.virtualBufferVtx.FreeRanges.size()));
-        strings.add("activeRanges: " + (VBOUtil.virtualBufferVtx.activeRanges.size()));
+        strings.add("activeRanges: " + (VBOUtil.virtualBufferVtx.activeRanges.size()));strings.add("Vertex-Buffers");
+        strings.add("");
+        strings.add("Index-Buffers");
+        strings.add("Used Bytes: " + (VBOUtil.virtualBufferIdx.usedBytes >> 20) + "MB");
+        strings.add("Max Size: " + (VBOUtil.virtualBufferIdx.size_t >> 20) + "MB");
+//        strings.add("Allocs: " + VirtualBuffer.allocs);
+//        strings.add("allocBytes: " + VirtualBuffer.allocBytes);
+        strings.add("subAllocs: " + VBOUtil.virtualBufferIdx.subAllocs);
+//        strings.add("Blocks: " + VirtualBuffer.blocks);
+//        strings.add("BlocksBytes: " + VirtualBuffer.blockBytes);
+
+        strings.add("minRange: " + VBOUtil.virtualBufferIdx.unusedRangesS);
+        strings.add("maxRange: " + VBOUtil.virtualBufferIdx.unusedRangesM);
+        strings.add("unusedRangesCount: " + VBOUtil.virtualBufferIdx.unusedRangesCount);
+        strings.add("minVBOSize: " + VBOUtil.virtualBufferIdx.allocMin);
+        strings.add("maxVBOSize: " + VBOUtil.virtualBufferIdx.allocMax);
+        strings.add("unusedBytes: " + (VBOUtil.virtualBufferIdx.size_t- VBOUtil.virtualBufferIdx.usedBytes >> 20) + "MB");
+//        strings.add("freeRanges: " + (VBOUtil.virtualBufferIdx.FreeRanges.size()));
+        strings.add("activeRanges: " + (VBOUtil.virtualBufferIdx.activeRanges.size()));
 
         return strings;
     }
