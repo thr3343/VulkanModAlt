@@ -35,7 +35,8 @@ public class DrawBuffers {
     AreaBuffer vertexBuffer;
 //    AreaBuffer indexBuffer;
 
-    final ResettableQueue<RenderSection> sectionQueue = new ResettableQueue<>(512);
+    final ResettableQueue<DrawParameters> sectionQueue = new ResettableQueue<>(512);
+    final ResettableQueue<DrawParameters> TsectionQueue = new ResettableQueue<>(512);
     private static final long npointer = MemoryUtil.nmemAlignedAlloc(8, 8);
     static final long npointer1 = MemoryUtil.nmemAlignedAlloc(8, 8);
 
@@ -120,7 +121,7 @@ public class DrawBuffers {
 
         Pipeline pipeline = ShaderManager.getInstance().getTerrainShader();
 
-        final int size = this.sectionQueue.size();
+        final int size = renderType==TerrainRenderType.TRANSLUCENT ? this.TsectionQueue.size() : this.sectionQueue.size();
         if(size ==0) return 0;
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
@@ -158,9 +159,10 @@ public class DrawBuffers {
     private int getDrawCount(TerrainRenderType terrainRenderType, ByteBuffer byteBuffer, IndirectBuffer indirectBuffer) {
         long bufferPtr = MemoryUtil.memAddress0(byteBuffer);
         int drawCount = 0;
-        for (RenderSection section : this.sectionQueue) {
-            //            RenderSection section = iterator.next();
-            DrawParameters drawParameters = section.drawParametersArray[terrainRenderType.ordinal()];
+        for(DrawParameters drawParameters : terrainRenderType ==TerrainRenderType.TRANSLUCENT ? this.TsectionQueue : this.sectionQueue)
+        {
+//            RenderSection section = iterator.next();
+//            DrawParameters drawParameters = section.drawParametersArray[terrainRenderType.ordinal()];
 
             //Debug
             //            BlockPos o = section.origin;
@@ -247,12 +249,12 @@ public class DrawBuffers {
         //        Drawer.getInstance().bindPipeline(pipeline);
         ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
 
+        final boolean bindless = Initializer.CONFIG.bindless;
         //            final int value = drawParameters.vertexOffset << 5;
-        for (RenderSection section : this.sectionQueue) {
-            DrawParameters drawParameters = section.drawParametersArray[renderType.ordinal()];
-
-           if(Initializer.CONFIG.bindless) drawIndexedBindless(drawParameters);
-           else drawIndexed2(drawParameters.vertexOffset);
+        for(DrawParameters drawParameters : renderType ==TerrainRenderType.TRANSLUCENT ? this.TsectionQueue : this.sectionQueue)
+        {
+            if(bindless) drawIndexedBindless(drawParameters);
+            else drawIndexed2(drawParameters.vertexOffset, drawParameters.indexCount);
         }
 
 
@@ -263,8 +265,8 @@ public class DrawBuffers {
 
     }
 
-    private void drawIndexed2(int indexCount) {
-        final int value = indexCount << 5;
+    private void drawIndexed2(int vertexOffset, int indexCount) {
+        final int value = vertexOffset << 5;
         VUtil.UNSAFE.putLong(npointer, value);
         nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, npointer1, npointer);
 //                callPJPV(commandBuffer.address(), pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, new float[]{(float) ((double) section.xOffset - camX), (float) ((double) section.yOffset - camY), (float) ((double) section.zOffset - camZ)}, commandBuffer.getCapabilities().vkCmdPushConstants);
@@ -288,7 +290,7 @@ public class DrawBuffers {
         return allocated;
     }
 
-    public void addSection(RenderSection renderSection) {
+    public void addSection(DrawParameters renderSection) {
         this.sectionQueue.add(renderSection);
     }
 

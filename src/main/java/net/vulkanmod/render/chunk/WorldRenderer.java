@@ -300,8 +300,11 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            if (renderSection.getCompiledSection().renderTypes.stream().anyMatch(rType -> renderSection.getBuffer(rType).indexCount!=0)) {
-                renderSection.getChunkArea().getDrawBuffers().addSection(renderSection);
+            for (TerrainRenderType rType : renderSection.getCompiledSection().renderTypes) {
+                final DrawBuffers.DrawParameters buffer = renderSection.drawParametersArray[rType.ordinal()];
+                if (buffer.indexCount != 0) {
+                    (rType!=TRANSLUCENT ? renderSection.getChunkArea().getDrawBuffers().sectionQueue : renderSection.getChunkArea().getDrawBuffers().TsectionQueue).add(buffer);
+                }
             }
 
 //            SolidVBOs.add(renderSection);
@@ -347,7 +350,7 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            renderSection.getChunkArea().getDrawBuffers().sectionQueue.add(renderSection);
+//            renderSection.getChunkArea().getDrawBuffers().sectionQueue.add(renderSection);
 
             if(!renderSection.isCompletelyEmpty()) {
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
