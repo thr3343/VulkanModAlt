@@ -15,6 +15,7 @@ public class AreaBuffer {
     private final int usage;
 
 //    private final LinkedList<Segment> freeSegments = new LinkedList<>();
+    final Int2ReferenceOpenHashMap<VkBufferPointer> freeSegments = new Int2ReferenceOpenHashMap<>();
     final Int2ReferenceOpenHashMap<VkBufferPointer> usedSegments = new Int2ReferenceOpenHashMap<>();
 
     private final int elementSize;
@@ -53,11 +54,15 @@ public class AreaBuffer {
 //        {
 //            this
 //        }
-        var section = VBOUtil.virtualBufferVtx.getActiveRangeFromIdx(this.index, uploadSegment.firstIndex);
+        var section = checkForFree(uploadSegment.firstIndex);
         if(section==null)
         {
-            section =  VBOUtil.virtualBufferVtx.addSubIncr(this.index, uploadSegment.index, size);
-            usedSegments.put(section.i2(), section);
+            section = VBOUtil.virtualBufferVtx.getActiveRangeFromIdx(this.index, uploadSegment.firstIndex);
+            if(section==null)
+            {
+                section =  VBOUtil.virtualBufferVtx.addSubIncr(this.index, uploadSegment.index, size);
+                usedSegments.put(section.i2(), section);
+            }
         }
 
 
@@ -72,13 +77,19 @@ public class AreaBuffer {
 
     }
 
+    private VkBufferPointer checkForFree(int firstIndex) {
+        return freeSegments.remove(firstIndex);
+    }
+
     public synchronized void setSegmentFree(int offset) {
         if(usedSegments.isEmpty()) return;
         VkBufferPointer segment = usedSegments.remove(offset);
         VBOUtil.virtualBufferVtx.addFreeableRange(segment);
-
-        //        this.freeSegments.add(segment);
-        this.used -= segment!=null ? segment.size_t() : 0;
+        if(segment!=null)
+        {
+            this.freeSegments.put(segment.i2(), segment);
+            this.used -= segment.size_t();
+        }
     }
 
     public long getId() {
@@ -91,6 +102,7 @@ public class AreaBuffer {
             VBOUtil.virtualBufferVtx.addFreeableRange(a);
         }
         usedSegments.clear();
+        freeSegments.clear();
 //        this.globalBuffer.freeSubAllocation(subAllocation);
     }
 
