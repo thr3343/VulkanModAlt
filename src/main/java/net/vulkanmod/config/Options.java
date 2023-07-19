@@ -204,6 +204,13 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
+                new SwitchOption("Bindless",
+                        value -> config.bindless = value,
+                        () -> config.bindless)
+                        .setTooltip(Component.nullToEmpty("""
+                        Enables Bindless Rendering Optimisations
+                        Gives a Small-Moderate Performance improvement on most modern GPUs
+                        May cause issues and/or performance regressions with some specific older Nvidia GPUs""")),
         };
 
     }

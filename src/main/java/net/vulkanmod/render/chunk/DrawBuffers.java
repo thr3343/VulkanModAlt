@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk;
 
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.VkBufferPointer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
@@ -242,12 +243,11 @@ public class DrawBuffers {
             ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
 
             //            final int value = drawParameters.vertexOffset << 5;
-            nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, stack.npointer(virtualBufferVtx.bufferPointerSuperSet), (stack.npointer(0)));
             for (RenderSection section : this.sectionQueue) {
                 DrawParameters drawParameters = section.drawParametersArray[renderType.ordinal()];
 
-                vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount, 1, 0, drawParameters.vertexOffset, 0);
-
+               if(Initializer.CONFIG.bindless) drawIndexedBindless(drawParameters);
+               else drawIndexed2(stack, drawParameters.vertexOffset);
             }
         }
 
@@ -256,16 +256,16 @@ public class DrawBuffers {
     }
 
     private void drawIndexedBindless(DrawParameters drawParameters) {
-        vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount, 1, drawParameters.firstIndex, drawParameters.vertexOffset, 0);
+        vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount, 1, 0, drawParameters.vertexOffset, 0);
 
     }
 
-    private void drawIndexed2(MemoryStack stack, DrawParameters drawParameters) {
-        final int value = drawParameters.vertexOffset << 5;
+    private void drawIndexed2(MemoryStack stack, int indexCount) {
+        final int value = indexCount << 5;
         nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, (stack.npointer(vertexBuffer.getId())), (stack.npointer(value)));
 //                callPJPV(commandBuffer.address(), pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, new float[]{(float) ((double) section.xOffset - camX), (float) ((double) section.yOffset - camY), (float) ((double) section.zOffset - camZ)}, commandBuffer.getCapabilities().vkCmdPushConstants);
 
-        vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount, 1, 0, 0, 0);
+        vkCmdDrawIndexed(Drawer.getCommandBuffer(), indexCount, 1, 0, 0, 0);
     }
 
     public void releaseBuffers() {

@@ -43,7 +43,7 @@ public class AreaBuffer {
         return this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ? new VertexBuffer(size, memoryType) : new IndexBuffer(size, memoryType);
     }
 
-    public synchronized void upload(ByteBuffer byteBuffer, DrawBuffers.DrawParameters uploadSegment) {
+    public void upload(ByteBuffer byteBuffer, DrawBuffers.DrawParameters uploadSegment) {
         //free old segment
 
         int size = byteBuffer.remaining();
@@ -81,7 +81,7 @@ public class AreaBuffer {
         return freeSegments.remove(firstIndex);
     }
 
-    public synchronized void setSegmentFree(int offset) {
+    public void setSegmentFree(int offset) {
         if(usedSegments.isEmpty()) return;
         VkBufferPointer segment = usedSegments.remove(offset);
         VBOUtil.virtualBufferVtx.addFreeableRange(segment);

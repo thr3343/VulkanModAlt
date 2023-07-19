@@ -43,12 +43,14 @@ import net.vulkanmod.vulkan.shader.ShaderManager;
 import net.vulkanmod.vulkan.util.VBOUtil;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.lwjgl.system.MemoryStack;
 
 import javax.annotation.Nullable;
 import java.util.*;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 import static net.vulkanmod.vulkan.util.VBOUtil.*;
+import static org.lwjgl.vulkan.VK10.nvkCmdBindVertexBuffers;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -583,6 +585,14 @@ public class WorldRenderer {
         drawer.bindAutoIndexBuffer(Drawer.getCommandBuffer(), 7);
 
         p.push("draw batches");
+
+        if(Initializer.CONFIG.bindless)
+        {
+            try(MemoryStack stack = MemoryStack.stackPush()) {
+                nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, stack.npointer(virtualBufferVtx.bufferPointerSuperSet), (stack.npointer(0)));
+            }
+
+        }
 
         if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(layerName)) {
 //            Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
