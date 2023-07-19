@@ -140,8 +140,8 @@ public final class VirtualBuffer {
 //        size_t= size;
     }
 
-    //TODO: Possible Fragmentation Workaround/Draw Call Coalescing: Use two unaligned blocks and attempt to merge them together if fit within the same (relative) alignment
-    public VkBufferPointer addSubIncr(int index, int actualSize) {
+    //TODO: Global ChunKArea index....
+    public VkBufferPointer addSubIncr(int i, int index, int actualSize) {
 
          if(size_t<=usedBytes+ (actualSize))
         {
@@ -156,7 +156,7 @@ public final class VirtualBuffer {
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack);
             allocCreateInfo.size((actualSize));
             allocCreateInfo.alignment(0);
-            allocCreateInfo.flags(VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
+            allocCreateInfo.flags(0);
             allocCreateInfo.pUserData(NULL);
 
             PointerBuffer pAlloc = stack.mallocPointer(1);
@@ -185,22 +185,10 @@ public final class VirtualBuffer {
             vmaGetVirtualAllocationInfo(virtualBlockBufferSuperSet, allocation, allocCreateInfo1);
 
             updateStatistics(stack);
-            VkBufferPointer vkBufferPointer = new VkBufferPointer(index, (int) allocCreateInfo1.offset(), (int) allocCreateInfo1.size(), pAlloc.get(0));
+            VkBufferPointer vkBufferPointer = new VkBufferPointer(i, index, (int) allocCreateInfo1.offset(), (int) allocCreateInfo1.size(), pAlloc.get(0));
             activeRanges.add(vkBufferPointer);
             return vkBufferPointer;
         }
-    }
-
-    public boolean isAlreadyLoaded(int index, int remaining) {
-        VkBufferPointer vkBufferPointer = getActiveRangeFromIdx(index);
-        if(vkBufferPointer==null) return false;
-        if(vkBufferPointer.size_t()>=remaining)
-        {
-            return true;
-        }
-        addFreeableRange(vkBufferPointer);
-        return false;
-
     }
 
 
@@ -230,7 +218,7 @@ public final class VirtualBuffer {
         Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation());
         for (int i = 0; i < activeRanges.size(); i++) {
             VkBufferPointer vkBufferPointer = activeRanges.get(i);
-            if (vkBufferPointer.index() == bufferPointer.index()) {
+            if (vkBufferPointer.subIndex() == bufferPointer.subIndex()) {
                 activeRanges.remove(i);
                 break;
             }
@@ -239,9 +227,9 @@ public final class VirtualBuffer {
         usedBytes-=bufferPointer.size_t();
     }
 
-    private VkBufferPointer getActiveRangeFromIdx(int index) {
+    public VkBufferPointer getActiveRangeFromIdx(int i, int index) {
         for (VkBufferPointer vkBufferPointer : activeRanges) {
-            if (vkBufferPointer.index() == index) {
+            if (vkBufferPointer.areaGlobalIndex()==i && vkBufferPointer.subIndex() == index) {
                 return vkBufferPointer;
             }
         }

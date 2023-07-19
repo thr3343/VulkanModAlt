@@ -53,18 +53,20 @@ public class AreaBuffer {
 //        {
 //            this
 //        }
-        var section = VBOUtil.virtualBufferVtx.addSubIncr(uploadSegment.index, size);
+        var section = VBOUtil.virtualBufferVtx.getActiveRangeFromIdx(this.index, uploadSegment.firstIndex);
+        if(section==null)
+        {
+            section =  VBOUtil.virtualBufferVtx.addSubIncr(this.index, uploadSegment.index, size);
+            usedSegments.put(section.i2(), section);
+        }
 
 
-        final Segment v = new Segment(section.i2(), section.size_t());
-        usedSegments.put(section.i2(), section);
+//        final Segment v = new Segment(section.i2(), section.size_t());
 
 //        Buffer dst = this.buffer;
-        AreaUploadManager.INSTANCE.uploadAsync(v, VBOUtil.virtualBufferVtx.bufferPointerSuperSet, section.i2(), section.size_t(), byteBuffer);
+        AreaUploadManager.INSTANCE.uploadAsync(section, VBOUtil.virtualBufferVtx.bufferPointerSuperSet, section.i2(), section.size_t(), byteBuffer);
 
-        uploadSegment.vertexBufferSegment.offset = section.i2();
-        uploadSegment.vertexBufferSegment.size = section.size_t();
-        uploadSegment.vertexBufferSegment.status = false;
+        uploadSegment.vertexBufferSegment=section;
 
         this.used += size;
 

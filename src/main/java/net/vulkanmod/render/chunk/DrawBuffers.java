@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk;
 
+import net.vulkanmod.render.VkBufferPointer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -59,7 +60,7 @@ public class DrawBuffers {
 
             this.vertexBuffer.upload(buffer.getVertexBuffer(), drawParameters);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
-            vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
+            vertexOffset = drawParameters.vertexBufferSegment.i2() / VERTEX_SIZE;
 
             //debug
 //            if(drawParameters.vertexBufferSegment.getOffset() % VERTEX_SIZE != 0) {
@@ -80,7 +81,7 @@ public class DrawBuffers {
         drawParameters.firstIndex = firstIndex;
         drawParameters.vertexOffset = vertexOffset;
 
-        Drawer.getInstance().getQuadsIndexBuffer().checkCapacity(buffer.indexCount * 2 / 3);
+//        Drawer.getInstance().getQuadsIndexBuffer().checkCapacity(buffer.indexCount * 2 / 3);
 
         buffer.release();
 
@@ -279,7 +280,7 @@ public class DrawBuffers {
         this.vertexBuffer.freeBuffer();
 //        this.indexBuffer.freeBuffer();
 
-        this.vertexBuffer = null;
+//        this.vertexBuffer = null;
 //        this.indexBuffer = null;
         this.allocated = false;
     }
@@ -301,7 +302,7 @@ public class DrawBuffers {
         int indexCount;
         int firstIndex;
         int vertexOffset;
-        AreaBuffer.Segment vertexBufferSegment = new AreaBuffer.Segment(-1);
+        VkBufferPointer vertexBufferSegment = new VkBufferPointer(-1,-1,-1,-1,-1);
 //        AreaBuffer.Segment indexBufferSegment;
 //        boolean ready = false;
 
@@ -321,7 +322,7 @@ public class DrawBuffers {
             this.firstIndex = 0;
             this.vertexOffset = 0;
 
-            int segmentOffset = this.vertexBufferSegment.getOffset();
+            int segmentOffset = this.vertexBufferSegment.i2();
             if(chunkArea != null && chunkArea.drawBuffers.isAllocated() && segmentOffset != -1) {
                 chunkArea.drawBuffers.vertexBuffer.setSegmentFree(segmentOffset);
 //                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vertexBufferSegment);
