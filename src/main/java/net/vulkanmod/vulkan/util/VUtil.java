@@ -17,6 +17,7 @@ public class VUtil {
     public static final long UINT64_MAX = 0xFFFFFFFFFFFFFFFFL;
 
     public static final Unsafe UNSAFE;
+    public static final long nullptr = MemoryUtil.nmemCalloc(0, 8);
 
     static {
         Field f = null;

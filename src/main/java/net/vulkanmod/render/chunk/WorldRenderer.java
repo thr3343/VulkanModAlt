@@ -41,6 +41,7 @@ import net.vulkanmod.vulkan.memory.MemoryTypes;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
 import net.vulkanmod.vulkan.util.VBOUtil;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryStack;
@@ -586,12 +587,8 @@ public class WorldRenderer {
 
         p.push("draw batches");
 
-        if(Initializer.CONFIG.bindless)
-        {
-            try(MemoryStack stack = MemoryStack.stackPush()) {
-                nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, stack.npointer(virtualBufferVtx.bufferPointerSuperSet), (stack.npointer(0)));
-            }
-
+        if(Initializer.CONFIG.bindless) {
+            nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, DrawBuffers.npointer1, (VUtil.nullptr));
         }
 
         if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(layerName)) {

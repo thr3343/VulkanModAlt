@@ -36,6 +36,13 @@ public class DrawBuffers {
 //    AreaBuffer indexBuffer;
 
     final ResettableQueue<RenderSection> sectionQueue = new ResettableQueue<>(512);
+    private static final long npointer = MemoryUtil.nmemAlignedAlloc(8, 8);
+    static final long npointer1 = MemoryUtil.nmemAlignedAlloc(8, 8);
+
+    static
+    {
+        VUtil.UNSAFE.putLong(npointer1, virtualBufferVtx.bufferPointerSuperSet);
+    }
 
     public DrawBuffers(int index, Vector3i position) {
         this.index = index;
@@ -232,25 +239,21 @@ public class DrawBuffers {
     public void buildDrawBatchesDirect(TerrainRenderType renderType, double camX, double camY, double camZ) {
         renderType.setCutoutUniform();
 
-        try(MemoryStack stack = MemoryStack.stackPush()) {
-
 
 //            if (renderType == TerrainRenderType.TRANSLUCENT) {
 //                vkCmdBindIndexBuffer(Drawer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
 //            }
 
-            //        Drawer.getInstance().bindPipeline(pipeline);
-            ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
+        //        Drawer.getInstance().bindPipeline(pipeline);
+        ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
 
-            //            final int value = drawParameters.vertexOffset << 5;
-            for (RenderSection section : this.sectionQueue) {
-                DrawParameters drawParameters = section.drawParametersArray[renderType.ordinal()];
+        //            final int value = drawParameters.vertexOffset << 5;
+        for (RenderSection section : this.sectionQueue) {
+            DrawParameters drawParameters = section.drawParametersArray[renderType.ordinal()];
 
-               if(Initializer.CONFIG.bindless) drawIndexedBindless(drawParameters);
-               else drawIndexed2(stack, drawParameters.vertexOffset);
-            }
+           if(Initializer.CONFIG.bindless) drawIndexedBindless(drawParameters);
+           else drawIndexed2(drawParameters.vertexOffset);
         }
-
 
 
     }
@@ -260,9 +263,10 @@ public class DrawBuffers {
 
     }
 
-    private void drawIndexed2(MemoryStack stack, int indexCount) {
+    private void drawIndexed2(int indexCount) {
         final int value = indexCount << 5;
-        nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, (stack.npointer(vertexBuffer.getId())), (stack.npointer(value)));
+        VUtil.UNSAFE.putLong(npointer, value);
+        nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, npointer1, npointer);
 //                callPJPV(commandBuffer.address(), pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, new float[]{(float) ((double) section.xOffset - camX), (float) ((double) section.yOffset - camY), (float) ((double) section.zOffset - camZ)}, commandBuffer.getCapabilities().vkCmdPushConstants);
 
         vkCmdDrawIndexed(Drawer.getCommandBuffer(), indexCount, 1, 0, 0, 0);
