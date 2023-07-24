@@ -20,7 +20,6 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.system.Struct;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
@@ -32,13 +31,11 @@ import static net.vulkanmod.vulkan.Framebuffer.*;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
-import static org.lwjgl.system.Checks.CHECKS;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.JNI.callPPI;
 import static org.lwjgl.system.JNI.callPPJI;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.NULL;
 import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -402,7 +399,8 @@ public class Drawer {
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
                 shouldRecreate = false;
-                recreateSwapChain();
+                vkResetFences(device, frameFences.get(currentFrame));
+                recreateSwapChain(true);
                 return;
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Cannot get image: " + vkResult);
@@ -444,7 +442,7 @@ public class Drawer {
 
             if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
                 shouldRecreate = false;
-                recreateSwapChain();
+                recreateSwapChain(false);
                 return;
             } else if(vkResult != VK_SUCCESS) {
                 throw new RuntimeException("Failed to present swap chain image");
@@ -453,13 +451,27 @@ public class Drawer {
             currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
         }
     }
+    void waitForSwapChain()
+    {
+//        constexpr VkPipelineStageFlags t=VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            //Empty Submit
+            VkSubmitInfo info = VkSubmitInfo.calloc(stack)
+                    .sType$Default()
+                    .pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame)))
+                    .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
 
-    private void recreateSwapChain() {
+            callPPJI(getGraphicsQueue(), 1, info.address(), frameFences.get(currentFrame), device.getCapabilities().vkQueueSubmit);
+            vkWaitForFences(device, frameFences.get(currentFrame),  true, -1);
+        }
+    }
+    private void recreateSwapChain(boolean b) {
 //        for(Long fence : inFlightFences) {
 //            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
 //        }
 
-        vkDeviceWaitIdle(device);
+        if(b) waitForSwapChain();
+        else vkDeviceWaitIdle(device);
 
         for(int i = 0; i < getSwapChainImages().size(); ++i) {
             vkDestroyFence(device, frameFences.get(i), null);
