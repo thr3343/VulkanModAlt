@@ -617,8 +617,8 @@ public class WorldRenderer {
 
         this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
-
-        VRenderSystem.applyModelViewMatrix(RenderSystem.getModelViewMatrix());
+//        VRenderSystem.applyModelViewMatrix(RenderSystem.getModelViewMatrix());
+        VRenderSystem.copyMVP();
 
         switch (layerName) {
             case CUTOUT -> {

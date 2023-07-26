@@ -13,6 +13,7 @@ import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.util.MappedBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Matrix4f;
+import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
@@ -127,6 +128,14 @@ public class VRenderSystem {
         mat.get(projectionMatrix.buffer.asFloatBuffer());
     }
 
+    public static void copyMVP() {
+//        applyModelViewMatrix(MV);
+        long srcAddr = (projectionMatrix.ptr);
+        long dstAddr = (MVP.ptr);
+
+        for (int i = 0; i < 8; i++)
+            MemoryUtil.memPutLong(dstAddr + (i << 3), MemoryUtil.memGetLong(srcAddr + (i << 3)));
+    }
     public static void calculateMVP() {
         org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer.asFloatBuffer());
         org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer.asFloatBuffer());
