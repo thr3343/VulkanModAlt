@@ -545,9 +545,9 @@ public class WorldRenderer {
     public void renderChunkLayer(RenderType renderType, double camX, double camY, double camZ, Matrix4f projection) {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
-        Profiler2 p = Profiler2.getMainProfiler();
+//        Profiler2 p = Profiler2.getMainProfiler();
 
-        TerrainRenderType layerName=switch (renderType.name)
+        final TerrainRenderType layerName=switch (renderType.name)
         {
             case "solid" -> SOLID;
             case "cutout_mipped" -> CUTOUT_MIPPED;
@@ -556,16 +556,16 @@ public class WorldRenderer {
             case "tripwire" -> TRIPWIRE;
             default -> throw new IllegalStateException("Unexpected value: " + renderType.name);
         };
-
+        if(!(Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(layerName)) return;
 
 //        p.pushMilestone("layer " + layerName);
-        if(layerName.equals(SOLID))
-            p.push("Opaque_terrain_pass");
-        else if(layerName.equals(TRANSLUCENT))
-        {
-            p.pop();
-            p.push("Translucent_terrain_pass");
-        }
+//        if(layerName.equals(CUTOUT_MIPPED))
+//            p.push("Opaque_terrain_pass");
+//        else if(layerName.equals(TRANSLUCENT))
+//        {
+//            p.pop();
+//            p.push("Translucent_terrain_pass");
+//        }
 
 
 
@@ -575,20 +575,20 @@ public class WorldRenderer {
 
         this.sortTranslucentSections(camX, camY, camZ);
 
-        this.minecraft.getProfiler().push("filterempty");
-        this.minecraft.getProfiler().popPush(() -> {
-            return "render_" + renderType;
-        });
+//        this.minecraft.getProfiler().push("filterempty");
+//        this.minecraft.getProfiler().popPush(() -> {
+//            return "render_" + renderType;
+//        });
         boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
         VRenderSystem.applyMVP(translationOffset, projection);
 
         Drawer drawer = Drawer.getInstance();
-        Pipeline pipeline = ShaderManager.getInstance().getTerrainShader();
+        Pipeline pipeline = ShaderManager.getInstance().terrainDirectShader;
         drawer.bindPipeline(pipeline);
-        drawer.bindAutoIndexBuffer(Drawer.getCommandBuffer(), 7);
+        if(layerName==CUTOUT_MIPPED) drawer.bindAutoIndexBuffer(Drawer.getCommandBuffer(), 7);
 
-        p.push("draw batches");
+//        p.push("draw batches");
 
         if(Initializer.CONFIG.bindless) {
             nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, DrawBuffers.npointer1, (VUtil.nullptr));
@@ -607,7 +607,7 @@ public class WorldRenderer {
             indirectBuffers[Drawer.getCurrentFrame()].submitUploads();
 //            uniformBuffers.submitUploads();
         }
-        p.pop();
+//        p.pop();
 
         //Need to reset push constant in case the pipeline will still be used for rendering
 //        if(!indirectDraw) {
@@ -615,21 +615,11 @@ public class WorldRenderer {
 //            drawer.pushConstants(pipeline);
 //        }
 
-        this.minecraft.getProfiler().pop();
+//        this.minecraft.getProfiler().pop();
         renderType.clearRenderState();
 //        VRenderSystem.applyModelViewMatrix(RenderSystem.getModelViewMatrix());
         VRenderSystem.copyMVP();
 
-        switch (layerName) {
-            case CUTOUT -> {
-                p.pop();
-//                p.pop();
-//                p.push("Render_level_2");
-                p.push("entities");
-            }
-//            case "translucent" -> p.pop();
-            case TRIPWIRE -> p.pop();
-        }
 
     }
 

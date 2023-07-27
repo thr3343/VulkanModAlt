@@ -120,12 +120,12 @@ public class VRenderSystem {
     }
 
     public static void applyModelViewMatrix(Matrix4f mat) {
-        mat.get(modelViewMatrix.buffer.asFloatBuffer());
+        mat.getToAddress(modelViewMatrix.ptr);
         //MemoryUtil.memPutFloat(MemoryUtil.memAddress(modelViewMatrix), 1);
     }
 
     public static void applyProjectionMatrix(Matrix4f mat) {
-        mat.get(projectionMatrix.buffer.asFloatBuffer());
+        mat.getToAddress(projectionMatrix.ptr);
     }
 
     public static void copyMVP() {
@@ -140,7 +140,7 @@ public class VRenderSystem {
         org.joml.Matrix4f MV = new org.joml.Matrix4f(modelViewMatrix.buffer.asFloatBuffer());
         org.joml.Matrix4f P = new org.joml.Matrix4f(projectionMatrix.buffer.asFloatBuffer());
 
-        P.mul(MV).get(MVP.buffer);
+        P.mul(MV).getToAddress(MVP.ptr);
     }
 
     public static void setTextureMatrix(Matrix4f mat) {

@@ -2,7 +2,6 @@ package net.vulkanmod.vulkan.shader;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.vulkanmod.Initializer;
 
 import static net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.compileShaderFile;
 
@@ -20,15 +19,11 @@ public class ShaderManager {
 
     public static ShaderManager getInstance() { return shaderManager; }
 
-    Pipeline terrainShader;
-    public Pipeline terrainDirectShader;
+//    Pipeline terrainShader;
+    public final Pipeline terrainDirectShader;
 
     public ShaderManager() {
-        createBasicPipelines();
-    }
-
-    private void createBasicPipelines() {
-        this.terrainShader = createPipeline("terrain");
+        //        this.terrainShader = createPipeline("terrain");
 
         this.terrainDirectShader = createPipeline("terrain_direct");
     }
@@ -42,18 +37,8 @@ public class ShaderManager {
         return pipelineBuilder.createPipeline();
     }
 
-    public Pipeline getTerrainShader() {
-        if(Initializer.CONFIG.indirectDraw) {
-            return this.terrainShader;
-        }
-        else {
-            return this.terrainDirectShader;
-        }
-
-    }
-
     public void destroyPipelines() {
-        this.terrainShader.cleanUp();
+//        this.terrainShader.cleanUp();
         this.terrainDirectShader.cleanUp();
     }
 }
