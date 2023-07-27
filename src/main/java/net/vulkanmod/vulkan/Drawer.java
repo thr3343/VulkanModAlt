@@ -5,6 +5,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 
+import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -114,7 +115,9 @@ public class Drawer {
         VertexBuffer vertexBuffer = this.vertexBuffers[currentFrame];
         vertexBuffer.copyToVertexBuffer(vertexFormat.getVertexSize(), vertexCount, buffer);
 
-        Pipeline pipeline = ((ShaderMixed)(RenderSystem.getShader())).getPipeline();
+        final ShaderInstance shader = RenderSystem.getShader();
+
+        Pipeline pipeline = ((ShaderMixed)(shader==null ? GameRenderer.getPositionColorShader() : shader)).getPipeline();
         bindPipeline(pipeline);
         uploadAndBindUBOs(pipeline);
 
