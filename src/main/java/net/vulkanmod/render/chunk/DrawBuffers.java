@@ -55,7 +55,7 @@ public class DrawBuffers {
 
         this.allocated = true;
     }
-
+//todo: maybe size "batches" in 96k index "Chunks", which are fixed size + easier Defrag management as well
     public DrawParameters upload(UploadBuffer buffer, DrawParameters drawParameters) {
         int vertexOffset = drawParameters.vertexOffset;
         int firstIndex = 0;
