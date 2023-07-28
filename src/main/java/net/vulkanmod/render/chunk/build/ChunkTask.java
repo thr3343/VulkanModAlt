@@ -218,28 +218,7 @@ public class ChunkTask {
         }
 
         private TerrainRenderType compactRenderTypes(TerrainRenderType renderType) {
-
-            if(Initializer.CONFIG.uniqueOpaqueLayer) {
-                if (renderType != TRANSLUCENT) {
-                    if(renderType != TRIPWIRE) {
-                        renderType = CUTOUT_MIPPED;
-                    }
-                    else
-                        renderType = TRANSLUCENT;
-                }
-                else return TRANSLUCENT;
-            }
-            else {
-                if (renderType != TRANSLUCENT && renderType != CUTOUT_MIPPED) {
-                    if(renderType != TRIPWIRE) {
-                        renderType = CUTOUT;
-                    }
-                    else
-                        renderType = TRANSLUCENT;
-                }
-            }
-
-            return renderType;
+            return renderType != TRANSLUCENT ? CUTOUT_MIPPED : TRANSLUCENT;
         }
 
         private <E extends BlockEntity> void handleBlockEntity(CompileResults compileResults, E blockEntity) {
