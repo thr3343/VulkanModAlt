@@ -10,10 +10,12 @@ import java.nio.ByteBuffer;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 public class AreaBuffer {
+    private final MemoryType memoryType;
     private final int index;
+    private final int usage;
 
-    //    private final LinkedList<Segment> freeSegments = new LinkedList<>();
-//    final Int2ReferenceOpenHashMap<VkBufferPointer> freeSegments = new Int2ReferenceOpenHashMap<>();
+//    private final LinkedList<Segment> freeSegments = new LinkedList<>();
+    final Int2ReferenceOpenHashMap<VkBufferPointer> freeSegments = new Int2ReferenceOpenHashMap<>();
     final Int2ReferenceOpenHashMap<VkBufferPointer> usedSegments = new Int2ReferenceOpenHashMap<>();
 
     private final int elementSize;
@@ -26,12 +28,19 @@ public class AreaBuffer {
     public AreaBuffer(int index, int usage, int maxSize, int elementSize) {
         this.index = index;
 
+        this.usage = usage;
         this.elementSize = elementSize;
+        this.memoryType = MemoryTypes.GPU_MEM;
 
 //        this.buffer = VBOUtil.virtualBufferVtx.addSubIncr(index, size);
         this.maxSize = maxSize;
 
 //        freeSegments.add(new Segment(this.buffer.i2(), this.buffer.size_t()));
+    }
+
+    private Buffer allocateBuffer(int size) {
+
+        return this.usage == VK_BUFFER_USAGE_VERTEX_BUFFER_BIT ? new VertexBuffer(size, memoryType) : new IndexBuffer(size, memoryType);
     }
 
     public void upload(ByteBuffer byteBuffer, DrawBuffers.DrawParameters uploadSegment) {
@@ -45,15 +54,17 @@ public class AreaBuffer {
 //        {
 //            this
 //        }
-//        var section = checkForFree(uploadSegment.firstIndex);
-//        if(section==null)
-        var section = VBOUtil.virtualBufferVtx.getActiveRangeFromIdx(this.index, uploadSegment.firstIndex);
+        var section = checkForFree(uploadSegment.firstIndex);
         if(section==null)
         {
-            section =  VBOUtil.virtualBufferVtx.addSubIncr(this.index, uploadSegment.index, size);
-
+            section = VBOUtil.virtualBufferVtx.getActiveRangeFromIdx(this.index, uploadSegment.firstIndex);
+            if(section==null)
+            {
+                section =  VBOUtil.virtualBufferVtx.addSubIncr(this.index, uploadSegment.index, size);
+                usedSegments.put(section.i2(), section);
+            }
         }
-        usedSegments.put(section.i2(), section);
+
 
 //        final Segment v = new Segment(section.i2(), section.size_t());
 
@@ -66,9 +77,9 @@ public class AreaBuffer {
 
     }
 
-//    private VkBufferPointer checkForFree(int firstIndex) {
-//        return freeSegments.remove(firstIndex);
-//    }
+    private VkBufferPointer checkForFree(int firstIndex) {
+        return freeSegments.remove(firstIndex);
+    }
 
     public void setSegmentFree(int offset) {
         if(usedSegments.isEmpty()) return;
@@ -76,7 +87,7 @@ public class AreaBuffer {
         VBOUtil.virtualBufferVtx.addFreeableRange(segment);
         if(segment!=null)
         {
-//            this.freeSegments.put(segment.i2(), segment);
+            this.freeSegments.put(segment.i2(), segment);
             this.used -= segment.size_t();
         }
     }
@@ -91,8 +102,77 @@ public class AreaBuffer {
             VBOUtil.virtualBufferVtx.addFreeableRange(a);
         }
         usedSegments.clear();
-//        freeSegments.clear();
+        freeSegments.clear();
 //        this.globalBuffer.freeSubAllocation(subAllocation);
     }
 
+    public static class Segment {
+
+        int offset, size;
+        boolean status = false;
+
+        public Segment(int offset1) {
+            reset(offset1);
+        }
+
+        private Segment(int offset, int size) {
+            this.offset = offset;
+            this.size = size;
+            this.status = false;
+        }
+
+        public void reset(int offset1) {
+            this.offset = offset1;
+            this.size = -1;
+            this.status = false;
+        }
+
+        public int getOffset() {
+            return offset;
+        }
+
+        public int getSize() {
+            return size;
+        }
+
+        void setPending() {
+            this.status = false;
+        }
+
+        public boolean isPending() {
+            return (!this.status);
+        }
+
+        public void setReady() {
+            this.status = true;
+        }
+
+        public boolean isReady() {
+            return (this.status);
+        }
+
+    }
+
+//    //Debug
+//    public List<Segment> findConflicts(int offset) {
+//        List<Segment> segments = new ArrayList<>();
+//        Segment segment = this.usedSegments.get(offset);
+//
+//        for(Segment s : this.usedSegments.values()) {
+//            if((s.offset >= segment.offset && s.offset < (segment.offset + segment.size))
+//              || (segment.offset >= s.offset && segment.offset < (s.offset + s.size))) {
+//                segments.add(s);
+//            }
+//        }
+//
+//        return segments;
+//    }
+
+    public static boolean checkRanges(Segment s1, Segment s2) {
+        return (s1.offset >= s2.offset && s1.offset < (s2.offset + s2.size)) || (s2.offset >= s1.offset && s2.offset < (s1.offset + s1.size));
+    }
+
+    public VkBufferPointer getSegment(int offset) {
+        return this.usedSegments.get(offset);
+    }
 }
