@@ -541,7 +541,7 @@ public class WorldRenderer {
         }
 
     }
-    @SuppressWarnings("all")
+
     public void renderChunkLayer(RenderType renderType, double camX, double camY, double camZ, Matrix4f projection) {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
@@ -549,11 +549,14 @@ public class WorldRenderer {
 
         final TerrainRenderType layerName=switch (renderType.name)
         {
+            case "solid" -> SOLID;
             case "cutout_mipped" -> CUTOUT_MIPPED;
+            case "cutout" -> CUTOUT;
             case "translucent" -> TRANSLUCENT;
-            default -> null;
+            case "tripwire" -> TRIPWIRE;
+            default -> throw new IllegalStateException("Unexpected value: " + renderType.name);
         };
-        if(!(COMPACT_RENDER_TYPES).contains(layerName)) return;
+        if(!(Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(layerName)) return;
 
 //        p.pushMilestone("layer " + layerName);
 //        if(layerName.equals(CUTOUT_MIPPED))
@@ -591,7 +594,7 @@ public class WorldRenderer {
             nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, DrawBuffers.npointer1, (VUtil.nullptr));
         }
 
-        if((COMPACT_RENDER_TYPES).contains(layerName)) {
+        if((Initializer.CONFIG.uniqueOpaqueLayer ? COMPACT_RENDER_TYPES : SEMI_COMPACT_RENDER_TYPES).contains(layerName)) {
 //            Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
             for(ChunkArea chunkArea : this.chunkAreaQueue.queue) {
 //                ChunkArea chunkArea = iterator.next();
@@ -600,10 +603,10 @@ public class WorldRenderer {
             }
         }
 
-//        if(layerName.equals(CUTOUT)/* || layerName.equals(TRIPWIRE)*/) {
-//            indirectBuffers[Drawer.getCurrentFrame()].submitUploads();
-////            uniformBuffers.submitUploads();
-//        }
+        if(layerName.equals(CUTOUT) || layerName.equals(TRIPWIRE)) {
+            indirectBuffers[Drawer.getCurrentFrame()].submitUploads();
+//            uniformBuffers.submitUploads();
+        }
 //        p.pop();
 
         //Need to reset push constant in case the pipeline will still be used for rendering
