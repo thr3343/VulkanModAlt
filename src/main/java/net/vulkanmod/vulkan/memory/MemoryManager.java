@@ -70,7 +70,7 @@ public class MemoryManager {
 
     public synchronized void initFrame(int frame) {
         this.setCurrentFrame(frame);
-        this.freeBuffers(frame);
+//        this.freeBuffers(frame);
         this.doFrameOps(frame);
     }
 
