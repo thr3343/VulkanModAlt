@@ -69,7 +69,7 @@ public class AreaBuffer {
 //        final Segment v = new Segment(section.i2(), section.size_t());
 
 //        Buffer dst = this.buffer;
-        AreaUploadManager.INSTANCE.uploadAsync(section, VBOUtil.virtualBufferVtx.bufferPointerSuperSet, section.i2(), section.size_t(), byteBuffer);
+        AreaUploadManager.INSTANCE.uploadAsync(section, VBOUtil.virtualBufferVtx.bufferPointerSuperSet, VBOUtil.virtualBufferVtx.size_t, section.i2(), section.size_t(), byteBuffer);
 
         uploadSegment.vertexBufferSegment=section;
 

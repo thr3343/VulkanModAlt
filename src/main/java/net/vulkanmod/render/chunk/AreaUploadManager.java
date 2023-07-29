@@ -53,8 +53,9 @@ public class AreaUploadManager {
         TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
     }
 
-    public void uploadAsync(VkBufferPointer uploadSegment, long bufferId, long dstOffset, long bufferSize, ByteBuffer src) {
+    public void uploadAsync(VkBufferPointer uploadSegment, long bufferId, long dstBufferSize, long dstOffset, long bufferSize, ByteBuffer src) {
         Validate.isTrue(currentFrame == Drawer.getCurrentFrame());
+        Validate.isTrue(dstOffset<dstBufferSize);
 
         if(commandBuffers[currentFrame] == null)
             this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
