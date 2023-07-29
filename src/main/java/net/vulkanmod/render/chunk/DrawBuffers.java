@@ -13,6 +13,7 @@ import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
+import org.lwjgl.vulkan.VkDrawIndexedIndirectCommand;
 
 import java.nio.ByteBuffer;
 
@@ -33,6 +34,7 @@ public class DrawBuffers {
     AreaBuffer vertexBuffer;
 //    AreaBuffer indexBuffer;
 
+//    final StaticQueue<VkDrawIndexedIndirectCommand2> sectionQueue2 = new StaticQueue<>(512);
     final StaticQueue<DrawParameters> sectionQueue = new StaticQueue<>(512);
     final StaticQueue<DrawParameters> TsectionQueue = new StaticQueue<>(512);
     private static final long npointer = MemoryUtil.nmemAlignedAlloc(8, 8);
@@ -55,10 +57,8 @@ public class DrawBuffers {
 
         this.allocated = true;
     }
-//todo: maybe size "batches" in 96k index "Chunks", which are fixed size + easier Defrag management as well
-    public DrawParameters upload(UploadBuffer buffer, DrawParameters drawParameters) {
-        int vertexOffset = drawParameters.vertexOffset;
-        int firstIndex = 0;
+
+    public void upload(UploadBuffer buffer, DrawParameters drawParameters) {
 
         if(!buffer.indexOnly)
         {
@@ -66,12 +66,12 @@ public class DrawBuffers {
 
             this.vertexBuffer.upload(buffer.getVertexBuffer(), drawParameters);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
-            vertexOffset = drawParameters.vertexBufferSegment.i2() / VERTEX_SIZE;
 
-            //debug
-//            if(drawParameters.vertexBufferSegment.getOffset() % VERTEX_SIZE != 0) {
-//                throw new RuntimeException("misaligned vertex buffer");
-//            }
+            drawParameters.indexCount = buffer.indexCount;
+            drawParameters.firstIndex = 0;
+//            sectionQueue2.add(new VkDrawIndexedIndirectCommand2(buffer.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2(), 0));
+//            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.i2();
+
         }
 
 //        if(!buffer.autoIndices) {
@@ -83,15 +83,12 @@ public class DrawBuffers {
 //        AreaUploadManager.INSTANCE.enqueueParameterUpdate(
 //                new ParametersUpdate(drawParameters, buffer.indexCount, firstIndex, vertexOffset));
 
-        drawParameters.indexCount = buffer.indexCount;
-        drawParameters.firstIndex = firstIndex;
-        drawParameters.vertexOffset = vertexOffset;
 
 //        Drawer.getInstance().getQuadsIndexBuffer().checkCapacity(buffer.indexCount * 2 / 3);
 
         buffer.release();
 
-        return drawParameters;
+//        return drawParameters;
     }
 
     private void translateVBO(UploadBuffer buffer, DrawParameters drawParameters, int indexCount) {
@@ -178,7 +175,7 @@ public class DrawBuffers {
             MemoryUtil.memPutLong(ptr, (long) 1 <<32 | drawParameters.indexCount);
             MemoryUtil.memPutInt(ptr + 8, drawParameters.firstIndex);
             //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE);
-            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexOffset);
+            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.i2());
             //            MemoryUtil.memPutInt(ptr + 12, drawParameters.vertexBufferSegment.getOffset());
             MemoryUtil.memPutInt(ptr + 16, 0);
 
@@ -245,7 +242,7 @@ public class DrawBuffers {
         for (DrawParameters drawParameters : renderType ==TerrainRenderType.TRANSLUCENT ? this.TsectionQueue : this.sectionQueue) {
 //            DrawParameters drawParameters = section[renderType.ordinal()];
 
-            VUtil.UNSAFE.putLong(npointer, (long) drawParameters.vertexOffset << 5);
+            VUtil.UNSAFE.putLong(npointer, drawParameters.vertexBufferSegment.i2());
             nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, npointer1, npointer);
 //                callPJPV(commandBuffer.address(), pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, new float[]{(float) ((double) section.xOffset - camX), (float) ((double) section.yOffset - camY), (float) ((double) section.zOffset - camZ)}, commandBuffer.getCapabilities().vkCmdPushConstants);
 
@@ -279,14 +276,14 @@ public class DrawBuffers {
     }
 
     public static class DrawParameters {
-        private int xOffset;
-        private int yOffset;
-        private int zOffset;
         final int index;
         //        private final TerrainRenderType r;
         int indexCount;
         int firstIndex;
-        int vertexOffset;
+        private int xOffset;
+        private int yOffset;
+        private int zOffset;
+        //        int vertexOffset;
         VkBufferPointer vertexBufferSegment = new VkBufferPointer(-1,-1,-1,-1,-1);
 //        AreaBuffer.Segment indexBufferSegment;
 //        boolean ready = false;
@@ -303,13 +300,12 @@ public class DrawBuffers {
         }
 
         public void reset(ChunkArea chunkArea) {
-            this.indexCount = 0;
-            this.firstIndex = 0;
-            this.vertexOffset = 0;
+//            this.indexCount = 0;
+//            this.firstIndex = 0;
+//            this.vertexOffset = 0;
 
-            int segmentOffset = this.vertexBufferSegment.i2();
-            if(chunkArea != null && chunkArea.drawBuffers.isAllocated() && segmentOffset != -1) {
-                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(segmentOffset);
+            if(chunkArea != null && chunkArea.drawBuffers.isAllocated()) {
+                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vertexBufferSegment.i2());
 //                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vertexBufferSegment);
             }
         }
@@ -318,16 +314,6 @@ public class DrawBuffers {
             this.xOffset=x;
             this.yOffset=y;
             this.zOffset=z;
-        }
-    }
-
-    public record ParametersUpdate(DrawParameters drawParameters, int indexCount, int firstIndex, int vertexOffset) {
-
-        public void setDrawParameters() {
-            this.drawParameters.indexCount = indexCount;
-            this.drawParameters.firstIndex = firstIndex;
-            this.drawParameters.vertexOffset = vertexOffset;
-//            this.drawParameters.ready = true;
         }
     }
 

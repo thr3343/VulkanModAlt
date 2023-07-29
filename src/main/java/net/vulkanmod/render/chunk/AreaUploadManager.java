@@ -25,7 +25,7 @@ public class AreaUploadManager {
     final ObjectArrayList<VkBufferPointer>[] recordedUploads;
 //    final ObjectArrayList<UploadData>[] recordedUploads;
 //    final ObjectArrayList<DrawBuffers.UploadData>[] recordedUploads;
-    final ObjectArrayList<DrawBuffers.ParametersUpdate>[] updatedParameters;
+////    final ObjectArrayList<DrawBuffers.ParametersUpdate>[] updatedParameters;
     final ObjectArrayList<Runnable>[] frameOps;
     final CommandPool.CommandBuffer[] commandBuffers;
 
@@ -34,12 +34,12 @@ public class AreaUploadManager {
     public AreaUploadManager(int frames) {
         this.commandBuffers = new CommandPool.CommandBuffer[frames];
         this.recordedUploads = new ObjectArrayList[frames];
-        this.updatedParameters = new ObjectArrayList[frames];
+//        this.updatedParameters = new ObjectArrayList[frames];
         this.frameOps = new ObjectArrayList[frames];
 
         for (int i = 0; i < frames; i++) {
             this.recordedUploads[i] = new ObjectArrayList<>();
-            this.updatedParameters[i] = new ObjectArrayList<>();
+//            this.updatedParameters[i] = new ObjectArrayList<>();
             this.frameOps[i] = new ObjectArrayList<>();
         }
     }
@@ -69,9 +69,9 @@ public class AreaUploadManager {
         this.recordedUploads[this.currentFrame].add(uploadSegment);
     }
 
-    public void enqueueParameterUpdate(DrawBuffers.ParametersUpdate parametersUpdate) {
-        this.updatedParameters[this.currentFrame].add(parametersUpdate);
-    }
+//    public void enqueueParameterUpdate(DrawBuffers.ParametersUpdate parametersUpdate) {
+////        this.updatedParameters[this.currentFrame].add(parametersUpdate);
+//    }
 
     public void enqueueFrameOp(Runnable runnable) {
         this.frameOps[this.currentFrame].add(runnable);
@@ -95,15 +95,15 @@ public class AreaUploadManager {
     }
 
     private void executeFrameOps(int frame) {
-        for(DrawBuffers.ParametersUpdate parametersUpdate : this.updatedParameters[frame]) {
-            parametersUpdate.setDrawParameters();
-        }
+//        for(DrawBuffers.ParametersUpdate parametersUpdate : this.updatedParameters[frame]) {
+//            parametersUpdate.setDrawParameters();
+//        }
 
         for(Runnable runnable : this.frameOps[frame]) {
             runnable.run();
         }
 
-        this.updatedParameters[frame].clear();
+//        this.updatedParameters[frame].clear();
         this.frameOps[frame].clear();
     }
 
@@ -117,9 +117,9 @@ public class AreaUploadManager {
 //            uploadSegment.setReady();
 //        }
 
-        for(DrawBuffers.ParametersUpdate parametersUpdate : this.updatedParameters[frame]) {
-            parametersUpdate.setDrawParameters();
-        }
+//        for(DrawBuffers.ParametersUpdate parametersUpdate : this.updatedParameters[frame]) {
+//            parametersUpdate.setDrawParameters();
+//        }
 
         this.commandBuffers[frame].reset();
         this.commandBuffers[frame] = null;
