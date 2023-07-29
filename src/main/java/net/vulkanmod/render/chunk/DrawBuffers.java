@@ -5,18 +5,21 @@ import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Drawer;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
+import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
+import net.vulkanmod.vulkan.util.VBOUtil;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkCommandBuffer;
-import org.lwjgl.vulkan.VkDrawIndexedIndirectCommand;
 
 import java.nio.ByteBuffer;
 
+import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 import static net.vulkanmod.vulkan.util.VBOUtil.*;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.JNI.callPJPV;
@@ -28,10 +31,10 @@ public class DrawBuffers {
 
     private static final int VERTEX_SIZE = ShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
-    private final int index;
+    private final int areaIndex;
 
     private boolean allocated = false;
-    AreaBuffer vertexBuffer;
+//    AreaBuffer vertexBuffer;
 //    AreaBuffer indexBuffer;
 
 //    final StaticQueue<VkDrawIndexedIndirectCommand2> sectionQueue2 = new StaticQueue<>(512);
@@ -45,14 +48,14 @@ public class DrawBuffers {
         VUtil.UNSAFE.putLong(npointer1, virtualBufferVtx.bufferPointerSuperSet);
     }
 
-    public DrawBuffers(int index, Vector3i position) {
-        this.index = index;
+    public DrawBuffers(int areaIndex, Vector3i position) {
+        this.areaIndex = areaIndex;
 
     }
 
 
     public void allocateBuffers() {
-        this.vertexBuffer = new AreaBuffer(index, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2056192, VERTEX_SIZE);
+//        this.vertexBuffer = new AreaBuffer(index, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 2056192, VERTEX_SIZE);
 //        this.indexBuffer = new AreaBuffer(VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 96384, INDEX_SIZE);
 
         this.allocated = true;
@@ -64,9 +67,9 @@ public class DrawBuffers {
         {
             translateVBO(buffer, drawParameters, drawParameters.indexCount);
 
-            this.vertexBuffer.upload(buffer.getVertexBuffer(), drawParameters);
+            drawParameters.vertexBufferSegment=  this.configureVertexFormat(drawParameters, drawParameters.index, buffer);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
-
+            drawParameters.initialised =true;
             drawParameters.indexCount = buffer.indexCount;
             drawParameters.firstIndex = 0;
 //            sectionQueue2.add(new VkDrawIndexedIndirectCommand2(buffer.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2(), 0));
@@ -239,27 +242,61 @@ public class DrawBuffers {
         //        Drawer.getInstance().bindPipeline(pipeline);
         ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
 
+        //            DrawParameters drawParameters = section[renderType.ordinal()];
+        //                drawIndexedBindless(drawParameters);
         for (DrawParameters drawParameters : renderType ==TerrainRenderType.TRANSLUCENT ? this.TsectionQueue : this.sectionQueue) {
-//            DrawParameters drawParameters = section[renderType.ordinal()];
-
-            VUtil.UNSAFE.putLong(npointer, drawParameters.vertexBufferSegment.i2());
-            nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, npointer1, npointer);
+            if(drawParameters.indexCount!=0 && drawParameters.initialised && drawParameters.vertexBufferSegment!=null)
+            {
+                VUtil.UNSAFE.putLong(npointer, drawParameters.vertexBufferSegment.i2());
+                nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, npointer1, npointer);
 //                callPJPV(commandBuffer.address(), pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, new float[]{(float) ((double) section.xOffset - camX), (float) ((double) section.yOffset - camY), (float) ((double) section.zOffset - camZ)}, commandBuffer.getCapabilities().vkCmdPushConstants);
 
-            vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount, 1, drawParameters.firstIndex, 0, 0);
-            //                drawIndexedBindless(drawParameters);
-
-
+                vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount, 1, drawParameters.firstIndex, 0, 0);
+            }
         }
 
 
     }
 
+    private VkBufferPointer configureVertexFormat(DrawParameters drawParameters, int index, UploadBuffer parameters) {
+//        boolean bl = !parameters.format().equals(this.vertexFormat);
+        VkBufferPointer fakeVertexBuffer=drawParameters.vertexBufferSegment;
+        ByteBuffer data = parameters.getVertexBuffer();
+
+        final int size = data.remaining();
+        if(fakeVertexBuffer ==null || !VBOUtil.virtualBufferVtx.isAlreadyLoaded(index, size))
+        {
+            fakeVertexBuffer = VBOUtil.virtualBufferVtx.addSubIncr(this.areaIndex, index, size);
+        }
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
+        stagingBuffer.copyBuffer(size, data);
+
+
+        TransferQueue.uploadBufferImmediate(stagingBuffer.getId(), stagingBuffer.getOffset(), virtualBufferVtx.bufferPointerSuperSet, fakeVertexBuffer.i2(), size);
+//            this.vertOff= fakeVertexBuffer.i2()>>5;
+        return fakeVertexBuffer;
+    }
     public void releaseBuffers() {
         if(!this.allocated)
             return;
 
-        this.vertexBuffer.freeBuffer();
+//        for(var a : sectionQueue)
+//        {
+//            virtualBufferVtx.addFreeableRange(a.vertexBufferSegment);
+//            a.initialised=false;
+//            a.vertexBufferSegment=null;
+//        }
+//        for(var a : TsectionQueue)
+//        {
+//            virtualBufferVtx.addFreeableRange(a.vertexBufferSegment);
+//            a.initialised=false;
+//            a.vertexBufferSegment=null;
+//        }
+        virtualBufferVtx.freeRange(this.areaIndex);
+        this.sectionQueue.clear();
+        this.TsectionQueue.clear();
+
+//        this.vertexBuffer.freeBuffer();
 //        this.indexBuffer.freeBuffer();
 
 //        this.vertexBuffer = null;
@@ -284,9 +321,9 @@ public class DrawBuffers {
         private int yOffset;
         private int zOffset;
         //        int vertexOffset;
-        VkBufferPointer vertexBufferSegment = new VkBufferPointer(-1,-1,-1,-1,-1);
+        VkBufferPointer vertexBufferSegment = null;
 //        AreaBuffer.Segment indexBufferSegment;
-//        boolean ready = false;
+        boolean initialised = false;
 
         DrawParameters(int xOffset, int yOffset, int zOffset, int index) {
             this.xOffset = xOffset;
@@ -300,20 +337,26 @@ public class DrawBuffers {
         }
 
         public void reset(ChunkArea chunkArea) {
-//            this.indexCount = 0;
-//            this.firstIndex = 0;
-//            this.vertexOffset = 0;
-
-            if(chunkArea != null && chunkArea.drawBuffers.isAllocated()) {
-                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vertexBufferSegment.i2());
+            this.indexCount = 0;
+            this.firstIndex = 0;
+            if(chunkArea != null && chunkArea.drawBuffers.isAllocated() && vertexBufferSegment!=null) {
+                this.initialised =false;
+//                VBOUtil.virtualBufferVtx.addFreeableRange(this.vertexBufferSegment);
+//                VBOUtil.virtualBufferVtx.addFreeableRange(this.vertexBufferSegment);
+//                    this.vertexBufferSegment = null;
 //                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vertexBufferSegment);
             }
+//            this.vertexBufferSegment = null;
         }
 
         public void resetOrigin(int x, int y, int z) {
             this.xOffset=x;
             this.yOffset=y;
             this.zOffset=z;
+            initialised=false;
+            if(VBOUtil.virtualBufferVtx.addFreeableRange(this.vertexBufferSegment))
+                this.vertexBufferSegment = null;
+
         }
     }
 

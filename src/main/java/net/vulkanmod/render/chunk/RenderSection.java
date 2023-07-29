@@ -257,15 +257,9 @@ public class RenderSection {
         this.visibility = 0;
         this.completelyEmpty = true;
 
-        this.resetDrawParameters();
+//        this.resetDrawParameters();
     }
 
-    private void resetDrawParameters() {
-        for(DrawBuffers.DrawParameters drawParameters : this.drawParametersArray) {
-            drawParameters.reset(this.chunkArea);
-
-        }
-    }
 
     public void setDirty(boolean playerChanged) {
         this.playerChanged = playerChanged || this.dirty && this.playerChanged;

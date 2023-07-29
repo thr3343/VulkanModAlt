@@ -9,6 +9,7 @@ import org.lwjgl.util.vma.*;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
+import java.util.ArrayList;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.*;
@@ -191,6 +192,18 @@ public final class VirtualBuffer {
         }
     }
 
+    public boolean isAlreadyLoaded(int index, int remaining) {
+        VkBufferPointer vkBufferPointer = getActiveRangeFromIdx(index);
+        if(vkBufferPointer==null) return false;
+        if(vkBufferPointer.size_t()>=remaining)
+        {
+            return true;
+        }
+        return !addFreeableRange(vkBufferPointer);
+
+
+    }
+
 
     //Not Supported on LWJGL 3.3.1
     private void updateStatistics(MemoryStack stack) {
@@ -209,27 +222,31 @@ public final class VirtualBuffer {
         allocMax=vmaStatistics.allocationSizeMax();
     }
 
-    public void addFreeableRange(VkBufferPointer bufferPointer)
+    public boolean addFreeableRange(VkBufferPointer bufferPointer)
     {
-        if(usedBytes==0)return;
-        if(bufferPointer==null) return;
-        if(bufferPointer.allocation()==0) return;
+        if(usedBytes==0) return false;
+        if(bufferPointer==null) return false;
+        if(bufferPointer.allocation()==-1) return false;
+        if(bufferPointer.allocation()==0) return false;
 //        if(bufferPointer.sizes==0) return;
+        boolean freed =false;
         Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation());
         for (int i = 0; i < activeRanges.size(); i++) {
             VkBufferPointer vkBufferPointer = activeRanges.get(i);
             if (vkBufferPointer.subIndex() == bufferPointer.subIndex()) {
                 activeRanges.remove(i);
+                freed=true;
                 break;
             }
         }
         subAllocs--;
         usedBytes-=bufferPointer.size_t();
+        return freed;
     }
 
-    public VkBufferPointer getActiveRangeFromIdx(int i, int index) {
+    public VkBufferPointer getActiveRangeFromIdx(int index) {
         for (VkBufferPointer vkBufferPointer : activeRanges) {
-            if (vkBufferPointer.areaGlobalIndex()==i && vkBufferPointer.subIndex() == index) {
+            if (vkBufferPointer.subIndex() == index) {
                 return vkBufferPointer;
             }
         }
@@ -247,4 +264,16 @@ public final class VirtualBuffer {
         System.out.println("FREED");
     }
 
+    public void freeRange(int index) {
+        ArrayList<VkBufferPointer> tmpfrees=new ArrayList<>(512);
+        for (VkBufferPointer vkBufferPointer : activeRanges) {
+            if (vkBufferPointer.areaGlobalIndex() == index) {
+               tmpfrees.add(vkBufferPointer);
+            }
+        }
+        for(VkBufferPointer vkBufferPointer : tmpfrees)
+        {
+            addFreeableRange(vkBufferPointer);
+        }
+    }
 }
