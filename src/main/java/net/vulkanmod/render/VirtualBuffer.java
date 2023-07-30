@@ -166,24 +166,25 @@ public final class VirtualBuffer {
             ;
 //            subIncr += alignedSize;
             usedBytes+= (actualSize);
-            Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, null);
 
-            long allocation = pAlloc.get(0);
+
+
 
 
             subAllocs++;
             VmaVirtualAllocationInfo allocCreateInfo1 = VmaVirtualAllocationInfo.malloc(stack);
 
-            if(allocation==0)
+            if(Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, null)==VK_ERROR_OUT_OF_DEVICE_MEMORY)
             {
                 System.out.println(size_t+"-->"+(size_t-usedBytes)+"-->"+(usedBytes+ (actualSize))+"-->"+ (actualSize) +"-->"+size_t);
                 WorldRenderer.getInstance().setNeedsUpdate();
                 WorldRenderer.getInstance().allChanged();
                 pAlloc=stack.mallocPointer(1);
                 Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, stack.longs(0));
-                allocation=pAlloc.get(0);
+
 
             }
+            long allocation = pAlloc.get(0);
             vmaGetVirtualAllocationInfo(virtualBlockBufferSuperSet, allocation, allocCreateInfo1);
 
             updateStatistics(stack);
