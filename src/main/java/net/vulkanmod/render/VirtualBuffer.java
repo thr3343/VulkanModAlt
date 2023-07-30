@@ -1,6 +1,5 @@
 package net.vulkanmod.render;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.*;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Vulkan;
@@ -14,6 +13,7 @@ import java.util.ArrayList;
 
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.system.Pointer.POINTER_SIZE;
 import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -143,55 +143,43 @@ public final class VirtualBuffer {
     }
 
     //TODO: Global ChunKArea index....
-    public VkBufferPointer addSubIncr(int i, int index, int actualSize) {
+    public VkBufferPointer allocSubSection(int areaIndex, int index, int actualSize) {
 
-         if(size_t<=usedBytes+ (actualSize))
-        {
-            System.out.println(size_t+"-->"+(usedBytes+ (actualSize))+"-->"+size_t*2);
-            WorldRenderer.getInstance().setNeedsUpdate();
-            WorldRenderer.getInstance().allChanged();
-        }
+        if(size_t<=usedBytes+ (actualSize))
+            reload(actualSize);
 
         try(MemoryStack stack = MemoryStack.stackPush())
         {
+            VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
+                    .size((actualSize))
+                    .alignment(128)
+                    .flags(0)
+                    .pUserData(NULL);
 
-            VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack);
-            allocCreateInfo.size((actualSize));
-            allocCreateInfo.alignment(128);
-            allocCreateInfo.flags(0);
-            allocCreateInfo.pUserData(NULL);
+            long pAlloc = stack.nmalloc(POINTER_SIZE);
+            long pOffset = stack.nmalloc(POINTER_SIZE);
 
-            PointerBuffer pAlloc = stack.mallocPointer(1);
-
-            ;
-//            subIncr += alignedSize;
             usedBytes+= (actualSize);
-
-
-
-
-
+        
             subAllocs++;
-            VmaVirtualAllocationInfo allocCreateInfo1 = VmaVirtualAllocationInfo.malloc(stack);
-
-            if(Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, null)==VK_ERROR_OUT_OF_DEVICE_MEMORY)
+            
+            if(nvmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo.address(), pAlloc, pOffset) ==VK_ERROR_OUT_OF_DEVICE_MEMORY)
             {
-                System.out.println(size_t+"-->"+(size_t-usedBytes)+"-->"+(usedBytes+ (actualSize))+"-->"+ (actualSize) +"-->"+size_t);
-                WorldRenderer.getInstance().setNeedsUpdate();
-                WorldRenderer.getInstance().allChanged();
-                pAlloc=stack.mallocPointer(1);
-                Vma.vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, stack.longs(0));
-
-
+                reload(actualSize);
+                nvmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo.address(), pAlloc, pOffset);
             }
-            long allocation = pAlloc.get(0);
-            vmaGetVirtualAllocationInfo(virtualBlockBufferSuperSet, allocation, allocCreateInfo1);
 
             updateStatistics(stack);
-            VkBufferPointer vkBufferPointer = new VkBufferPointer(i, index, (int) allocCreateInfo1.offset(), (int) allocCreateInfo1.size(), pAlloc.get(0));
+            VkBufferPointer vkBufferPointer = new VkBufferPointer(areaIndex, index, memGetInt(pOffset), actualSize, memGetLong(pAlloc));
             activeRanges.add(vkBufferPointer);
             return vkBufferPointer;
         }
+    }
+
+    private void reload(int actualSize) {
+        System.out.println(size_t+"-->"+(size_t-usedBytes)+"-->"+(usedBytes+ actualSize)+"-->"+ actualSize +"-->"+size_t);
+        WorldRenderer.getInstance().setNeedsUpdate();
+        WorldRenderer.getInstance().allChanged();
     }
 
     public boolean isAlreadyLoaded(int index, int remaining) {

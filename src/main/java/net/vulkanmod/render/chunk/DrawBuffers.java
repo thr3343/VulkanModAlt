@@ -266,7 +266,7 @@ public class DrawBuffers {
         final int size = data.remaining();
         if(!drawParameters.initialised || !VBOUtil.virtualBufferVtx.isAlreadyLoaded(index, size))
         {
-            drawParameters.vertexBufferSegment = VBOUtil.virtualBufferVtx.addSubIncr(this.areaIndex, index, size);
+            drawParameters.vertexBufferSegment = VBOUtil.virtualBufferVtx.allocSubSection(this.areaIndex, index, size);
         }
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
         stagingBuffer.copyBuffer(size, data);
