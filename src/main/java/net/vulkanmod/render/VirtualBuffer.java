@@ -39,7 +39,7 @@ public final class VirtualBuffer {
 //    private static long  PFNINTERNALFREE=nmemAlignedAlloc(8, 32);
 //    public static int allocBytes;
 
-    public final ObjectArrayList<VkBufferPointer> activeRanges = new ObjectArrayList<>(1024);
+    public final ObjectArrayList<virtualSegmentBuffer> activeRanges = new ObjectArrayList<>(1024);
     private final int vkBufferType;
 
 
@@ -143,36 +143,37 @@ public final class VirtualBuffer {
     }
 
     //TODO: Global ChunKArea index....
-    public VkBufferPointer allocSubSection(int areaIndex, int index, int actualSize) {
+    public virtualSegmentBuffer allocSubSection(int areaIndex, int subIndex, int size_t) {
 
-        if(size_t<=usedBytes+ (actualSize))
-            reload(actualSize);
+        if(this.size_t <=usedBytes+ (size_t))
+            reload(size_t);
 
         try(MemoryStack stack = MemoryStack.stackPush())
         {
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
-                    .size((actualSize))
+                    .size((size_t))
                     .alignment(128)
-                    .flags(0)
+                    .flags(VMA_ALLOCATION_CREATE_STRATEGY_MIN_OFFSET_BIT)
                     .pUserData(NULL);
 
             long pAlloc = stack.nmalloc(POINTER_SIZE);
             long pOffset = stack.nmalloc(POINTER_SIZE);
 
-            usedBytes+= (actualSize);
+            usedBytes+= (size_t);
         
             subAllocs++;
             
             if(nvmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo.address(), pAlloc, pOffset) ==VK_ERROR_OUT_OF_DEVICE_MEMORY)
             {
-                reload(actualSize);
+                reload(size_t);
                 nvmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo.address(), pAlloc, pOffset);
             }
 
             updateStatistics(stack);
-            VkBufferPointer vkBufferPointer = new VkBufferPointer(areaIndex, index, memGetInt(pOffset), actualSize, memGetLong(pAlloc));
-            activeRanges.add(vkBufferPointer);
-            return vkBufferPointer;
+            virtualSegmentBuffer virtualSegmentBuffer
+                    = new virtualSegmentBuffer(areaIndex, subIndex, memGetInt(pOffset), size_t, memGetLong(pAlloc));
+            activeRanges.add(virtualSegmentBuffer);
+            return virtualSegmentBuffer;
         }
     }
 
@@ -183,13 +184,13 @@ public final class VirtualBuffer {
     }
 
     public boolean isAlreadyLoaded(int index, int remaining) {
-        VkBufferPointer vkBufferPointer = getActiveRangeFromIdx(index);
-        if(vkBufferPointer==null) return false;
-        if(vkBufferPointer.size_t()>=remaining)
+        virtualSegmentBuffer virtualSegmentBuffer = getActiveRangeFromIdx(index);
+        if(virtualSegmentBuffer ==null) return false;
+        if(virtualSegmentBuffer.size_t()>=remaining)
         {
             return true;
         }
-        addFreeableRange(vkBufferPointer);
+        addFreeableRange(virtualSegmentBuffer);
         return false;
 
 
@@ -213,7 +214,7 @@ public final class VirtualBuffer {
         allocMax=vmaStatistics.allocationSizeMax();
     }
 
-    public boolean addFreeableRange(VkBufferPointer bufferPointer)
+    public boolean addFreeableRange(virtualSegmentBuffer bufferPointer)
     {
         if(usedBytes==0) return false;
         if(bufferPointer==null) return false;
@@ -223,8 +224,8 @@ public final class VirtualBuffer {
         boolean freed =false;
         Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation());
         for (int i = 0; i < activeRanges.size(); i++) {
-            VkBufferPointer vkBufferPointer = activeRanges.get(i);
-            if (vkBufferPointer.subIndex() == bufferPointer.subIndex()) {
+            virtualSegmentBuffer virtualSegmentBuffer = activeRanges.get(i);
+            if (virtualSegmentBuffer.subIndex() == bufferPointer.subIndex()) {
                 activeRanges.remove(i);
                 freed=true;
                 break;
@@ -235,10 +236,10 @@ public final class VirtualBuffer {
         return freed;
     }
 
-    public VkBufferPointer getActiveRangeFromIdx(int index) {
-        for (VkBufferPointer vkBufferPointer : activeRanges) {
-            if (vkBufferPointer.subIndex() == index) {
-                return vkBufferPointer;
+    public virtualSegmentBuffer getActiveRangeFromIdx(int index) {
+        for (virtualSegmentBuffer virtualSegmentBuffer : activeRanges) {
+            if (virtualSegmentBuffer.subIndex() == index) {
+                return virtualSegmentBuffer;
             }
         }
         return null;
@@ -256,15 +257,15 @@ public final class VirtualBuffer {
     }
 
     public void freeRange(int index) {
-        ArrayList<VkBufferPointer> tmpfrees=new ArrayList<>(512);
-        for (VkBufferPointer vkBufferPointer : activeRanges) {
-            if (vkBufferPointer.areaGlobalIndex() == index) {
-               tmpfrees.add(vkBufferPointer);
+        ArrayList<virtualSegmentBuffer> tmpfrees=new ArrayList<>(512);
+        for (virtualSegmentBuffer virtualSegmentBuffer : activeRanges) {
+            if (virtualSegmentBuffer.areaGlobalIndex() == index) {
+               tmpfrees.add(virtualSegmentBuffer);
             }
         }
-        for(VkBufferPointer vkBufferPointer : tmpfrees)
+        for(virtualSegmentBuffer virtualSegmentBuffer : tmpfrees)
         {
-            addFreeableRange(vkBufferPointer);
+            addFreeableRange(virtualSegmentBuffer);
         }
     }
 }

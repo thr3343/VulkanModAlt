@@ -1,7 +1,7 @@
 package net.vulkanmod.render.chunk;
 
 import net.vulkanmod.Initializer;
-import net.vulkanmod.render.VkBufferPointer;
+import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -319,7 +319,7 @@ public class DrawBuffers {
 //        int firstIndex;
         VkDrawIndexedIndirectCommand2 vertexBufferSegment1 = null;
         //        int vertexOffset;
-        VkBufferPointer vertexBufferSegment = null;
+        virtualSegmentBuffer vertexBufferSegment = null;
 //        AreaBuffer.Segment indexBufferSegment;
         boolean initialised = false;
 
