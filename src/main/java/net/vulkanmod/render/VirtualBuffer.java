@@ -1,6 +1,7 @@
 package net.vulkanmod.render;
 
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.*;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
@@ -156,7 +157,7 @@ public final class VirtualBuffer {
 
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack);
             allocCreateInfo.size((actualSize));
-            allocCreateInfo.alignment(0);
+            allocCreateInfo.alignment(128);
             allocCreateInfo.flags(0);
             allocCreateInfo.pUserData(NULL);
 
@@ -199,7 +200,8 @@ public final class VirtualBuffer {
         {
             return true;
         }
-        return !addFreeableRange(vkBufferPointer);
+        addFreeableRange(vkBufferPointer);
+        return false;
 
 
     }

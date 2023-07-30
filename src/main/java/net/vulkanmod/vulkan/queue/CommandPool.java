@@ -4,7 +4,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.Struct;
+import org.lwjgl.system.Pointer;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
@@ -12,9 +12,10 @@ import java.util.ArrayDeque;
 import java.util.List;
 
 import static org.lwjgl.system.Checks.CHECKS;
+import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.JNI.callPPJI;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.NULL;
+import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class CommandPool {
@@ -56,18 +57,19 @@ public class CommandPool {
                 allocInfo.commandBufferCount(size);
 
                 PointerBuffer pCommandBuffer = stack.mallocPointer(size);
+                PointerBuffer pFence = stack.mallocPointer(size);
                 vkAllocateCommandBuffers(Vulkan.getDevice(), allocInfo, pCommandBuffer);
 
                 VkFenceCreateInfo fenceInfo = VkFenceCreateInfo.callocStack(stack);
                 fenceInfo.sType(VK_STRUCTURE_TYPE_FENCE_CREATE_INFO);
                 fenceInfo.flags(VK_FENCE_CREATE_SIGNALED_BIT);
-
                 for(int i = 0; i < size; ++i) {
-                    LongBuffer pFence = stack.mallocLong(size);
-                    vkCreateFence(Vulkan.getDevice(), fenceInfo, null, pFence);
 
-                    CommandBuffer commandBuffer = new CommandBuffer(new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getDevice()), pFence.get(0));
-                    commandBuffer.handle = new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getDevice());
+
+                    nvkCreateFence(Vulkan.getDevice(), fenceInfo.address(), NULL, pFence.address(i));
+
+                    CommandBuffer commandBuffer = new CommandBuffer(new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getDevice()), pFence.get(i));
+//                    commandBuffer.handle = new VkCommandBuffer(pCommandBuffer.get(i), Vulkan.getDevice());
                     commandBuffers.add(commandBuffer);
                     availableCmdBuffers.add(commandBuffer);
                 }
@@ -88,7 +90,7 @@ public class CommandPool {
         }
     }
 
-    public synchronized long submitCommands(CommandBuffer commandBuffer, long queue) {
+    public long submitCommands(CommandBuffer commandBuffer, long queue) {
 
         try(MemoryStack stack = stackPush()) {
             long fence = commandBuffer.fence;
@@ -101,7 +103,7 @@ public class CommandPool {
             submitInfo.sType(VK_STRUCTURE_TYPE_SUBMIT_INFO);
             submitInfo.pCommandBuffers(stack.pointers(commandBuffer.handle));
 
-            callPPJI(queue, 1, submitInfo.address(), fence, Vulkan.getDevice().getCapabilities().vkQueueSubmit);
+            callPPJI(queue, 1, submitInfo.address(), fence, commandBuffer.handle.getCapabilities().vkQueueSubmit);
             //vkQueueWaitIdle(graphicsQueue);
 
             //vkFreeCommandBuffers(device, commandPool, commandBuffer);
@@ -122,8 +124,8 @@ public class CommandPool {
     }
 
     public class CommandBuffer {
-        VkCommandBuffer handle;
-        long fence;
+        final VkCommandBuffer handle;
+        final long fence;
         boolean submitted;
         boolean recording;
 

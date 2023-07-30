@@ -298,10 +298,9 @@ public class WorldRenderer {
             RenderSection renderSection = this.chunkQueue.poll();
 
             for (TerrainRenderType rType : renderSection.getCompiledSection().renderTypes) {
-                final DrawBuffers.DrawParameters buffer = renderSection.drawParametersArray[rType.ordinal()];
-                final DrawBuffers drawBuffers = renderSection.getChunkArea().getDrawBuffers();
-                if (buffer.initialised && buffer.vertexBufferSegment!=null && buffer.indexCount != 0) {
-                    (rType!=TRANSLUCENT ? drawBuffers.sectionQueue : drawBuffers.TsectionQueue).add(buffer);
+                final VkDrawIndexedIndirectCommand2 buffer = renderSection.drawParametersArray[rType.ordinal()].vertexBufferSegment1;
+                if (buffer!=null) {
+                    renderSection.getChunkArea().getDrawBuffers().addSection(rType, buffer);
                 }
             }
 

@@ -1,6 +1,6 @@
 package net.vulkanmod.render.chunk;
 
-public record VkDrawIndexedIndirectCommand2(int indexcount,
+public record VkDrawIndexedIndirectCommand2(int indexCount,
                                            int instanceCount,
                                            int firstIndex,
                                            int vertexOffset,
