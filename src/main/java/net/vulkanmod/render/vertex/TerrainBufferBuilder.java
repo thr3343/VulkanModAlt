@@ -342,23 +342,22 @@ public class TerrainBufferBuilder implements VertexConsumer {
         this.putFloat(0, x);
         this.putFloat(4, y);
         this.putFloat(8, z);
-        this.putByte(12, (byte)((int)(red * 255.0F)));
-        this.putByte(13, (byte)((int)(green * 255.0F)));
-        this.putByte(14, (byte)((int)(blue * 255.0F)));
-        this.putByte(15, (byte)((int)(alpha * 255.0F)));
-        this.putFloat(16, u);
-        this.putFloat(20, v);
-        byte i;
-        i = 24;
+        this.putInt(12,VertexUtil.packColor(red, green, blue, alpha));
+		this.putShort(16, (short) (u * UV_CONV));
+		this.putShort(18, (short) (v * UV_CONV));
 
-        this.putShort(i, (short)(light & '\uffff'));
-        this.putShort(i + 2, (short)(light >> 16 & '\uffff'));
-        this.putByte(i + 4, BufferVertexConsumer.normalIntValue(normalX));
-        this.putByte(i + 5, BufferVertexConsumer.normalIntValue(normalY));
-        this.putByte(i + 6, BufferVertexConsumer.normalIntValue(normalZ));
-        this.nextElementByte += i + 8;
+
+		this.putInt(20, light);
+
+		this.nextElementByte += 20 + 4;
         this.endVertex();
-	}	private void defaultVertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
+	}
+
+	private void putInt(int index, int value) {
+		MemoryUtil.memPutInt(this.bufferPtr + this.nextElementByte + index, value);
+	}
+
+	private void defaultVertex(float x, float y, float z, float red, float green, float blue, float alpha, float u, float v, int overlay, int light, float normalX, float normalY, float normalZ) {
         this.putFloat(0, x);
         this.putFloat(4, y);
         this.putFloat(8, z);
@@ -368,13 +367,11 @@ public class TerrainBufferBuilder implements VertexConsumer {
         this.putByte(15, (byte)((int)(alpha * 255.0F)));
         this.putFloat(16, u);
         this.putFloat(20, v);
-        byte i;
-        i = 24;
 
-        this.putShort(i, (short)(light & '\uffff'));
-        this.putShort(i + 2, (short)(light >> 16 & '\uffff'));
 
-        this.nextElementByte += i + 8;
+        this.putInt(24, light);
+
+        this.nextElementByte += 24 + 4;
         this.endVertex();
 	}
 

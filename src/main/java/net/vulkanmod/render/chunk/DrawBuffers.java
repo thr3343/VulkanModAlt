@@ -31,7 +31,7 @@ import static org.lwjgl.vulkan.VK10.vkCmdBindDescriptorSets;
 
 public class DrawBuffers {
 
-    private static final int VERTEX_SIZE = ShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
+    static final int VERTEX_SIZE = ShaderManager.TERRAIN_VERTEX_FORMAT.getVertexSize();
     private static final int INDEX_SIZE = Short.BYTES;
     private final int areaIndex;
 

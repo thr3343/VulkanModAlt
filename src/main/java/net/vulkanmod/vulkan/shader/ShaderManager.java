@@ -2,12 +2,13 @@ package net.vulkanmod.vulkan.shader;
 
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.vulkanmod.render.vertex.CustomVertexFormat;
 
 import static net.vulkanmod.vulkan.shader.ShaderSPIRVUtils.compileShaderFile;
 
 public class ShaderManager {
-//    public static final VertexFormat TERRAIN_VERTEX_FORMAT = CustomVertexFormat.COMPRESSED_TERRAIN;
-    public static final VertexFormat TERRAIN_VERTEX_FORMAT = DefaultVertexFormat.BLOCK;
+    public static final VertexFormat TERRAIN_VERTEX_FORMAT = CustomVertexFormat.COMPRESSED_TERRAIN;
+//    public static final VertexFormat TERRAIN_VERTEX_FORMAT = DefaultVertexFormat.BLOCK;
 
     public static ShaderManager shaderManager;
     private final ShaderSPIRVUtils.SPIRV vertShaderSPIRV1 = compileShaderFile("basic/terrain_direct/terrain_direct" + ".vsh", ShaderSPIRVUtils.ShaderKind.VERTEX_SHADER);

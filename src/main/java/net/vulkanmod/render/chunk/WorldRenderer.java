@@ -595,7 +595,6 @@ public class WorldRenderer {
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, npointer1, (VUtil.nullptr));
         }
         layerName.setCutoutUniform();
-
         ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
         if((COMPACT_RENDER_TYPES).contains(layerName)) {
             if(!Initializer.CONFIG.bindless) drawBatchedIndexed(b, address);
@@ -635,7 +634,7 @@ public class WorldRenderer {
     private void drawBatchedIndexedBindless(boolean b, long address) {
         for (VkDrawIndexedIndirectCommand2 drawParameters : b ? this.TsectionQueue : this.sectionQueue) {
             {
-                callPV(address, drawParameters.indexCount(), 1, 0, drawParameters.vertexOffset()>>5, 0, functionAddress1);
+                callPV(address, drawParameters.indexCount(), 1, 0, drawParameters.vertexOffset() / DrawBuffers.VERTEX_SIZE, 0, functionAddress1);
             }
         }
     }
