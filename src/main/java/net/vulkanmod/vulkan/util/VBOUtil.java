@@ -6,7 +6,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.Vulkan;
 import org.joml.Matrix4f;
+import org.lwjgl.system.MemoryUtil;
 
 import java.io.IOException;
 
@@ -21,8 +23,17 @@ public class VBOUtil {
 ////    public static final ObjectArrayList<VBO> cutoutMippedChunks = new ObjectArrayList<>(1024);
 //    public static final ObjectArrayList<VBO> translucentChunks = new ObjectArrayList<>(1024);
 //    public static final VirtualBuffer virtualBufferIdx=new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-    public static final VirtualBuffer virtualBufferVtx=new VirtualBuffer(134217728, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-//    public static final VirtualBuffer virtualBufferVtx2=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    public static final VirtualBuffer virtualBufferVtx=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    public static final long npointer = MemoryUtil.nmemAlignedAlloc(8, 8);
+    public static final long npointer1 = MemoryUtil.nmemAlignedAlloc(8, 8);
+    public static final long functionAddress = Vulkan.getDevice().getCapabilities().vkCmdBindVertexBuffers;
+    public static final long functionAddress1 = Vulkan.getDevice().getCapabilities().vkCmdDrawIndexed;
+
+    //    public static final VirtualBuffer virtualBufferVtx2=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    static
+    {
+        VUtil.UNSAFE.putLong(npointer1, virtualBufferVtx.bufferPointerSuperSet);
+    }
     public static Matrix4f translationOffset;
     public static double camX;
     public static double camZ;

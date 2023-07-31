@@ -37,17 +37,19 @@ import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
-import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
+import org.lwjgl.vulkan.VkCommandBuffer;
 
 import javax.annotation.Nullable;
 import java.util.*;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 import static net.vulkanmod.vulkan.util.VBOUtil.*;
+import static org.lwjgl.system.JNI.callPPPV;
+import static org.lwjgl.system.JNI.callPV;
 import static org.lwjgl.vulkan.VK10.nvkCmdBindVertexBuffers;
 
 public class WorldRenderer {
@@ -90,6 +92,8 @@ public class WorldRenderer {
 
     RenderRegionCache renderRegionCache;
     int nonEmptyChunks;
+    private final ResettableQueue<VkDrawIndexedIndirectCommand2> sectionQueue = new ResettableQueue<>();
+    private final ResettableQueue<VkDrawIndexedIndirectCommand2> TsectionQueue = new ResettableQueue<>();
 
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
@@ -293,14 +297,15 @@ public class WorldRenderer {
 
         if(rebuildLimit == 0)
             this.needsUpdate = true;
-
+        sectionQueue.clear();
+        TsectionQueue.clear();
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
             for (TerrainRenderType rType : renderSection.getCompiledSection().renderTypes) {
                 final VkDrawIndexedIndirectCommand2 buffer = renderSection.drawParametersArray[rType.ordinal()].vertexBufferSegment1;
                 if (buffer!=null) {
-                    renderSection.getChunkArea().getDrawBuffers().addSection(rType, buffer);
+                    (rType !=TRANSLUCENT ? sectionQueue : TsectionQueue).add(buffer);
                 }
             }
 
@@ -578,23 +583,23 @@ public class WorldRenderer {
         VRenderSystem.applyMVP(translationOffset, projection);
 
         Drawer drawer = Drawer.getInstance();
-        Pipeline pipeline = ShaderManager.getInstance().terrainDirectShader;
-        drawer.bindPipeline(pipeline);
-        if(layerName==CUTOUT_MIPPED) drawer.bindAutoIndexBuffer(Drawer.getCommandBuffer(), 7);
+        drawer.bindPipeline(ShaderManager.shaderManager.terrainDirectShader);
+        final VkCommandBuffer commandBuffer = Drawer.getCommandBuffer();
+        final long address = commandBuffer.address();
+        final boolean b = layerName == TRANSLUCENT;
+        if(!b) drawer.bindAutoIndexBuffer(commandBuffer, 7);
 
 //        p.push("draw batches");
 
         if(Initializer.CONFIG.bindless) {
-            nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, DrawBuffers.npointer1, (VUtil.nullptr));
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, npointer1, (VUtil.nullptr));
         }
+        layerName.setCutoutUniform();
 
+        ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
         if((COMPACT_RENDER_TYPES).contains(layerName)) {
-//            Iterator<ChunkArea> iterator = this.chunkAreaQueue.iterator(flag);
-            for(ChunkArea chunkArea : this.chunkAreaQueue.queue) {
-//                ChunkArea chunkArea = iterator.next();
-                if(indirectDraw) chunkArea.getDrawBuffers().buildDrawBatchesIndirect(indirectBuffers[Drawer.getCurrentFrame()], layerName, camX, camY, camZ);
-                else chunkArea.getDrawBuffers().buildDrawBatchesDirect(layerName, camX, camY, camZ);
-            }
+            if(!Initializer.CONFIG.bindless) drawBatchedIndexed(b, address);
+            else drawBatchedIndexedBindless(b, address);
         }
 
 //        if(layerName.equals(CUTOUT)/* || layerName.equals(TRIPWIRE)*/) {
@@ -615,6 +620,24 @@ public class WorldRenderer {
         VRenderSystem.copyMVP();
 
 
+    }
+
+    private void drawBatchedIndexed(boolean b, long address) {
+        for (VkDrawIndexedIndirectCommand2 drawParameters : b ? this.TsectionQueue : this.sectionQueue) {
+            {
+                VUtil.UNSAFE.putLong(npointer, drawParameters.vertexOffset());
+                callPPPV(address, 0, 1, npointer1, npointer, functionAddress);
+
+                callPV(address, drawParameters.indexCount(), 1, 0, 0, 0, functionAddress1);
+            }
+        }
+    }
+    private void drawBatchedIndexedBindless(boolean b, long address) {
+        for (VkDrawIndexedIndirectCommand2 drawParameters : b ? this.TsectionQueue : this.sectionQueue) {
+            {
+                callPV(address, drawParameters.indexCount(), 1, 0, drawParameters.vertexOffset()>>5, 0, functionAddress1);
+            }
+        }
     }
 
     private void sortTranslucentSections(double camX, double camY, double camZ) {

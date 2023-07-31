@@ -24,7 +24,7 @@ import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
 import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 import static net.vulkanmod.vulkan.util.VBOUtil.*;
 import static org.lwjgl.system.Checks.check;
-import static org.lwjgl.system.JNI.callPJPV;
+import static org.lwjgl.system.JNI.*;
 import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK10.vkCmdBindDescriptorSets;
@@ -42,13 +42,9 @@ public class DrawBuffers {
 //    final StaticQueue<VkDrawIndexedIndirectCommand2> sectionQueue2 = new StaticQueue<>(512);
     final StaticQueue<VkDrawIndexedIndirectCommand2> sectionQueue = new StaticQueue<>(512);
     final StaticQueue<VkDrawIndexedIndirectCommand2> TsectionQueue = new StaticQueue<>(512);
-    private static final long npointer = MemoryUtil.nmemAlignedAlloc(8, 8);
-    static final long npointer1 = MemoryUtil.nmemAlignedAlloc(8, 8);
 
-    static
-    {
-        VUtil.UNSAFE.putLong(npointer1, virtualBufferVtx.bufferPointerSuperSet);
-    }
+
+    //                callPJPV(commandBuffer.address(), pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, new float[]{(float) ((double) section.xOffset - camX), (float) ((double) section.yOffset - camY), (float) ((double) section.zOffset - camZ)}, commandBuffer.getCapabilities().vkCmdPushConstants);
 
     public DrawBuffers(int areaIndex, Vector3i position) {
         this.areaIndex = areaIndex;
@@ -119,7 +115,6 @@ public class DrawBuffers {
         if(size ==0) return;
         try (MemoryStack stack = MemoryStack.stackPush()) {
 
-            renderType.setCutoutUniform();
 //
 //            {
 //                vkCmdBindIndexBuffer(Drawer.getCommandBuffer(), Drawer.getInstance().getQuadIndexBuffer().getIndexBuffer().getId(), 0, VK_INDEX_TYPE_UINT16);
@@ -140,7 +135,6 @@ public class DrawBuffers {
                 nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, stack.npointer(virtualBufferVtx.bufferPointerSuperSet), VUtil.nullptr);
             }
 
-            ShaderManager.getInstance().terrainDirectShader.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
 
             vkCmdDrawIndexedIndirect(Drawer.getCommandBuffer(), indirectBuffer.getId(), indirectBuffer.getOffset(), drawCount, stride);
 
@@ -232,27 +226,17 @@ public class DrawBuffers {
         }
     }
 
-    public void buildDrawBatchesDirect(TerrainRenderType renderType, double camX, double camY, double camZ) {
-        renderType.setCutoutUniform();
+    public void buildDrawBatchesDirect(TerrainRenderType renderType, double camX, double camY, double camZ, long address) {
 
-
-//            if (renderType == TerrainRenderType.TRANSLUCENT) {
-//                vkCmdBindIndexBuffer(Drawer.getCommandBuffer(), this.indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
-//            }
-
-        //        Drawer.getInstance().bindPipeline(pipeline);
-        ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(Drawer.getCommandBuffer(), Drawer.getCurrentFrame());
 
         //            DrawParameters drawParameters = section[renderType.ordinal()];
         //                drawIndexedBindless(drawParameters);
         for (VkDrawIndexedIndirectCommand2 drawParameters : renderType ==TerrainRenderType.TRANSLUCENT ? this.TsectionQueue : this.sectionQueue) {
-            if(drawParameters!=null)
             {
                 VUtil.UNSAFE.putLong(npointer, drawParameters.vertexOffset());
-                nvkCmdBindVertexBuffers(Drawer.getCommandBuffer(), 0, 1, npointer1, npointer);
-//                callPJPV(commandBuffer.address(), pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, new float[]{(float) ((double) section.xOffset - camX), (float) ((double) section.yOffset - camY), (float) ((double) section.zOffset - camZ)}, commandBuffer.getCapabilities().vkCmdPushConstants);
+                callPPPV(address, 0, 1, npointer1, npointer, functionAddress);
 
-                vkCmdDrawIndexed(Drawer.getCommandBuffer(), drawParameters.indexCount(), 1, 0, 0, 0);
+                callPV(address, drawParameters.indexCount(), 1, 0, 0, 0, functionAddress1);
             }
         }
 

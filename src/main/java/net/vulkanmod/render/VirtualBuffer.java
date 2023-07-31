@@ -153,7 +153,7 @@ public final class VirtualBuffer {
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
                     .size((size_t))
                     .alignment(128)
-                    .flags(VMA_ALLOCATION_CREATE_STRATEGY_MIN_OFFSET_BIT)
+                    .flags(0)
                     .pUserData(NULL);
 
             long pAlloc = stack.nmalloc(POINTER_SIZE);
