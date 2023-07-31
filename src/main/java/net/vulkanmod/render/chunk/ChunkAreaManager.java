@@ -178,13 +178,6 @@ public class ChunkAreaManager {
         }
     }
 
-    public void resetQueues() {
-        for(ChunkArea chunkArea : this.chunkAreasArr) {
-            chunkArea.getDrawBuffers().sectionQueue.clear();
-            chunkArea.getDrawBuffers().TsectionQueue.clear();
-        }
-    }
-
     private int getAreaIndex(int x, int y, int z) {
         return (z * this.ySize + y) * this.xzSize + x;
     }

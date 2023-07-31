@@ -191,8 +191,8 @@ public class ChunkTask {
                     }
                 }
 
-                if (set.contains(TRANSLUCENT)) {
-                    TerrainBufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(TRANSLUCENT);
+                if (set.contains(CUTOUT_MIPPED)) {
+                    TerrainBufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(CUTOUT_MIPPED);
                     if (!bufferBuilder2.isCurrentBatchEmpty()) {
                         bufferBuilder2.setQuadSortOrigin(camX - (float) blockPos.getX(), camY - (float) blockPos.getY(), camZ - (float) blockPos.getZ());
                         compileResults.transparencyState = bufferBuilder2.getSortState();
@@ -218,7 +218,7 @@ public class ChunkTask {
         }
 
         private TerrainRenderType compactRenderTypes(TerrainRenderType renderType) {
-            return renderType != TRANSLUCENT ? CUTOUT_MIPPED : TRANSLUCENT;
+            return CUTOUT_MIPPED;
         }
 
         private <E extends BlockEntity> void handleBlockEntity(CompileResults compileResults, E blockEntity) {

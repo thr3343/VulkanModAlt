@@ -93,7 +93,7 @@ public class WorldRenderer {
     RenderRegionCache renderRegionCache;
     int nonEmptyChunks;
     private final ResettableQueue<VkDrawIndexedIndirectCommand2> sectionQueue = new ResettableQueue<>();
-    private final ResettableQueue<VkDrawIndexedIndirectCommand2> TsectionQueue = new ResettableQueue<>();
+//    private final ResettableQueue<VkDrawIndexedIndirectCommand2> TsectionQueue = new ResettableQueue<>();
 
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
@@ -284,7 +284,7 @@ public class WorldRenderer {
 
     private void resetUpdateQueues() {
         this.chunkAreaQueue.clear();
-        this.sectionGrid.chunkAreaManager.resetQueues();
+        sectionQueue.clear();
     }
 
     private void updateRenderChunks() {
@@ -298,14 +298,13 @@ public class WorldRenderer {
         if(rebuildLimit == 0)
             this.needsUpdate = true;
         sectionQueue.clear();
-        TsectionQueue.clear();
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
             for (TerrainRenderType rType : renderSection.getCompiledSection().renderTypes) {
                 final VkDrawIndexedIndirectCommand2 buffer = renderSection.drawParametersArray[rType.ordinal()].vertexBufferSegment1;
                 if (buffer!=null && buffer.indexCount()!=0) {
-                    (rType !=TRANSLUCENT ? sectionQueue : TsectionQueue).add(buffer);
+                    sectionQueue.add(buffer);
                 }
             }
 
@@ -403,21 +402,7 @@ public class WorldRenderer {
             relativeChunk.setDirections(renderSection.directions, direction);
             this.chunkQueue.add(relativeChunk);
 
-            byte d;
-            if ((renderSection.sourceDirs & (1 << direction.ordinal())) == 0 && !renderSection.isCompletelyEmpty())
-            {
-                if(renderSection.step > 4) {
-                    d = (byte) (renderSection.directionChanges + 1);
-                }
-                else {
-                    d = 0;
-                }
-
-            }
-            else
-                d = renderSection.directionChanges;
-
-            relativeChunk.directionChanges = d;
+            relativeChunk.directionChanges = (renderSection.sourceDirs & (1 << direction.ordinal())) == 0 && !renderSection.isCompletelyEmpty() ? renderSection.step > 4 ? (byte) (renderSection.directionChanges + 1) : 0 : renderSection.directionChanges;
         }
     }
 
@@ -543,7 +528,6 @@ public class WorldRenderer {
         }
 
     }
-    @SuppressWarnings("all")
     public void renderChunkLayer(RenderType renderType, double camX, double camY, double camZ, Matrix4f projection) {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
@@ -551,8 +535,7 @@ public class WorldRenderer {
 
         final TerrainRenderType layerName=switch (renderType.name)
         {
-            case "cutout_mipped" -> CUTOUT_MIPPED;
-            case "translucent" -> TRANSLUCENT;
+            case "tripwire" -> CUTOUT_MIPPED;
             default -> null;
         };
         if(!(COMPACT_RENDER_TYPES).contains(layerName)) return;
@@ -572,7 +555,7 @@ public class WorldRenderer {
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
 
-        this.sortTranslucentSections(camX, camY, camZ);
+//        this.sortTranslucentSections(camX, camY, camZ);
 
 //        this.minecraft.getProfiler().push("filterempty");
 //        this.minecraft.getProfiler().popPush(() -> {
@@ -586,8 +569,8 @@ public class WorldRenderer {
         drawer.bindPipeline(ShaderManager.shaderManager.terrainDirectShader);
         final VkCommandBuffer commandBuffer = Drawer.getCommandBuffer();
         final long address = commandBuffer.address();
-        final boolean b = layerName == TRANSLUCENT;
-        if(!b) drawer.bindAutoIndexBuffer(commandBuffer, 7);
+//        final boolean b = layerName == TRANSLUCENT;
+        drawer.bindAutoIndexBuffer(commandBuffer, 7);
 
 //        p.push("draw batches");
 
@@ -597,8 +580,8 @@ public class WorldRenderer {
         layerName.setCutoutUniform();
         ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
         if((COMPACT_RENDER_TYPES).contains(layerName)) {
-            if(!Initializer.CONFIG.bindless) drawBatchedIndexed(b, address);
-            else drawBatchedIndexedBindless(b, address);
+            if(!Initializer.CONFIG.bindless) drawBatchedIndexed(address);
+            else drawBatchedIndexedBindless(address);
         }
 
 //        if(layerName.equals(CUTOUT)/* || layerName.equals(TRIPWIRE)*/) {
@@ -621,8 +604,8 @@ public class WorldRenderer {
 
     }
 
-    private void drawBatchedIndexed(boolean b, long address) {
-        for (VkDrawIndexedIndirectCommand2 drawParameters : b ? this.TsectionQueue : this.sectionQueue) {
+    private void drawBatchedIndexed(long address) {
+        for (VkDrawIndexedIndirectCommand2 drawParameters : this.sectionQueue) {
             if(drawParameters.indexCount()!=0){
                 VUtil.UNSAFE.putLong(npointer, drawParameters.vertexOffset());
                 callPPPV(address, 0, 1, npointer1, npointer, functionAddress);
@@ -631,8 +614,8 @@ public class WorldRenderer {
             }
         }
     }
-    private void drawBatchedIndexedBindless(boolean b, long address) {
-        for (VkDrawIndexedIndirectCommand2 drawParameters : b ? this.TsectionQueue : this.sectionQueue) {
+    private void drawBatchedIndexedBindless(long address) {
+        for (VkDrawIndexedIndirectCommand2 drawParameters : this.sectionQueue) {
             {
                 callPV(address, drawParameters.indexCount(), 1, 0, drawParameters.vertexOffset() / DrawBuffers.VERTEX_SIZE, 0, functionAddress1);
             }
@@ -662,7 +645,7 @@ public class WorldRenderer {
             while(iterator.hasNext() && j < 15) {
                 RenderSection section = iterator.next();
 
-                section.resortTransparency(TRANSLUCENT, this.taskDispatcher);
+                section.resortTransparency(CUTOUT_MIPPED, this.taskDispatcher);
 
                 ++j;
             }

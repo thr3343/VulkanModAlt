@@ -156,22 +156,22 @@ public final class VirtualBuffer {
                     .flags(0)
                     .pUserData(NULL);
 
-            long pAlloc = stack.nmalloc(POINTER_SIZE);
-            long pOffset = stack.nmalloc(POINTER_SIZE);
+            PointerBuffer pAlloc = stack.mallocPointer(1);
+            LongBuffer pOffset = stack.mallocLong(1);
 
             usedBytes+= (size_t);
         
             subAllocs++;
             
-            if(nvmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo.address(), pAlloc, pOffset) ==VK_ERROR_OUT_OF_DEVICE_MEMORY)
+            if(vmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo, pAlloc, pOffset) !=VK_SUCCESS)
             {
                 reload(size_t);
-                nvmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo.address(), pAlloc, pOffset);
+                this.allocSubSection(areaIndex, subIndex, size_t);
             }
 
-            updateStatistics(stack);
+//            updateStatistics(stack);
             virtualSegmentBuffer virtualSegmentBuffer
-                    = new virtualSegmentBuffer(areaIndex, subIndex, memGetInt(pOffset), size_t, memGetLong(pAlloc));
+                    = new virtualSegmentBuffer(areaIndex, subIndex, (int) pOffset.get(), size_t, pAlloc.get());
             activeRanges.add(virtualSegmentBuffer);
             return virtualSegmentBuffer;
         }
@@ -183,14 +183,8 @@ public final class VirtualBuffer {
         WorldRenderer.getInstance().allChanged();
     }
 
-    public boolean isAlreadyLoaded(int areaIndex, int index, int remaining) {
-        virtualSegmentBuffer virtualSegmentBuffer = getActiveRangeFromIdx(areaIndex, index);
-        if(virtualSegmentBuffer ==null) return false;
-        if(virtualSegmentBuffer.size_t()>remaining)
-        {
-            return true;
-        }
-        return addFreeableRange(virtualSegmentBuffer);
+    public boolean isAlreadyLoaded(virtualSegmentBuffer virtualSegmentBuffer) {
+        return getActiveRangeFromIdx(virtualSegmentBuffer);
 
 
     }
@@ -237,13 +231,13 @@ public final class VirtualBuffer {
         return freed;
     }
 
-    public virtualSegmentBuffer getActiveRangeFromIdx(int areaIndex, int index) {
+    public boolean getActiveRangeFromIdx(virtualSegmentBuffer buffer) {
         for (virtualSegmentBuffer virtualSegmentBuffer : activeRanges) {
-            if (virtualSegmentBuffer.areaGlobalIndex()==areaIndex && virtualSegmentBuffer.subIndex() == index) {
-                return virtualSegmentBuffer;
+            if (virtualSegmentBuffer==buffer) {
+                return true;
             }
         }
-        return null;
+        return false;
     }
 
     //Makes Closing the game very slow
