@@ -152,7 +152,7 @@ public final class VirtualBuffer {
         {
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
                     .size((size_t))
-                    .alignment(32)
+                    .alignment(0)
                     .flags(0)
                     .pUserData(NULL);
 
@@ -183,15 +183,14 @@ public final class VirtualBuffer {
         WorldRenderer.getInstance().allChanged();
     }
 
-    public boolean isAlreadyLoaded(int index, int remaining) {
-        virtualSegmentBuffer virtualSegmentBuffer = getActiveRangeFromIdx(index);
+    public boolean isAlreadyLoaded(int areaIndex, int index, int remaining) {
+        virtualSegmentBuffer virtualSegmentBuffer = getActiveRangeFromIdx(areaIndex, index);
         if(virtualSegmentBuffer ==null) return false;
-        if(virtualSegmentBuffer.size_t()>=remaining)
+        if(virtualSegmentBuffer.size_t()>remaining)
         {
             return true;
         }
-        addFreeableRange(virtualSegmentBuffer);
-        return false;
+        return addFreeableRange(virtualSegmentBuffer);
 
 
     }
@@ -231,14 +230,16 @@ public final class VirtualBuffer {
                 break;
             }
         }
-        subAllocs--;
-        usedBytes-=bufferPointer.size_t();
+        if(freed) {
+            subAllocs--;
+            usedBytes-=bufferPointer.size_t();
+        }
         return freed;
     }
 
-    public virtualSegmentBuffer getActiveRangeFromIdx(int index) {
+    public virtualSegmentBuffer getActiveRangeFromIdx(int areaIndex, int index) {
         for (virtualSegmentBuffer virtualSegmentBuffer : activeRanges) {
-            if (virtualSegmentBuffer.subIndex() == index) {
+            if (virtualSegmentBuffer.areaGlobalIndex()==areaIndex && virtualSegmentBuffer.subIndex() == index) {
                 return virtualSegmentBuffer;
             }
         }

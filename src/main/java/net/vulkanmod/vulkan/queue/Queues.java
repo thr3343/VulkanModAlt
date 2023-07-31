@@ -82,7 +82,7 @@ public enum Queues {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             submitCommands(commandBuffer);
-            VK10.vkWaitForFences(Vulkan.getDevice(), commandBuffer.fence, false, 0);
+            VK10.vkWaitForFences(Vulkan.getDevice(), commandBuffer.fence, true, VUtil.UINT64_MAX);
             commandBuffer.reset();
         }
     }

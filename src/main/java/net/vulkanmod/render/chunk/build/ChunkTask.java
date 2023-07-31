@@ -258,39 +258,8 @@ public class ChunkTask {
         }
 
         public CompletableFuture<Result> doTask(ThreadBuilderPack builderPack) {
-            if (this.cancelled.get()) {
-                return CompletableFuture.completedFuture(Result.CANCELLED);
-            } else if (!renderSection.hasXYNeighbours()) {
-                this.cancelled.set(true);
-                return CompletableFuture.completedFuture(Result.CANCELLED);
-            } else {
-                Vec3 vec3 = WorldRenderer.getCameraPos();
-                float f = (float)vec3.x;
-                float f1 = (float)vec3.y;
-                float f2 = (float)vec3.z;
-                TerrainBufferBuilder.SortState transparencyState = this.compiledSection.transparencyState;
-                if (transparencyState != null && this.compiledSection.renderTypes.contains(TRANSLUCENT)) {
-                    TerrainBufferBuilder bufferbuilder = builderPack.builder(TRANSLUCENT);
-                    bufferbuilder.begin(VertexFormat.Mode.QUADS, ShaderManager.TERRAIN_VERTEX_FORMAT);
-                    bufferbuilder.restoreSortState(transparencyState);
-//                    bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.origin.getX(), f1 - (float) renderSection.origin.getY(), f2 - (float) renderSection.origin.getZ());
-                    bufferbuilder.setQuadSortOrigin(f - (float) this.renderSection.xOffset(), f1 - (float) renderSection.yOffset(), f2 - (float) renderSection.zOffset());
-                    this.compiledSection.transparencyState = bufferbuilder.getSortState();
-                    TerrainBufferBuilder.RenderedBuffer renderedBuffer = bufferbuilder.end();
-                    if (this.cancelled.get()) {
-                        return CompletableFuture.completedFuture(Result.CANCELLED);
-                    } else {
+           return CompletableFuture.completedFuture(Result.CANCELLED);
 
-                        UploadBuffer uploadBuffer = new UploadBuffer(renderedBuffer);
-                        taskDispatcher.scheduleUploadChunkLayer(renderSection, TRANSLUCENT, uploadBuffer);
-                        renderedBuffer.release();
-                        return CompletableFuture.completedFuture(Result.SUCCESSFUL);
-
-                    }
-                } else {
-                    return CompletableFuture.completedFuture(Result.CANCELLED);
-                }
-            }
         }
     }
     

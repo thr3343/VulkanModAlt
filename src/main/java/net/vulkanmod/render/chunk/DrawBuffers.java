@@ -13,6 +13,7 @@ import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
 import net.vulkanmod.vulkan.util.VBOUtil;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.apache.commons.lang3.Validate;
 import org.joml.Vector3i;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -246,17 +247,18 @@ public class DrawBuffers {
     private VkDrawIndexedIndirectCommand2 configureVertexFormat(DrawParameters drawParameters, int index, UploadBuffer parameters) {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
         ByteBuffer data = parameters.getVertexBuffer();
-
-        final int size = data.remaining();
-        if(!drawParameters.initialised || !VBOUtil.virtualBufferVtx.isAlreadyLoaded(index, size))
+        final int remaining = data.remaining();
+        Validate.isTrue(remaining % VERTEX_SIZE ==0);
+        if(drawParameters.vertexBufferSegment1 == null || VBOUtil.virtualBufferVtx.isAlreadyLoaded(areaIndex, index, remaining))
         {
-            drawParameters.vertexBufferSegment = VBOUtil.virtualBufferVtx.allocSubSection(this.areaIndex, index, size);
+            drawParameters.vertexBufferSegment = VBOUtil.virtualBufferVtx.allocSubSection(this.areaIndex, index, remaining);
         }
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
-        stagingBuffer.copyBuffer(size, data);
+        stagingBuffer.copyBuffer(remaining, data);
 
-
-        TransferQueue.uploadBufferImmediate(stagingBuffer.getId(), stagingBuffer.getOffset(), virtualBufferVtx.bufferPointerSuperSet, drawParameters.vertexBufferSegment.i2(), size);
+        Validate.isTrue(drawParameters.vertexBufferSegment.i2()<virtualBufferVtx.size_t);
+        Validate.isTrue(drawParameters.vertexBufferSegment.size_t()<virtualBufferVtx.size_t);
+        TransferQueue.uploadBufferImmediate(stagingBuffer.getId(), stagingBuffer.getOffset(), virtualBufferVtx.bufferPointerSuperSet, drawParameters.vertexBufferSegment.i2(), remaining);
 //            this.vertOff= fakeVertexBuffer.i2()>>5;
         return new VkDrawIndexedIndirectCommand2(parameters.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2(), 0);
     }
@@ -327,12 +329,13 @@ public class DrawBuffers {
 
         public void reset() {
 
-//            if(this.initialised && VBOUtil.virtualBufferVtx.addFreeableRange(this.vertexBufferSegment))
-//            {
-//                this.vertexBufferSegment = null;
-//                this.vertexBufferSegment1 = null;
-//                initialised=false;
-//            }
+            if(this.initialised)
+            {
+                VBOUtil.virtualBufferVtx.addFreeableRange(this.vertexBufferSegment);
+                this.vertexBufferSegment = null;
+                this.vertexBufferSegment1 = null;
+                initialised=false;
+            }
 
         }
     }
