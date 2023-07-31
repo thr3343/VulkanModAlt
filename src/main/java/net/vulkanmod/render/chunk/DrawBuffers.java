@@ -317,7 +317,7 @@ public class DrawBuffers {
         public void reset(ChunkArea chunkArea) {
 //            this.indexCount = 0;
 //            this.firstIndex = 0;
-            this.initialised =false;
+//            this.initialised =false;
             //                VBOUtil.virtualBufferVtx.addFreeableRange(this.vertexBufferSegment);
             //                VBOUtil.virtualBufferVtx.addFreeableRange(this.vertexBufferSegment);
             //                    this.vertexBufferSegment = null;
@@ -326,9 +326,13 @@ public class DrawBuffers {
         }
 
         public void reset() {
-            initialised=false;
-            if(VBOUtil.virtualBufferVtx.addFreeableRange(this.vertexBufferSegment))
-                this.vertexBufferSegment = null; this.vertexBufferSegment1 = null;
+
+//            if(this.initialised && VBOUtil.virtualBufferVtx.addFreeableRange(this.vertexBufferSegment))
+//            {
+//                this.vertexBufferSegment = null;
+//                this.vertexBufferSegment1 = null;
+//                initialised=false;
+//            }
 
         }
     }

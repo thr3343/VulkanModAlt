@@ -147,8 +147,6 @@ public class TaskDispatcher {
 
             if(uploadBuffer != null) {
                 drawBuffers.upload(uploadBuffer, section.drawParametersArray[renderType.ordinal()], section.xOffset(), section.yOffset(), section.zOffset());
-            } else {
-                section.drawParametersArray[renderType.ordinal()].reset(renderArea);
             }
         }
     }

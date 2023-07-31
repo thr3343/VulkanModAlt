@@ -304,7 +304,7 @@ public class WorldRenderer {
 
             for (TerrainRenderType rType : renderSection.getCompiledSection().renderTypes) {
                 final VkDrawIndexedIndirectCommand2 buffer = renderSection.drawParametersArray[rType.ordinal()].vertexBufferSegment1;
-                if (buffer!=null) {
+                if (buffer!=null && buffer.indexCount()!=0) {
                     (rType !=TRANSLUCENT ? sectionQueue : TsectionQueue).add(buffer);
                 }
             }
@@ -623,7 +623,7 @@ public class WorldRenderer {
 
     private void drawBatchedIndexed(boolean b, long address) {
         for (VkDrawIndexedIndirectCommand2 drawParameters : b ? this.TsectionQueue : this.sectionQueue) {
-            {
+            if(drawParameters.indexCount()!=0){
                 VUtil.UNSAFE.putLong(npointer, drawParameters.vertexOffset());
                 callPPPV(address, 0, 1, npointer1, npointer, functionAddress);
 
