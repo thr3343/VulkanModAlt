@@ -2,6 +2,8 @@ package net.vulkanmod.render.chunk.build;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
+import net.minecraft.CrashReport;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
 import net.minecraft.client.renderer.RenderType;
@@ -28,6 +30,7 @@ import net.vulkanmod.vulkan.shader.ShaderManager;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -116,15 +119,31 @@ public class ChunkTask {
                     if(!compileResults.renderedLayers.isEmpty())
                         compiledChunk.isCompletelyEmpty = false;
 
-                    taskDispatcher.scheduleSectionUpdate(renderSection, compileResults.renderedLayers);
-                    compiledChunk.renderTypes.addAll(compileResults.renderedLayers.keySet());
+                    final List<CompletableFuture<Void>> list = new ArrayList<>(compileResults.renderedLayers.size());
 
-                    this.renderSection.setCompiledSection(compiledChunk);
-                    this.renderSection.setVisibility(((VisibilitySetExtended)compiledChunk.visibilitySet).getVisibility());
+                    compileResults.renderedLayers.forEach((renderType, renderedBuffer) -> {
+
+                        list.add(taskDispatcher.scheduleUploadChunkLayer(renderSection, (renderType), renderedBuffer));
+                        compiledChunk.renderTypes.add(renderType);
+                    });
+
+
                     this.renderSection.setCompletelyEmpty(compiledChunk.isCompletelyEmpty);
 
                     this.buildTime = (System.nanoTime() - startTime) * 0.000001f;
-                    return CompletableFuture.completedFuture(Result.SUCCESSFUL);
+                    return Util.sequenceFailFast(list).handle((listx, throwable) -> {
+                        if (throwable != null && !(throwable instanceof CancellationException) && !(throwable instanceof InterruptedException)) {
+                            Minecraft.getInstance().delayCrash(CrashReport.forThrowable(throwable, "Rendering chunk"));
+                        }
+
+                        if (this.cancelled.get()) {
+                            return Result.CANCELLED;
+                        }
+                        this.renderSection.setCompiledSection(compiledChunk);
+                        this.renderSection.setVisibility(((VisibilitySetExtended)compiledChunk.visibilitySet).getVisibility());
+//                            ChunkRenderDispatcher.this.renderer.addRecentlyCompiledChunk(ChunkRenderDispatcher.RenderChunk.this);
+                        return Result.SUCCESSFUL;
+                    });
 
                 }
             }
@@ -163,7 +182,7 @@ public class ChunkTask {
 
                         //Force compact RenderType
 
-                        final TerrainRenderType renderType1  = compactRenderTypes(TerrainRenderType.get(ItemBlockRenderTypes.getRenderLayer(fluidState).name));
+                        final TerrainRenderType renderType1  = (TerrainRenderType.get(ItemBlockRenderTypes.getRenderLayer(fluidState).name));
 
                         bufferBuilder = chunkBufferBuilderPack.builder(renderType1);
                         if (set.add(renderType1)) {
@@ -178,7 +197,7 @@ public class ChunkTask {
 
                         //Force compact RenderType
 
-                        final TerrainRenderType renderType1 = compactRenderTypes(TerrainRenderType.get(ItemBlockRenderTypes.getChunkRenderType(blockState).name));
+                        final TerrainRenderType renderType1 = (TerrainRenderType.get(ItemBlockRenderTypes.getChunkRenderType(blockState).name));
                         bufferBuilder = chunkBufferBuilderPack.builder(renderType1);
                         if (set.add(renderType1)) {
                             bufferBuilder.begin(VertexFormat.Mode.QUADS, ShaderManager.TERRAIN_VERTEX_FORMAT);

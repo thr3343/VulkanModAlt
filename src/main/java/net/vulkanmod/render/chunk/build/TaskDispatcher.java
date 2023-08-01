@@ -9,6 +9,9 @@ import org.slf4j.Logger;
 import javax.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
+
+import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
 
 public class TaskDispatcher {
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -138,7 +141,7 @@ public class TaskDispatcher {
         );
     }
 
-    private void doSectionUpdate(RenderSection section, EnumMap<TerrainRenderType, UploadBuffer> uploadBuffers) {
+    void doSectionUpdate(RenderSection section, EnumMap<TerrainRenderType, UploadBuffer> uploadBuffers) {
         ChunkArea renderArea = section.getChunkArea();
         DrawBuffers drawBuffers = renderArea.getDrawBuffers();
 
@@ -151,17 +154,10 @@ public class TaskDispatcher {
         }
     }
 
-    public void scheduleUploadChunkLayer(RenderSection section, TerrainRenderType renderType, UploadBuffer uploadBuffer) {
-        this.toUpload.add(
-                () -> this.doUploadChunkLayer(section, renderType, uploadBuffer)
-        );
-    }
-
-    private void doUploadChunkLayer(RenderSection section, TerrainRenderType renderType, UploadBuffer uploadBuffer) {
-        ChunkArea renderArea = section.getChunkArea();
-        DrawBuffers drawBuffers = renderArea.getDrawBuffers();
-
-        drawBuffers.upload(uploadBuffer, section.drawParametersArray[renderType.ordinal()], section.xOffset(), section.yOffset(), section.zOffset());
+    public CompletableFuture<Void> scheduleUploadChunkLayer(RenderSection section, TerrainRenderType renderType, UploadBuffer uploadBuffer) {
+        if(renderType==TRANSLUCENT) return CompletableFuture.completedFuture(null);
+        return CompletableFuture.runAsync(() ->
+                section.getChunkArea().getDrawBuffers().upload(uploadBuffer, section.drawParametersArray[renderType.ordinal()], section.xOffset(), section.yOffset(), section.zOffset()), this.toUpload::add);
     }
 
     public int getIdleThreadsCount() {

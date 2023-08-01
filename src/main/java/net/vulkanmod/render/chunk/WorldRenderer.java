@@ -535,9 +535,13 @@ public class WorldRenderer {
 
         final TerrainRenderType layerName=switch (renderType.name)
         {
-            case "tripwire" -> CUTOUT_MIPPED;
+            case "cutout_mipped" -> CUTOUT_MIPPED;
+            case "translucent" -> TRANSLUCENT;
             default -> null;
         };
+        final boolean b = layerName == TRANSLUCENT;
+        if(b) return;
+
         if(!(COMPACT_RENDER_TYPES).contains(layerName)) return;
 
 //        p.pushMilestone("layer " + layerName);

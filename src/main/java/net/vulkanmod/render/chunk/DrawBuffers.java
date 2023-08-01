@@ -105,7 +105,10 @@ public class DrawBuffers {
             drawParameters.vertexBufferSegment = VBOUtil.virtualBufferVtx.allocSubSection(this.areaIndex, index, remaining);
         }
 
-        AreaUploadManager.INSTANCE.uploadAsync(drawParameters.vertexBufferSegment, virtualBufferVtx.bufferPointerSuperSet, virtualBufferVtx.size_t, drawParameters.vertexBufferSegment.i2(), remaining, data);
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
+        stagingBuffer.copyBuffer(remaining, data);
+
+        TransferQueue.uploadBufferImmediate(stagingBuffer.getId(), stagingBuffer.getOffset(), virtualBufferVtx.bufferPointerSuperSet, drawParameters.vertexBufferSegment.i2(), remaining);//            this.vertOff= fakeVertexBuffer.i2()>>5;
 //            this.vertOff= fakeVertexBuffer.i2()>>5;
         return new VkDrawIndexedIndirectCommand2(parameters.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2(), 0);
     }
