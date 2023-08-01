@@ -248,15 +248,13 @@ public class DrawBuffers {
         ByteBuffer data = parameters.getVertexBuffer();
 
         final int size = data.remaining();
-        if(!drawParameters.initialised || !VBOUtil.virtualBufferVtx.isAlreadyLoaded(index, size))
+        if(drawParameters.vertexBufferSegment!=null)
         {
-            drawParameters.vertexBufferSegment = VBOUtil.virtualBufferVtx.allocSubSection(this.areaIndex, index, size);
+            VBOUtil.virtualBufferVtx.addFreeableRange(drawParameters.vertexBufferSegment);
         }
-        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
-        stagingBuffer.copyBuffer(size, data);
+        drawParameters.vertexBufferSegment = VBOUtil.virtualBufferVtx.allocSubSection(this.areaIndex, index, size);
 
-
-        TransferQueue.uploadBufferImmediate(stagingBuffer.getId(), stagingBuffer.getOffset(), virtualBufferVtx.bufferPointerSuperSet, drawParameters.vertexBufferSegment.i2(), size);
+        AreaUploadManager.INSTANCE.uploadAsync(drawParameters.vertexBufferSegment, virtualBufferVtx.bufferPointerSuperSet, virtualBufferVtx.size_t, drawParameters.vertexBufferSegment.i2(), size, data);
 //            this.vertOff= fakeVertexBuffer.i2()>>5;
         return new VkDrawIndexedIndirectCommand2(parameters.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2(), 0);
     }
@@ -277,8 +275,8 @@ public class DrawBuffers {
 //            a.vertexBufferSegment=null;
 //        }
         virtualBufferVtx.freeRange(this.areaIndex);
-        this.sectionQueue.clear();
-        this.TsectionQueue.clear();
+//        this.sectionQueue.clear();
+//        this.TsectionQueue.clear();
 
 //        this.vertexBuffer.freeBuffer();
 //        this.indexBuffer.freeBuffer();
@@ -327,7 +325,7 @@ public class DrawBuffers {
 
         public void reset() {
             initialised=false;
-            if(VBOUtil.virtualBufferVtx.addFreeableRange(this.vertexBufferSegment))
+            VBOUtil.virtualBufferVtx.addFreeableRange(this.vertexBufferSegment);
                 this.vertexBufferSegment = null; this.vertexBufferSegment1 = null;
 
         }

@@ -152,7 +152,7 @@ public final class VirtualBuffer {
         {
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
                     .size((size_t))
-                    .alignment(128)
+                    .alignment(32)
                     .flags(0)
                     .pUserData(NULL);
 
@@ -169,7 +169,7 @@ public final class VirtualBuffer {
                 nvmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo.address(), pAlloc, pOffset);
             }
 
-            updateStatistics(stack);
+//            updateStatistics(stack);
             virtualSegmentBuffer virtualSegmentBuffer
                     = new virtualSegmentBuffer(areaIndex, subIndex, memGetInt(pOffset), size_t, memGetLong(pAlloc));
             activeRanges.add(virtualSegmentBuffer);
@@ -214,26 +214,27 @@ public final class VirtualBuffer {
         allocMax=vmaStatistics.allocationSizeMax();
     }
 
-    public boolean addFreeableRange(virtualSegmentBuffer bufferPointer)
+    public void addFreeableRange(virtualSegmentBuffer bufferPointer)
     {
-        if(usedBytes==0) return false;
-        if(bufferPointer==null) return false;
-        if(bufferPointer.allocation()==-1) return false;
-        if(bufferPointer.allocation()==0) return false;
+        if(usedBytes==0) return;
+        if(bufferPointer==null) return;
+        if(bufferPointer.allocation()==-1) return;
+        if(bufferPointer.allocation()==0) return;
 //        if(bufferPointer.sizes==0) return;
         boolean freed =false;
         Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation());
         for (int i = 0; i < activeRanges.size(); i++) {
             virtualSegmentBuffer virtualSegmentBuffer = activeRanges.get(i);
-            if (virtualSegmentBuffer.subIndex() == bufferPointer.subIndex()) {
+            if (virtualSegmentBuffer == bufferPointer) {
                 activeRanges.remove(i);
                 freed=true;
                 break;
             }
         }
-        subAllocs--;
-        usedBytes-=bufferPointer.size_t();
-        return freed;
+        if(freed){
+            subAllocs--;
+            usedBytes-=bufferPointer.size_t();
+        }
     }
 
     public virtualSegmentBuffer getActiveRangeFromIdx(int index) {
