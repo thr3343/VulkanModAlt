@@ -21,26 +21,24 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.GL11C;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
-import org.lwjgl.system.Struct;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-import static net.vulkanmod.vulkan.Framebuffer.*;
+import static net.vulkanmod.vulkan.Framebuffer.AttachmentTypes;
+import static net.vulkanmod.vulkan.Framebuffer.DEFAULT_FORMAT;
 import static net.vulkanmod.vulkan.Vulkan.*;
-import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
-import static org.lwjgl.system.Checks.CHECKS;
-import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.JNI.callPPI;
 import static org.lwjgl.system.JNI.callPPJI;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
-import static org.lwjgl.system.MemoryUtil.NULL;
-import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.EXTDebugUtils.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
 import static org.lwjgl.vulkan.VK10.*;
@@ -519,6 +517,7 @@ public class Drawer {
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }
         VBOUtil.virtualBufferVtx.cleanUp();
+        VBOUtil.TvirtualBufferVtx.cleanUp();
         buffer = this.quadsIndexBuffer.getIndexBuffer();
         memoryManager.freeBuffer(buffer.getId(), buffer.getAllocation());
         buffer = this.triangleFanIndexBuffer.getIndexBuffer();

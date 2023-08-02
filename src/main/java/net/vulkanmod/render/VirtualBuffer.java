@@ -2,6 +2,7 @@ package net.vulkanmod.render;
 
 import it.unimi.dsi.fastutil.objects.*;
 import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -41,12 +42,14 @@ public final class VirtualBuffer {
 
     public final ObjectArrayList<virtualSegmentBuffer> activeRanges = new ObjectArrayList<>(1024);
     private final int vkBufferType;
+    private final TerrainRenderType r;
 
 
-    public VirtualBuffer(long size_t, int type)
+    public VirtualBuffer(long size_t, int type, TerrainRenderType r)
     {
         this.size_t=size_t;
         this.vkBufferType =type;
+        this.r = r;
 
 
         try(MemoryStack stack = MemoryStack.stackPush())
@@ -143,8 +146,8 @@ public final class VirtualBuffer {
     }
 
     //TODO: Global ChunKArea index....
-    public virtualSegmentBuffer allocSubSection(int areaIndex, int subIndex, int size_t) {
-
+    public virtualSegmentBuffer allocSubSection(int areaIndex, int subIndex, int size_t, TerrainRenderType r) {
+        if(this.r!=r) throw new RuntimeException();
         if(this.size_t <=usedBytes+ (size_t))
             reload(size_t);
 
@@ -171,7 +174,7 @@ public final class VirtualBuffer {
 
 //            updateStatistics(stack);
             virtualSegmentBuffer virtualSegmentBuffer
-                    = new virtualSegmentBuffer(areaIndex, subIndex, memGetInt(pOffset), size_t, memGetLong(pAlloc));
+                    = new virtualSegmentBuffer(areaIndex, subIndex, memGetInt(pOffset), size_t, memGetLong(pAlloc), r);
             activeRanges.add(virtualSegmentBuffer);
             return virtualSegmentBuffer;
         }
@@ -216,6 +219,7 @@ public final class VirtualBuffer {
 
     public void addFreeableRange(virtualSegmentBuffer bufferPointer)
     {
+        if(this.r!=bufferPointer.r()) throw new RuntimeException();
         if(usedBytes==0) return;
         if(bufferPointer==null) return;
         if(bufferPointer.allocation()==-1) return;

@@ -1,18 +1,16 @@
 package net.vulkanmod.vulkan.util;
 
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexFormatElement;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ShaderInstance;
 import net.vulkanmod.render.VirtualBuffer;
+import net.vulkanmod.render.vertex.TerrainRenderType;
+import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
-import java.io.IOException;
-
-import static com.mojang.blaze3d.vertex.DefaultVertexFormat.BLOCK;
+import static net.vulkanmod.render.vertex.TerrainRenderType.CUTOUT_MIPPED;
+import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 //Use smaller class instead of WorldRenderer in case it helps GC/Heap fragmentation e.g.
@@ -23,16 +21,19 @@ public class VBOUtil {
 ////    public static final ObjectArrayList<VBO> cutoutMippedChunks = new ObjectArrayList<>(1024);
 //    public static final ObjectArrayList<VBO> translucentChunks = new ObjectArrayList<>(1024);
 //    public static final VirtualBuffer virtualBufferIdx=new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-    public static final VirtualBuffer virtualBufferVtx=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    public static final long npointer = MemoryUtil.nmemAlignedAlloc(8, 8);
-    public static final long npointer1 = MemoryUtil.nmemAlignedAlloc(8, 8);
+    public static final VirtualBuffer virtualBufferVtx=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, CUTOUT_MIPPED);
+    public static final VirtualBuffer TvirtualBufferVtx=new VirtualBuffer(134217728, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
+    public static final long vOffset = MemoryUtil.nmemAlignedAlloc(8, 8);
+    public static final long SPtr = MemoryUtil.nmemAlignedAlloc(8, 8);
+    public static final long TPtr = MemoryUtil.nmemAlignedAlloc(8, 8);
     public static final long functionAddress = Vulkan.getDevice().getCapabilities().vkCmdBindVertexBuffers;
     public static final long functionAddress1 = Vulkan.getDevice().getCapabilities().vkCmdDrawIndexed;
 
     //    public static final VirtualBuffer virtualBufferVtx2=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     static
     {
-        VUtil.UNSAFE.putLong(npointer1, virtualBufferVtx.bufferPointerSuperSet);
+        VUtil.UNSAFE.putLong(SPtr, virtualBufferVtx.bufferPointerSuperSet);
+        VUtil.UNSAFE.putLong(TPtr, TvirtualBufferVtx.bufferPointerSuperSet);
     }
     public static Matrix4f translationOffset;
     public static double camX;
@@ -80,6 +81,10 @@ public class VBOUtil {
 
 
 
+    }
+
+    public static void freeBuff(virtualSegmentBuffer vertexBufferSegment) {
+        (vertexBufferSegment.r()==TRANSLUCENT ? TvirtualBufferVtx : virtualBufferVtx).addFreeableRange(vertexBufferSegment);
     }
 
 //    public static void removeVBO(VBO vbo) {

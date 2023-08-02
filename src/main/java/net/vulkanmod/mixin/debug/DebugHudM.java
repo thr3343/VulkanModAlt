@@ -10,6 +10,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
+import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.gui.GuiBatchRenderer;
 import net.vulkanmod.vulkan.util.VBOUtil;
 import net.vulkanmod.vulkan.DeviceInfo;
@@ -37,6 +38,7 @@ import static org.lwjgl.vulkan.VK10.*;
 @Mixin(DebugScreenOverlay.class)
 public abstract class DebugHudM {
 
+    private static final long maxVRAM = Vulkan.memoryProperties.memoryHeaps(0).size();
     @Shadow @Final private Minecraft minecraft;
 
     @Shadow
@@ -64,8 +66,9 @@ public abstract class DebugHudM {
         strings.add(String.format("Allocated: % 2d%% %03dMB", m * 100L / l, bytesToMegabytes(m)));
         strings.add(String.format("Off-heap: " + getOffHeapMemory() + "MB"));
         strings.add("NativeMemory: " + MemoryManager.getInstance().getNativeMemoryMB() + "MB");
-        strings.add("DeviceMemory: " + MemoryManager.getInstance().getDeviceMemoryMB() + "MB");
-        strings.add("DeviceMemory2: " + (VBOUtil.virtualBufferVtx.size_t >> 20) + "MB");
+        strings.add("UsedVRAM: " + (VBOUtil.TvirtualBufferVtx.usedBytes>>20)+"+"+(VBOUtil.virtualBufferVtx.usedBytes>>20) + "MB");
+        strings.add("ReservedVRAM: " + (VBOUtil.TvirtualBufferVtx.size_t>>20)+"+"+(VBOUtil.virtualBufferVtx.size_t>>20) + "MB");
+        strings.add("TotalVRAM: " + (maxVRAM >>20)+"MB");
         strings.add("");
         strings.add("VulkanMod " + getVersion());
         strings.add("CPU: " + DeviceInfo.cpuInfo);
@@ -77,23 +80,10 @@ public abstract class DebugHudM {
 
         strings.add("Vertex-Buffers");
         strings.add("");
+        strings.add("-=VBO-DrawCalls=-");
+        strings.add("S: "+ WorldRenderer.sectionQueue.size());
+        strings.add("T: "+ WorldRenderer.TsectionQueue.size());
 
-        strings.add("Used Bytes: " + (VBOUtil.virtualBufferVtx.usedBytes >> 20) + "MB");
-        strings.add("Max Size: " + (VBOUtil.virtualBufferVtx.size_t >> 20) + "MB");
-//        strings.add("Allocs: " + VirtualBuffer.allocs);
-//        strings.add("allocBytes: " + VirtualBuffer.allocBytes);
-        strings.add("subAllocs: " + VBOUtil.virtualBufferVtx.subAllocs);
-//        strings.add("Blocks: " + VirtualBuffer.blocks);
-//        strings.add("BlocksBytes: " + VirtualBuffer.blockBytes);
-
-        strings.add("minRange: " + VBOUtil.virtualBufferVtx.unusedRangesS);
-        strings.add("maxRange: " + VBOUtil.virtualBufferVtx.unusedRangesM);
-        strings.add("unusedRangesCount: " + VBOUtil.virtualBufferVtx.unusedRangesCount);
-        strings.add("minVBOSize: " + VBOUtil.virtualBufferVtx.allocMin);
-        strings.add("maxVBOSize: " + VBOUtil.virtualBufferVtx.allocMax);
-        strings.add("unusedBytes: " + (VBOUtil.virtualBufferVtx.size_t- VBOUtil.virtualBufferVtx.usedBytes >> 20) + "MB");
-//        strings.add("freeRanges: " + (VBOUtil.virtualBufferVtx.FreeRanges.size()));
-        strings.add("activeRanges: " + (VBOUtil.virtualBufferVtx.activeRanges.size()));
 
         return strings;
     }

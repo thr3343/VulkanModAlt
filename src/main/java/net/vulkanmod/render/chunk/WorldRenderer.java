@@ -92,8 +92,8 @@ public class WorldRenderer {
 
     RenderRegionCache renderRegionCache;
     int nonEmptyChunks;
-    private final ResettableQueue<VkDrawIndexedIndirectCommand2> sectionQueue = new ResettableQueue<>();
-    private final ResettableQueue<VkDrawIndexedIndirectCommand2> TsectionQueue = new ResettableQueue<>();
+    public static final ResettableQueue<VkDrawIndexedIndirectCommand2> sectionQueue = new ResettableQueue<>();
+    public static final ResettableQueue<VkDrawIndexedIndirectCommand2> TsectionQueue = new ResettableQueue<>();
 
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
@@ -591,13 +591,14 @@ public class WorldRenderer {
 
 //        p.push("draw batches");
 
+        final long suPtr = b ? TPtr : SPtr;
         if(Initializer.CONFIG.bindless) {
-            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, npointer1, (VUtil.nullptr));
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, suPtr, (VUtil.nullptr));
         }
         layerName.setCutoutUniform();
         ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
         if((COMPACT_RENDER_TYPES).contains(layerName)) {
-            if(!Initializer.CONFIG.bindless) drawBatchedIndexed(b, address);
+            if(!Initializer.CONFIG.bindless) drawBatchedIndexed(b, address, suPtr);
             else drawBatchedIndexedBindless(b, address);
         }
 
@@ -621,11 +622,11 @@ public class WorldRenderer {
 
     }
 
-    private void drawBatchedIndexed(boolean b, long address) {
+    private void drawBatchedIndexed(boolean b, long address, long sPtr) {
         for (VkDrawIndexedIndirectCommand2 drawParameters : b ? this.TsectionQueue : this.sectionQueue) {
             {
-                VUtil.UNSAFE.putLong(npointer, drawParameters.vertexOffset());
-                callPPPV(address, 0, 1, npointer1, npointer, functionAddress);
+                VUtil.UNSAFE.putLong(vOffset, drawParameters.vertexOffset());
+                callPPPV(address, 0, 1, sPtr, vOffset, functionAddress);
 
                 callPV(address, drawParameters.indexCount(), 1, 0, 0, 0, functionAddress1);
             }
