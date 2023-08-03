@@ -5,6 +5,7 @@ import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -92,8 +93,8 @@ public class WorldRenderer {
 
     RenderRegionCache renderRegionCache;
     int nonEmptyChunks;
-    public static final ResettableQueue<VkDrawIndexedIndirectCommand2> sectionQueue = new ResettableQueue<>();
-    public static final ResettableQueue<VkDrawIndexedIndirectCommand2> TsectionQueue = new ResettableQueue<>();
+    public static final ObjectArrayList<VkDrawIndexedIndirectCommand2> sectionQueue = new ObjectArrayList<>();
+    public static final ObjectArrayList<VkDrawIndexedIndirectCommand2> TsectionQueue = new ObjectArrayList<>();
 
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
@@ -284,7 +285,7 @@ public class WorldRenderer {
 
     private void resetUpdateQueues() {
         this.chunkAreaQueue.clear();
-        this.sectionGrid.chunkAreaManager.resetQueues();
+//        this.sectionGrid.chunkAreaManager.resetQueues();
     }
 
     private void updateRenderChunks() {

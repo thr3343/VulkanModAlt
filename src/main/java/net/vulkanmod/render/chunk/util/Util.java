@@ -1,12 +1,8 @@
 package net.vulkanmod.render.chunk.util;
 
 import net.minecraft.core.Direction;
-import org.joml.Matrix4f;
-import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
-
-import java.nio.ByteBuffer;
-import java.nio.FloatBuffer;
+import org.lwjgl.system.libc.LibCString;
 
 public class Util {
 
@@ -48,9 +44,9 @@ public class Util {
         return r != 0 ? i + alignment - r : i;
     }
 
-    public static ByteBuffer createCopy(ByteBuffer src) {
-        ByteBuffer ret = MemoryUtil.memAlloc(src.remaining());
-        MemoryUtil.memCopy(src, ret);
+    public static long createCopy(long src, int size) {
+        long ret = MemoryUtil.nmemAlloc(size);
+        LibCString.nmemcpy(ret, src, size);
         return ret;
     }
 }

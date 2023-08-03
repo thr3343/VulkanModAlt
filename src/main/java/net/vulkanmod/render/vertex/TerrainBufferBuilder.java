@@ -518,8 +518,19 @@ public class TerrainBufferBuilder implements VertexConsumer {
 			return TerrainBufferBuilder.this.bufferSlice(i, j);
 		}
 
-		public int vertexBufferPtr() {
-			return this.pointer + this.drawState.vertexBufferStart();
+		public long vertexBufferPtr() {
+			return TerrainBufferBuilder.this.bufferPtr +  this.pointer + this.drawState.vertexBufferStart();
+		}
+
+		public long indexBufferPtr() {
+			return TerrainBufferBuilder.this.bufferPtr +  this.pointer + this.drawState.indexBufferStart();
+		}
+		public int size() {
+			return (this.pointer + this.drawState.vertexBufferEnd()) - (this.pointer + this.drawState.vertexBufferStart());
+		}
+
+		public int size2() {
+			return (this.pointer + this.drawState.indexBufferEnd()) - (this.pointer + this.drawState.indexBufferStart());
 		}
 
 		public ByteBuffer indexBuffer() {

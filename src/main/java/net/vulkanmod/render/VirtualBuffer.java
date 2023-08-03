@@ -219,26 +219,15 @@ public final class VirtualBuffer {
 
     public void addFreeableRange(virtualSegmentBuffer bufferPointer)
     {
-        if(this.r!=bufferPointer.r()) throw new RuntimeException();
-        if(usedBytes==0) return;
-        if(bufferPointer==null) return;
-        if(bufferPointer.allocation()==-1) return;
-        if(bufferPointer.allocation()==0) return;
-//        if(bufferPointer.sizes==0) return;
-        boolean freed =false;
-        Vma.vmaVirtualFree(virtualBlockBufferSuperSet, bufferPointer.allocation());
-        for (int i = 0; i < activeRanges.size(); i++) {
-            virtualSegmentBuffer virtualSegmentBuffer = activeRanges.get(i);
-            if (virtualSegmentBuffer == bufferPointer) {
-                activeRanges.remove(i);
-                freed=true;
-                break;
-            }
-        }
-        if(freed){
+        final virtualSegmentBuffer contains = remFrag(bufferPointer);
+        if(contains !=null)
+        {
+
+            Vma.vmaVirtualFree(virtualBlockBufferSuperSet, contains.allocation());
             subAllocs--;
             usedBytes-=bufferPointer.size_t();
         }
+//
     }
 
     public virtualSegmentBuffer getActiveRangeFromIdx(int index) {
@@ -272,5 +261,29 @@ public final class VirtualBuffer {
         {
             addFreeableRange(virtualSegmentBuffer);
         }
+    }
+
+//    public boolean sizeDupe(int index, virtualSegmentBuffer vertexBufferSegment) {
+//        if(vertexBufferSegment==null) return false;
+//        if(index!=vertexBufferSegment.subIndex()) throw new RuntimeException();
+//        return (contains(vertexBufferSegment));
+//    }
+
+    public virtualSegmentBuffer remFrag(virtualSegmentBuffer vertexBufferSegment) {
+        //                remfragment(activeRanges.remove(i));
+        if(vertexBufferSegment==null) return null;
+        for (int i = 0; i < activeRanges.size(); i++) {
+            virtualSegmentBuffer virtualSegmentBuffer = activeRanges.get(i);
+            if (virtualSegmentBuffer == vertexBufferSegment) {
+                return activeRanges.remove(i);
+            }
+        }
+        return null;
+    }
+
+    public void remfragment(virtualSegmentBuffer vertexBufferSegment) {
+        vmaVirtualFree(virtualBlockBufferSuperSet, vertexBufferSegment.allocation());
+        subAllocs--;
+        usedBytes-= vertexBufferSegment.size_t();
     }
 }

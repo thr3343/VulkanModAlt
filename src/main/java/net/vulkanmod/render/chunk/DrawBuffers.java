@@ -1,5 +1,6 @@
 package net.vulkanmod.render.chunk;
 
+import net.minecraft.util.Mth;
 import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
@@ -82,15 +83,15 @@ public class DrawBuffers {
     }
 
     private void translateVBO(UploadBuffer buffer, int indexCount, int xOffset, int yOffset, int zOffset) {
-        final long addr = MemoryUtil.memAddress0(buffer.getVertexBuffer());
+        final long addr = (buffer.getVertexBuffer());
         final float v = (float) (xOffset - camX - originX);
         final float v1 = (float) (zOffset - camZ - originZ);
 //        final float camX1 = (float) (v < (int) v ? v - 1 : v);
 //        final float camZ1 = (float) (v1 < (int) v1 ? v1 - 1 : v1)
-        final int camX1 = Math.round(v);
-        final int camZ1 = Math.round(v1);
+        final int camX1 = Mth.floor(v);
+        final int camZ1 = Mth.floor(v1);
 
-        for (int i = 0; i < buffer.getVertexBuffer().capacity(); i += VERTEX_SIZE) {
+        for (int i = 0; i < buffer.vertSize; i += VERTEX_SIZE) {
             VUtil.UNSAFE.putFloat(addr + i, (VUtil.UNSAFE.getFloat(addr + i) + (camX1)));
             VUtil.UNSAFE.putFloat(addr + i + 4, (VUtil.UNSAFE.getFloat(addr + i + 4) + yOffset));
             VUtil.UNSAFE.putFloat(addr + i + 8, (VUtil.UNSAFE.getFloat(addr + i + 8) + (camZ1)));
@@ -100,16 +101,15 @@ public class DrawBuffers {
 
     private VkDrawIndexedIndirectCommand2 configureVertexFormat(DrawParameters drawParameters, int index, UploadBuffer parameters, TerrainRenderType r, VirtualBuffer virtualBufferVtx1) {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
-        ByteBuffer data = parameters.getVertexBuffer();
 
-        final int size = data.remaining();
-        if(drawParameters.vertexBufferSegment!=null)
+        final int size = parameters.vertSize;
+        if(virtualBufferVtx1.remFrag(drawParameters.vertexBufferSegment)!=null)
         {
-            virtualBufferVtx1.addFreeableRange(drawParameters.vertexBufferSegment);
+          if(size!=drawParameters.vertexBufferSegment.size_t())  virtualBufferVtx1.remfragment(drawParameters.vertexBufferSegment);
         }
-        drawParameters.vertexBufferSegment = virtualBufferVtx1.allocSubSection(this.areaIndex, index, size, r);
+        else drawParameters.vertexBufferSegment = virtualBufferVtx1.allocSubSection(this.areaIndex, index, size, r);
 
-        AreaUploadManager.INSTANCE.uploadAsync(drawParameters.vertexBufferSegment, virtualBufferVtx1.bufferPointerSuperSet, virtualBufferVtx1.size_t, drawParameters.vertexBufferSegment.i2(), size, data);
+        AreaUploadManager.INSTANCE.uploadAsync(drawParameters.vertexBufferSegment, virtualBufferVtx1.bufferPointerSuperSet, virtualBufferVtx1.size_t, drawParameters.vertexBufferSegment.i2(), size, parameters.getVertexBuffer());
 //            this.vertOff= fakeVertexBuffer.i2()>>5;
         return new VkDrawIndexedIndirectCommand2(parameters.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2(), 0);
     }
@@ -146,10 +146,6 @@ public class DrawBuffers {
         return allocated;
     }
 
-    public void addSection(TerrainRenderType rType, VkDrawIndexedIndirectCommand2 renderSection) {
-        (rType!=TRANSLUCENT ? sectionQueue : TsectionQueue).add(renderSection);
-    }
-
     public static class DrawParameters {
         final int index;
         //        private final TerrainRenderType r;
@@ -168,16 +164,7 @@ public class DrawBuffers {
             this.index = index;
         }
 
-        public void reset(ChunkArea chunkArea) {
-//            this.indexCount = 0;
-//            this.firstIndex = 0;
-            this.initialised =false;
-            //                VBOUtil.virtualBufferVtx.addFreeableRange(this.vertexBufferSegment);
-            //                VBOUtil.virtualBufferVtx.addFreeableRange(this.vertexBufferSegment);
-            //                    this.vertexBufferSegment = null;
-            //                chunkArea.drawBuffers.vertexBuffer.setSegmentFree(this.vertexBufferSegment);
-            //            this.vertexBufferSegment = null;
-        }
+
 
         public void reset() {
             if(initialised) {
