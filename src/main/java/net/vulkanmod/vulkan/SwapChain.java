@@ -3,7 +3,6 @@ package net.vulkanmod.vulkan;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.minecraft.util.Mth;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -46,8 +45,8 @@ public class SwapChain {
     private boolean modeChange;
 
     public SwapChain() {
-
-        this.framesNum = Initializer.CONFIG.frameQueueSize-1;
+        //TODO: Check for Wayland breakage later
+        this.framesNum = Initializer.CONFIG.swapChainSize -1;
         createSwapChain(this.framesNum);
         MemoryManager.createInstance(this.swapChainImages.size());
 
@@ -80,8 +79,8 @@ public class SwapChain {
             VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
             //Workaround for Mesa
-            IntBuffer imageCount = stack.ints(preferredImageCount);
-//            IntBuffer imageCount = stack.ints(Math.max(swapChainSupport.capabilities.minImageCount(), preferredImageCount));
+//            IntBuffer imageCount = stack.ints(preferredImageCount);
+            IntBuffer imageCount = stack.ints(Math.max(swapChainSupport.capabilities.minImageCount(), preferredImageCount));
 
 
             this.swapChainFormat = surfaceFormat.format();

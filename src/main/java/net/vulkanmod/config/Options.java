@@ -3,10 +3,7 @@ package net.vulkanmod.config;
 import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.contents.LiteralContents;
-import net.minecraft.network.chat.contents.TranslatableContents;
 import net.vulkanmod.Initializer;
-import net.vulkanmod.vulkan.Drawer;
 
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
@@ -169,9 +166,9 @@ public class Options {
 
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
-                new RangeOption("RenderFrameQueue", 2, 5, 1,
-                        value -> config.frameQueueSize = value,
-                        () -> config.frameQueueSize)
+                new RangeOption("SwapchainLength", 2, 5, 1,
+                        value -> config.swapChainSize = value,
+                        () -> config.swapChainSize)
                         .setTooltip(Component.nullToEmpty("Restart is needed to take effect")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
