@@ -37,7 +37,8 @@ public class SwapChain {
     public static boolean isBGRAformat;
     private boolean vsync;
 
-    private final int framesNum;
+    //TODO: Check for Wayland breakage later
+    private final int framesNum = Math.max(Initializer.CONFIG.swapChainSize - 1, 2);
 
     private int[] currentLayout;
     private int swapChainFormat;
@@ -45,8 +46,6 @@ public class SwapChain {
     private boolean modeChange;
 
     public SwapChain() {
-        //TODO: Check for Wayland breakage later
-        this.framesNum = Initializer.CONFIG.swapChainSize -1;
         createSwapChain(this.framesNum);
         MemoryManager.createInstance(this.swapChainImages.size());
 
@@ -79,8 +78,7 @@ public class SwapChain {
             VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
             //Workaround for Mesa
-//            IntBuffer imageCount = stack.ints(preferredImageCount);
-            IntBuffer imageCount = stack.ints(Math.max(swapChainSupport.capabilities.minImageCount(), preferredImageCount));
+            IntBuffer imageCount = stack.ints(preferredImageCount);
 
 
             this.swapChainFormat = surfaceFormat.format();
@@ -148,6 +146,7 @@ public class SwapChain {
 
             if(oldSwapChain != VK_NULL_HANDLE && oldSwapChain!=swapChain) {
                 this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));
+                vkDestroySwapchainKHR(device, oldSwapChain, null);
 //                if(modeChange) retiredSwapChains.add(oldSwapChain);
             }
 ////                this.imageViews.forEach(imageView -> vkDestroyImageView(device, imageView, null));

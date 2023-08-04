@@ -171,7 +171,7 @@ public class Options {
                         () -> config.swapChainSize)
                         .setTooltip(Component.nullToEmpty("""
                 The Number of images Used to render, Store and Present Frames to the Screen
-                A SwapChain Length of 3 or higher may help with High FrameRate scenarios
+                A SwapChain Length of 4 or higher may help with High FrameRate scenarios
                 Restart is needed to take effect""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,

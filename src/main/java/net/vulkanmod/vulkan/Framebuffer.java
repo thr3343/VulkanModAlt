@@ -181,7 +181,13 @@ public class Framebuffer {
                 colorAttachment.format(attachmentType.format);
                 colorAttachment.samples(VK_SAMPLE_COUNT_1_BIT);
                 colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
-                colorAttachment.storeOp(VK_ATTACHMENT_STORE_OP_STORE);
+                final int vkAttachmentStoreOpStore = switch (attachmentType)
+                {
+
+                    case COLOR -> getDeviceInfo().hasLoadStoreOpNone ? VK13.VK_ATTACHMENT_STORE_OP_NONE : VK_ATTACHMENT_STORE_OP_STORE;
+                    case DEPTH -> VK_ATTACHMENT_STORE_OP_DONT_CARE;
+                };
+                colorAttachment.storeOp(vkAttachmentStoreOpStore);
                 colorAttachment.initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
                 colorAttachment.finalLayout(attachmentType.layout);
             }
