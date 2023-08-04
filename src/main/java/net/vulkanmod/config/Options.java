@@ -166,10 +166,13 @@ public class Options {
 
     public static Option<?>[] getOtherOpts() {
         return new Option[] {
-                new RangeOption("SwapchainLength", 2, 5, 1,
+                new RangeOption("SwapchainLength", 2, 8, 1,
                         value -> config.swapChainSize = value,
                         () -> config.swapChainSize)
-                        .setTooltip(Component.nullToEmpty("Restart is needed to take effect")),
+                        .setTooltip(Component.nullToEmpty("""
+                The Number of images Used to render, Store and Present Frames to the Screen
+                A SwapChain Length of 3 or higher may help with High FrameRate scenarios
+                Restart is needed to take effect""")),
                 new SwitchOption("Gui Optimizations",
                         value -> config.guiOptimizations = value,
                         () -> config.guiOptimizations)
