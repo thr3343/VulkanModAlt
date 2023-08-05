@@ -1,12 +1,10 @@
 package net.vulkanmod.mixin.render;
 
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.shaders.Program;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.VertexFormat;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
@@ -69,7 +67,7 @@ public class ShaderInstanceM implements ShaderMixed {
         Pipeline.Builder pipelineBuilder = new Pipeline.Builder(format, path);
         pipelineBuilder.parseBindingsJSON();
         pipelineBuilder.compileShaders();
-        this.pipeline = pipelineBuilder.createPipeline();
+        this.pipeline = pipelineBuilder.createPipeline(name);
     }
 
     @Inject(method = "getOrCreate", at = @At("HEAD"), cancellable = true)
@@ -194,7 +192,7 @@ public class ShaderInstanceM implements ShaderMixed {
             builder.setUniforms(Collections.singletonList(ubo), converter.getSamplerList());
             builder.compileShaders(converter.getVshConverted(), converter.getFshConverted());
 
-            this.pipeline = builder.createPipeline();
+            this.pipeline = builder.createPipeline(name);
             this.isLegacy = true;
 
         } catch (Throwable throwable) {

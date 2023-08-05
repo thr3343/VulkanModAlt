@@ -183,7 +183,6 @@ public class Framebuffer {
                 colorAttachment.loadOp(VK_ATTACHMENT_LOAD_OP_CLEAR);
                 final int vkAttachmentStoreOpStore = switch (attachmentType)
                 {
-
                     case COLOR -> getDeviceInfo().hasLoadStoreOpNone ? VK13.VK_ATTACHMENT_STORE_OP_NONE : VK_ATTACHMENT_STORE_OP_STORE;
                     case DEPTH -> VK_ATTACHMENT_STORE_OP_DONT_CARE;
                 };

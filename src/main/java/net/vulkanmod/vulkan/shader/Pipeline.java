@@ -58,6 +58,7 @@ public class Pipeline {
     private int colorFormat;
     private int depthFormat;
 
+    private final String name;
     private final List<UBO> UBOs;
     private final ManualUBO manualUBO;
     private final List<Sampler> samplers;
@@ -66,7 +67,8 @@ public class Pipeline {
     private long vertShaderModule = 0;
     private long fragShaderModule = 0;
 
-    public Pipeline(VertexFormat vertexFormat, int colorFormat, int depthFormat, List<UBO> UBOs, ManualUBO manualUBO, List<Sampler> samplers, PushConstants pushConstants, SPIRV vertSpirv, SPIRV fragSpirv) {
+    public Pipeline(String name, VertexFormat vertexFormat, int colorFormat, int depthFormat, List<UBO> UBOs, ManualUBO manualUBO, List<Sampler> samplers, PushConstants pushConstants, SPIRV vertSpirv, SPIRV fragSpirv) {
+        this.name = name;
         this.UBOs = UBOs;
         this.manualUBO = manualUBO;
         this.samplers = samplers;
@@ -175,14 +177,15 @@ public class Pipeline {
 
             VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachment = VkPipelineColorBlendAttachmentState.callocStack(1, stack);
             colorBlendAttachment.colorWriteMask(state.colorMask.colorMask);
+            boolean blendOverride =(this.name=="terrain_direct");
 
-            if(state.blendState.enabled) {
+            if(blendOverride || state.blendState.enabled) {
                 colorBlendAttachment.blendEnable(true);
-                colorBlendAttachment.srcColorBlendFactor(state.blendState.srcRgbFactor);
-                colorBlendAttachment.dstColorBlendFactor(state.blendState.dstRgbFactor);
+                colorBlendAttachment.srcColorBlendFactor(blendOverride? VK_BLEND_FACTOR_SRC_ALPHA : state.blendState.srcRgbFactor);
+                colorBlendAttachment.dstColorBlendFactor(blendOverride ? VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA : state.blendState.dstRgbFactor);
                 colorBlendAttachment.colorBlendOp(VK_BLEND_OP_ADD);
-                colorBlendAttachment.srcAlphaBlendFactor(state.blendState.srcAlphaFactor);
-                colorBlendAttachment.dstAlphaBlendFactor(state.blendState.dstAlphaFactor);
+                colorBlendAttachment.srcAlphaBlendFactor(blendOverride ? VK_BLEND_FACTOR_ZERO : state.blendState.srcAlphaFactor);
+                colorBlendAttachment.dstAlphaBlendFactor(blendOverride ? VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA : state.blendState.dstAlphaFactor);
                 colorBlendAttachment.alphaBlendOp(VK_BLEND_OP_ADD);
             }
             else {
@@ -736,7 +739,7 @@ public class Pipeline {
             this(vertexFormat, null);
         }
 
-        public Pipeline createPipeline() {
+        public Pipeline createPipeline(String name) {
             Validate.isTrue(this.samplers != null && this.UBOs != null
                     && this.vertShaderSPIRV != null && this.fragShaderSPIRV != null,
                     "Cannot create Pipeline: resources missing");
@@ -747,7 +750,7 @@ public class Pipeline {
             if(this.manualUBO != null)
                 this.UBOs.add(this.manualUBO);
 
-            return new Pipeline(this.vertexFormat, this.framebuffer.getFormat(), this.framebuffer.getDepthFormat(),
+            return new Pipeline(name, this.vertexFormat, this.framebuffer.getFormat(), this.framebuffer.getDepthFormat(),
                     this.UBOs, this.manualUBO, this.samplers, this.pushConstants, this.vertShaderSPIRV, this.fragShaderSPIRV);
         }
 

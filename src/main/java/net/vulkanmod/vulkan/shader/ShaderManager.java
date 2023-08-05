@@ -35,7 +35,7 @@ public class ShaderManager {
         Pipeline.Builder pipelineBuilder = new Pipeline.Builder(TERRAIN_VERTEX_FORMAT, path);
         pipelineBuilder.parseBindingsJSON();
         pipelineBuilder.compileShaders2(vertShaderSPIRV1, fragShaderSPIRV1);
-        return pipelineBuilder.createPipeline();
+        return pipelineBuilder.createPipeline(name);
     }
 
     public void destroyPipelines() {
