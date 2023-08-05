@@ -177,15 +177,15 @@ public class Pipeline {
 
             VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachment = VkPipelineColorBlendAttachmentState.callocStack(1, stack);
             colorBlendAttachment.colorWriteMask(state.colorMask.colorMask);
-            boolean blendOverride =(this.name=="terrain_direct");
+            boolean blendOverride = false; //(this.name=="terrain_direct");
 
-            if(blendOverride || state.blendState.enabled) {
+            if(state.blendState.enabled) {
                 colorBlendAttachment.blendEnable(true);
-                colorBlendAttachment.srcColorBlendFactor(blendOverride? VK_BLEND_FACTOR_SRC_ALPHA : state.blendState.srcRgbFactor);
-                colorBlendAttachment.dstColorBlendFactor(blendOverride ? VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA : state.blendState.dstRgbFactor);
+                colorBlendAttachment.srcColorBlendFactor(state.blendState.srcRgbFactor);
+                colorBlendAttachment.dstColorBlendFactor(state.blendState.dstRgbFactor);
                 colorBlendAttachment.colorBlendOp(VK_BLEND_OP_ADD);
-                colorBlendAttachment.srcAlphaBlendFactor(blendOverride ? VK_BLEND_FACTOR_ZERO : state.blendState.srcAlphaFactor);
-                colorBlendAttachment.dstAlphaBlendFactor(blendOverride ? VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA : state.blendState.dstAlphaFactor);
+                colorBlendAttachment.srcAlphaBlendFactor(state.blendState.srcAlphaFactor);
+                colorBlendAttachment.dstAlphaBlendFactor(state.blendState.dstAlphaFactor);
                 colorBlendAttachment.alphaBlendOp(VK_BLEND_OP_ADD);
             }
             else {

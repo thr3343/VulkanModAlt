@@ -38,6 +38,7 @@ import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
+import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.FrustumIntersection;
@@ -584,7 +585,13 @@ public class WorldRenderer {
         VRenderSystem.applyMVP(translationOffset, projection);
 
         Drawer drawer = Drawer.getInstance();
-        drawer.bindPipeline(ShaderManager.shaderManager.terrainDirectShader);
+        final Pipeline terrainDirectShader = switch (layerName)
+        {
+
+            case CUTOUT_MIPPED -> ShaderManager.shaderManager.terrainDirectShader;
+            case TRANSLUCENT -> ShaderManager.shaderManager.terrainDirectShader2;
+        };
+        drawer.bindPipeline(terrainDirectShader);
         final VkCommandBuffer commandBuffer = Drawer.getCommandBuffer();
         final long address = commandBuffer.address();
         final boolean b = layerName == TRANSLUCENT;
@@ -597,7 +604,7 @@ public class WorldRenderer {
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, suPtr, (VUtil.nullptr));
         }
         layerName.setCutoutUniform();
-        ShaderManager.shaderManager.terrainDirectShader.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
+        terrainDirectShader.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
         if((COMPACT_RENDER_TYPES).contains(layerName)) {
             if(!Initializer.CONFIG.bindless) drawBatchedIndexed(b, address, suPtr);
             else drawBatchedIndexedBindless(b, address);
@@ -624,7 +631,7 @@ public class WorldRenderer {
     }
 
     private void drawBatchedIndexed(boolean b, long address, long sPtr) {
-        for (VkDrawIndexedIndirectCommand2 drawParameters : b ? this.TsectionQueue : this.sectionQueue) {
+        for (VkDrawIndexedIndirectCommand2 drawParameters : b ? TsectionQueue : sectionQueue) {
             {
                 VUtil.UNSAFE.putLong(vOffset, drawParameters.vertexOffset());
                 callPPPV(address, 0, 1, sPtr, vOffset, functionAddress);
@@ -634,7 +641,7 @@ public class WorldRenderer {
         }
     }
     private void drawBatchedIndexedBindless(boolean b, long address) {
-        for (VkDrawIndexedIndirectCommand2 drawParameters : b ? this.TsectionQueue : this.sectionQueue) {
+        for (VkDrawIndexedIndirectCommand2 drawParameters : b ? TsectionQueue : sectionQueue) {
             {
                 callPV(address, drawParameters.indexCount(), 1, 0, drawParameters.vertexOffset() / DrawBuffers.VERTEX_SIZE, 0, functionAddress1);
             }
