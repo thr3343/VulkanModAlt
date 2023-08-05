@@ -155,7 +155,7 @@ public final class VirtualBuffer {
         {
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
                     .size((size_t))
-                    .alignment(32)
+                    .alignment(0)
                     .flags(0)
                     .pUserData(NULL);
 

@@ -95,11 +95,11 @@ public class DrawBuffers {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
 
         final int size = parameters.vertSize;
-        if(virtualBufferVtx1.remFrag(drawParameters.vertexBufferSegment)!=null)
+        if(drawParameters.vertexBufferSegment==null || !virtualBufferVtx1.isAlreadyLoaded(drawParameters.index, size))
         {
-            virtualBufferVtx1.remfragment(drawParameters.vertexBufferSegment);
+            drawParameters.vertexBufferSegment = virtualBufferVtx1.allocSubSection(this.areaIndex, index, size, r);
         }
-        drawParameters.vertexBufferSegment = virtualBufferVtx1.allocSubSection(this.areaIndex, index, size, r);
+
 
         AreaUploadManager.INSTANCE.uploadAsync(drawParameters.vertexBufferSegment, virtualBufferVtx1.bufferPointerSuperSet, virtualBufferVtx1.size_t, drawParameters.vertexBufferSegment.i2(), size, parameters.getVertexBuffer());
 //            this.vertOff= fakeVertexBuffer.i2()>>5;
