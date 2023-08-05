@@ -1,22 +1,15 @@
 package net.vulkanmod.mixin.debug;
 
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.DebugScreenOverlay;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.vulkanmod.render.chunk.WorldRenderer;
-import net.vulkanmod.render.gui.GuiBatchRenderer;
-import net.vulkanmod.vulkan.util.VBOUtil;
+import net.vulkanmod.render.chunk.UberBufferSet;
 import net.vulkanmod.vulkan.DeviceInfo;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import org.jetbrains.annotations.NotNull;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
@@ -33,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static net.vulkanmod.Initializer.getVersion;
-import static org.lwjgl.vulkan.VK10.*;
 
 @Mixin(DebugScreenOverlay.class)
 public abstract class DebugHudM {
@@ -66,8 +58,8 @@ public abstract class DebugHudM {
         strings.add(String.format("Allocated: % 2d%% %03dMB", m * 100L / l, bytesToMegabytes(m)));
         strings.add(String.format("Off-heap: " + getOffHeapMemory() + "MB"));
         strings.add("NativeMemory: " + MemoryManager.getInstance().getNativeMemoryMB() + "MB");
-        strings.add("UsedVRAM: " + (VBOUtil.TvirtualBufferVtx.usedBytes>>20)+"+"+(VBOUtil.virtualBufferVtx.usedBytes>>20) + "MB");
-        strings.add("ReservedVRAM: " + (VBOUtil.TvirtualBufferVtx.size_t>>20)+"+"+(VBOUtil.virtualBufferVtx.size_t>>20) + "MB");
+        strings.add("UsedVRAM: " + (UberBufferSet.TvirtualBufferVtx.usedBytes>>20)+"+"+(UberBufferSet.virtualBufferVtx.usedBytes>>20) + "MB");
+        strings.add("ReservedVRAM: " + (UberBufferSet.TvirtualBufferVtx.size_t>>20)+"+"+(UberBufferSet.virtualBufferVtx.size_t>>20) + "MB");
         strings.add("TotalVRAM: " + (maxVRAM >>20)+"MB");
         strings.add("");
         strings.add("VulkanMod " + getVersion());
@@ -81,8 +73,8 @@ public abstract class DebugHudM {
         strings.add("Vertex-Buffers");
         strings.add("");
         strings.add("-=VBO-DrawCalls=-");
-        strings.add("S: "+ WorldRenderer.sectionQueue.size());
-        strings.add("T: "+ WorldRenderer.TsectionQueue.size());
+        strings.add("S: "+ UberBufferSet.sectionQueue.size());
+        strings.add("T: "+ UberBufferSet.TsectionQueue.size());
 
 
         return strings;

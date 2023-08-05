@@ -5,7 +5,6 @@ import com.google.common.collect.Sets;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -48,6 +47,7 @@ import org.lwjgl.vulkan.VkCommandBuffer;
 import javax.annotation.Nullable;
 import java.util.*;
 
+import static net.vulkanmod.render.chunk.UberBufferSet.*;
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 import static net.vulkanmod.vulkan.util.VBOUtil.*;
 import static org.lwjgl.system.JNI.callPPPV;
@@ -94,8 +94,6 @@ public class WorldRenderer {
 
     RenderRegionCache renderRegionCache;
     int nonEmptyChunks;
-    public static final ObjectArrayList<VkDrawIndexedIndirectCommand2> sectionQueue = new ObjectArrayList<>();
-    public static final ObjectArrayList<VkDrawIndexedIndirectCommand2> TsectionQueue = new ObjectArrayList<>();
 
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
@@ -599,14 +597,13 @@ public class WorldRenderer {
 
 //        p.push("draw batches");
 
-        final long suPtr = b ? TPtr : SPtr;
         if(Initializer.CONFIG.bindless) {
-            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, suPtr, (VUtil.nullptr));
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, b ? TPtr : UberBufferSet.SPtr, (VUtil.nullptr));
         }
         layerName.setCutoutUniform();
         terrainDirectShader.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
         if((COMPACT_RENDER_TYPES).contains(layerName)) {
-            if(!Initializer.CONFIG.bindless) drawBatchedIndexed(b, address, suPtr);
+            if(!Initializer.CONFIG.bindless) drawBatchedIndexed(b, address);
             else drawBatchedIndexedBindless(b, address);
         }
 
@@ -630,16 +627,33 @@ public class WorldRenderer {
 
     }
 
-    private void drawBatchedIndexed(boolean b, long address, long sPtr) {
-        for (VkDrawIndexedIndirectCommand2 drawParameters : b ? TsectionQueue : sectionQueue) {
+    private void drawBatchedIndexed(boolean b, long address) {
+        if(!b) drawSolid(address);
+        else drawTranslucent(address);
+    }
+
+    private static void drawTranslucent(long address) {
+        for (int i = TsectionQueue.size() - 1; i >= 0; i--) {
             {
+                final VkDrawIndexedIndirectCommand2 drawParameters = TsectionQueue.get(i);
                 VUtil.UNSAFE.putLong(vOffset, drawParameters.vertexOffset());
-                callPPPV(address, 0, 1, sPtr, vOffset, functionAddress);
+                callPPPV(address, 0, 1, UberBufferSet.TPtr, vOffset, functionAddress);
 
                 callPV(address, drawParameters.indexCount(), 1, 0, 0, 0, functionAddress1);
             }
         }
     }
+    private static void drawSolid(long address) {
+        for (VkDrawIndexedIndirectCommand2 drawParameters : sectionQueue) {
+            {
+                VUtil.UNSAFE.putLong(vOffset, drawParameters.vertexOffset());
+                callPPPV(address, 0, 1, UberBufferSet.SPtr, vOffset, functionAddress);
+
+                callPV(address, drawParameters.indexCount(), 1, 0, 0, 0, functionAddress1);
+            }
+        }
+    }
+
     private void drawBatchedIndexedBindless(boolean b, long address) {
         for (VkDrawIndexedIndirectCommand2 drawParameters : b ? TsectionQueue : sectionQueue) {
             {

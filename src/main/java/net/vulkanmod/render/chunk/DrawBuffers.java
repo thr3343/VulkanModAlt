@@ -4,14 +4,10 @@ import net.minecraft.util.Mth;
 import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
-import net.vulkanmod.render.chunk.util.StaticQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.shader.ShaderManager;
 import net.vulkanmod.vulkan.util.VBOUtil;
 import net.vulkanmod.vulkan.util.VUtil;
-import org.lwjgl.system.MemoryUtil;
-
-import java.nio.ByteBuffer;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
 import static net.vulkanmod.vulkan.util.VBOUtil.*;
@@ -51,7 +47,7 @@ public class DrawBuffers {
         {
             translateVBO(buffer, buffer.indexCount, xOffset, yOffset, zOffset);
 
-            final VirtualBuffer virtualBufferVtx1 = r==TRANSLUCENT ? TvirtualBufferVtx : virtualBufferVtx;
+            final VirtualBuffer virtualBufferVtx1 = r==TRANSLUCENT ? UberBufferSet.TvirtualBufferVtx : UberBufferSet.virtualBufferVtx;
             drawParameters.vertexBufferSegment1=  this.configureVertexFormat(drawParameters, drawParameters.index, buffer, r, virtualBufferVtx1);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
             drawParameters.initialised =true;
@@ -125,8 +121,8 @@ public class DrawBuffers {
 //            a.initialised=false;
 //            a.vertexBufferSegment=null;
 //        }
-        virtualBufferVtx.freeRange(this.areaIndex);
-        TvirtualBufferVtx.freeRange(this.areaIndex);
+        UberBufferSet.virtualBufferVtx.freeRange(this.areaIndex);
+        UberBufferSet.TvirtualBufferVtx.freeRange(this.areaIndex);
 //        this.sectionQueue.clear();
 //        this.TsectionQueue.clear();
 
