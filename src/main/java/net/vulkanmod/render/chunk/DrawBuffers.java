@@ -1,7 +1,6 @@
 package net.vulkanmod.render.chunk;
 
 import net.minecraft.util.Mth;
-import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -9,7 +8,6 @@ import net.vulkanmod.vulkan.shader.ShaderManager;
 import net.vulkanmod.vulkan.util.VBOUtil;
 import net.vulkanmod.vulkan.util.VUtil;
 
-import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
 import static net.vulkanmod.vulkan.util.VBOUtil.*;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.MemoryUtil.memAddress;
@@ -47,8 +45,7 @@ public class DrawBuffers {
         {
             translateVBO(buffer, buffer.indexCount, xOffset, yOffset, zOffset);
 
-            final VirtualBuffer virtualBufferVtx1 = r==TRANSLUCENT ? UberBufferSet.TvirtualBufferVtx : UberBufferSet.virtualBufferVtx;
-            drawParameters.vertexBufferSegment1=  this.configureVertexFormat(drawParameters, drawParameters.index, buffer, r, virtualBufferVtx1);
+            drawParameters.vertexBufferSegment1=  VBOUtil.getCurrentUIndex(buffer.vertSize, r).configureVertexFormat(drawParameters, this.areaIndex, drawParameters.index, buffer, r);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
             drawParameters.initialised =true;
 //            drawParameters.firstIndex = 0;
@@ -91,20 +88,6 @@ public class DrawBuffers {
 
     }
 
-    private VkDrawIndexedIndirectCommand2 configureVertexFormat(DrawParameters drawParameters, int index, UploadBuffer parameters, TerrainRenderType r, VirtualBuffer virtualBufferVtx1) {
-//        boolean bl = !parameters.format().equals(this.vertexFormat);
-
-        final int size = parameters.vertSize;
-        if(virtualBufferVtx1.remFrag(drawParameters.vertexBufferSegment)!=null)
-        {
-            virtualBufferVtx1.remfragment(drawParameters.vertexBufferSegment);
-        }
-        drawParameters.vertexBufferSegment = virtualBufferVtx1.allocSubSection(this.areaIndex, index, size, r);
-
-        AreaUploadManager.INSTANCE.uploadAsync(drawParameters.vertexBufferSegment, virtualBufferVtx1.bufferPointerSuperSet, virtualBufferVtx1.size_t, drawParameters.vertexBufferSegment.i2(), size, parameters.getVertexBuffer());
-//            this.vertOff= fakeVertexBuffer.i2()>>5;
-        return new VkDrawIndexedIndirectCommand2(parameters.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2(), 0);
-    }
     public void releaseBuffers() {
         if(!this.allocated)
             return;
@@ -121,8 +104,7 @@ public class DrawBuffers {
 //            a.initialised=false;
 //            a.vertexBufferSegment=null;
 //        }
-        UberBufferSet.virtualBufferVtx.freeRange(this.areaIndex);
-        UberBufferSet.TvirtualBufferVtx.freeRange(this.areaIndex);
+          VBOUtil.getCurrentUIndex().freeRange(this.areaIndex);
 //        this.sectionQueue.clear();
 //        this.TsectionQueue.clear();
 
@@ -161,7 +143,7 @@ public class DrawBuffers {
         public void reset() {
             if(initialised) {
                 initialised = false;
-                VBOUtil.freeBuff(this.vertexBufferSegment);
+                VBOUtil.getCurrentUIndex().freeBuff(this.vertexBufferSegment);
                 this.vertexBufferSegment = null;
                 this.vertexBufferSegment1 = null;
             }

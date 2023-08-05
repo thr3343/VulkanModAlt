@@ -1,11 +1,15 @@
 package net.vulkanmod.render;
 
 import it.unimi.dsi.fastutil.objects.*;
+import net.vulkanmod.render.chunk.UberBufferSet;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.util.VBOUtil;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.vma.*;
 import org.lwjgl.vulkan.*;
 
@@ -19,17 +23,13 @@ import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public final class VirtualBuffer {
+    public final long uPtr= MemoryUtil.nmemAlignedAlloc(8, 8);
     public final long bufferPointerSuperSet;
     private final long virtualBlockBufferSuperSet;
     public final long size_t;
     //    public int subIncr;
     public int usedBytes;
     public int subAllocs;
-    public long unusedRangesS;
-    public long unusedRangesM;
-    public int unusedRangesCount;
-    public long allocMin;
-    public long allocMax;
 //    public boolean bound=false;
     private final long  bufferPtrBackingAlloc;
 //    private static long  PUSERDATA=nmemAlignedAlloc(8, 8);
@@ -43,6 +43,7 @@ public final class VirtualBuffer {
     public final ObjectArrayList<virtualSegmentBuffer> activeRanges = new ObjectArrayList<>(1024);
     private final int vkBufferType;
     private final TerrainRenderType r;
+    private boolean MaxedAvailable = false;
 
 
     public VirtualBuffer(long size_t, int type, TerrainRenderType r)
@@ -68,6 +69,7 @@ public final class VirtualBuffer {
             PointerBuffer block = stack.mallocPointer(1);
             Vma.vmaCreateVirtualBlock(blockCreateInfo, block);
             virtualBlockBufferSuperSet = block.get(0);
+            VUtil.UNSAFE.putLong(this.uPtr, this.bufferPointerSuperSet);
 
 //            size_t=size;
 //            bound=true;
@@ -147,15 +149,17 @@ public final class VirtualBuffer {
 
     //TODO: Global ChunKArea index....
     public virtualSegmentBuffer allocSubSection(int areaIndex, int subIndex, int size_t, TerrainRenderType r) {
+        if(this.MaxedAvailable) throw new RuntimeException();
         if(this.r!=r) throw new RuntimeException();
-        if(this.size_t <=usedBytes+ (size_t))
-            reload(size_t);
+        if(!this.canAllocate(size_t)) throw new RuntimeException();
+//        if(this.size_t <=usedBytes+ (size_t))
+//            reload(size_t);
 
         try(MemoryStack stack = MemoryStack.stackPush())
         {
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
                     .size((size_t))
-                    .alignment(32)
+                    .alignment(0)
                     .flags(0)
                     .pUserData(NULL);
 
@@ -168,8 +172,9 @@ public final class VirtualBuffer {
             
             if(nvmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo.address(), pAlloc, pOffset) ==VK_ERROR_OUT_OF_DEVICE_MEMORY)
             {
-                reload(size_t);
-                nvmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo.address(), pAlloc, pOffset);
+                throw new RuntimeException();
+//                reload(size_t);
+//                nvmaVirtualAllocate(virtualBlockBufferSuperSet, allocCreateInfo.address(), pAlloc, pOffset);
             }
 
 //            updateStatistics(stack);
@@ -182,61 +187,19 @@ public final class VirtualBuffer {
 
     private void reload(int actualSize) {
         System.out.println(size_t+"-->"+(size_t-usedBytes)+"-->"+(usedBytes+ actualSize)+"-->"+ actualSize +"-->"+size_t);
-        WorldRenderer.getInstance().setNeedsUpdate();
-        WorldRenderer.getInstance().allChanged();
+//        WorldRenderer.getInstance().setNeedsUpdate();
+//        WorldRenderer.getInstance().allChanged();
     }
 
-    public boolean isAlreadyLoaded(int index, int remaining) {
-        virtualSegmentBuffer virtualSegmentBuffer = getActiveRangeFromIdx(index);
-        if(virtualSegmentBuffer ==null) return false;
-        if(virtualSegmentBuffer.size_t()>=remaining)
-        {
-            return true;
-        }
-        addFreeableRange(virtualSegmentBuffer);
-        return false;
-
-
-    }
-
-
-    //Not Supported on LWJGL 3.3.1
-    private void updateStatistics(MemoryStack stack) {
-        VmaDetailedStatistics vmaStatistics = VmaDetailedStatistics.malloc(stack);
-        vmaCalculateVirtualBlockStatistics(virtualBlockBufferSuperSet, vmaStatistics);
-//        vmaGetVirtualBlockStatistics(virtualBlockBufferSuperSet, vmaStatistics.statistics());
-//        usedBytes= (int) vmaStatistics.statistics().allocationBytes();
-//        allocs=vmaStatistics.statistics().allocationCount();
-//        allocBytes= (int) vmaStatistics.statistics().allocationBytes();
-//        blocks=vmaStatistics.statistics().blockCount();
-//        blockBytes=vmaStatistics.statistics().blockBytes();
-        unusedRangesS=vmaStatistics.unusedRangeSizeMin();
-        unusedRangesM=vmaStatistics.unusedRangeSizeMax();
-        unusedRangesCount=vmaStatistics.unusedRangeCount();
-        allocMin=vmaStatistics.allocationSizeMin();
-        allocMax=vmaStatistics.allocationSizeMax();
-    }
 
     public void addFreeableRange(virtualSegmentBuffer bufferPointer)
     {
-        final virtualSegmentBuffer contains = remFrag(bufferPointer);
-        if(contains !=null)
+        if(remFrag(bufferPointer) !=null)
         {
 
-            Vma.vmaVirtualFree(virtualBlockBufferSuperSet, contains.allocation());
-            subAllocs--;
-            usedBytes-=bufferPointer.size_t();
+            remfragment(bufferPointer);
         }
 //
-    }
-
-    public virtualSegmentBuffer getActiveRangeFromIdx(int index) {
-        for (virtualSegmentBuffer virtualSegmentBuffer : activeRanges) {
-            if (virtualSegmentBuffer.subIndex() == index) {
-                return virtualSegmentBuffer;
-            }
-        }
-        return null;
     }
 
     //Makes Closing the game very slow
@@ -246,6 +209,7 @@ public final class VirtualBuffer {
         {
             Vma.vmaDestroyVirtualBlock(virtualBlockBufferSuperSet);
             vmaDestroyBuffer(Vulkan.getAllocator(), bufferPointerSuperSet, bufferPtrBackingAlloc);
+            nmemAlignedFree(this.uPtr);
         }
         System.out.println("FREED");
     }
@@ -285,5 +249,9 @@ public final class VirtualBuffer {
         vmaVirtualFree(virtualBlockBufferSuperSet, vertexBufferSegment.allocation());
         subAllocs--;
         usedBytes-= vertexBufferSegment.size_t();
+    }
+
+    public boolean canAllocate(int size) {
+        return (this.size_t >usedBytes+ (size));
     }
 }

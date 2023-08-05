@@ -1,14 +1,13 @@
 package net.vulkanmod.vulkan.util;
 
 import com.mojang.blaze3d.vertex.PoseStack;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.render.chunk.UberBufferSet;
-import net.vulkanmod.render.virtualSegmentBuffer;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
-
-import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
 
 //Use smaller class instead of WorldRenderer in case it helps GC/Heap fragmentation e.g.
 public class VBOUtil {
@@ -17,15 +16,18 @@ public class VBOUtil {
     public static final long functionAddress = Vulkan.getDevice().getCapabilities().vkCmdBindVertexBuffers;
     public static final long functionAddress1 = Vulkan.getDevice().getCapabilities().vkCmdDrawIndexed;
 
-    //    public static final VirtualBuffer virtualBufferVtx2=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        public static final ObjectArrayList<UberBufferSet> VirtualBuffers =ObjectArrayList.of(new UberBufferSet());
 
     public static Matrix4f translationOffset;
     public static double camX;
     public static double camZ;
     public static double originX;
     public static double originZ;
+    public static int usedBytes;
     private static double prevCamX;
     private static double prevCamZ;
+    public static long Ssize_t;
+    public static long Tsize_t;
 
 //    private static final ShaderInstance test;
 //    private static final ShaderInstance test2;
@@ -67,11 +69,36 @@ public class VBOUtil {
 
     }
 
-    public static void freeBuff(virtualSegmentBuffer vertexBufferSegment) {
-        (vertexBufferSegment.r()==TRANSLUCENT ? UberBufferSet.TvirtualBufferVtx : UberBufferSet.virtualBufferVtx).addFreeableRange(vertexBufferSegment);
+    public static void addUberSection() {
+        System.out.println("ADDIng+!");
+        final UberBufferSet k = new UberBufferSet();
+        VirtualBuffers.add(k);
+        Ssize_t +=k.Ssize_t;
+        Tsize_t +=k.Tsize_t;
     }
 
-//    public static void removeVBO(VBO vbo) {
+    public static UberBufferSet getCurrentUIndex() {
+        return VirtualBuffers.get(VirtualBuffers.size() - 1);
+    }
+
+    public static UberBufferSet getCurrentUIndex(int size, TerrainRenderType r) {
+
+        while (!pollBuffers(size, r))
+        {
+            addUberSection();
+        }
+        return VirtualBuffers.get(VirtualBuffers.size() - 1);
+    }
+
+    private static boolean pollBuffers(int size, TerrainRenderType r) {
+        return VirtualBuffers.get(VirtualBuffers.size() - 1).hasAvailable(r, size);
+    }
+
+    public static void resetAll() {
+        VirtualBuffers.forEach(UberBufferSet::clear);
+    }
+
+    //    public static void removeVBO(VBO vbo) {
 //        //            case CUTOUT_MIPPED -> cutoutMippedChunks.remove(vbo);
 //        (vbo.type == RenderTypes.CUTOUT?cutoutChunks:translucentChunks).remove(vbo);
 //

@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan.queue;
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.util.VUtil;
+import org.apache.commons.lang3.Validate;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.JNI;
 import org.lwjgl.system.MemoryStack;
@@ -69,10 +70,9 @@ public enum Queues {
         }
     }
 
-    public void uploadBufferImmediate(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size) {
+    public void uploadBufferImmediate(long srcBuffer, long srcOffset, long dstBuffer, long dstOffset, long size, CommandPool.CommandBuffer commandBuffer) {
 
         try (MemoryStack stack = stackPush()) {
-            CommandPool.CommandBuffer commandBuffer = beginCommands();
 
             VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
             copyRegion.size(size);
@@ -82,7 +82,7 @@ public enum Queues {
             vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegion);
 
             submitCommands(commandBuffer);
-            VK10.vkWaitForFences(Vulkan.getDevice(), commandBuffer.fence, false, 0);
+            VK10.vkWaitForFences(Vulkan.getDevice(), commandBuffer.fence, true, -1);
             commandBuffer.reset();
         }
     }
@@ -105,6 +105,13 @@ public enum Queues {
 //    public abstract long submitCommands(CommandPool.CommandBuffer commandBuffer);
 
 
+    public void startIfNeeded() {
+        if(!currentCmdBuffer.isRecording())
+        {
+            currentCmdBuffer = beginCommands();
+        }
+    }    
+    
     public void startRecording() {
         currentCmdBuffer = beginCommands();
     }

@@ -10,8 +10,6 @@ import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
 import org.apache.commons.lang3.Validate;
 
-import java.nio.ByteBuffer;
-
 import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 
 public class AreaUploadManager {
@@ -55,7 +53,7 @@ public class AreaUploadManager {
 
     public void uploadAsync(virtualSegmentBuffer uploadSegment, long bufferId, long dstBufferSize, long dstOffset, long bufferSize, long src) {
         Validate.isTrue(currentFrame == Drawer.getCurrentFrame());
-        Validate.isTrue(dstOffset<dstBufferSize);
+//        Validate.isTrue(dstOffset<dstBufferSize);
 
         if(commandBuffers[currentFrame] == null)
             this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
@@ -63,10 +61,27 @@ public class AreaUploadManager {
 
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(this.currentFrame);
         stagingBuffer.copyBuffer2((int) bufferSize, src);
-
+        if(dstOffset>dstBufferSize) throw new IllegalStateException();
         TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
 
         this.recordedUploads[this.currentFrame].add(uploadSegment);
+    }
+
+    public void uploadSync(long bufferId, long dstBufferSize, long dstOffset, long bufferSize, long src) {
+        Validate.isTrue(currentFrame == Drawer.getCurrentFrame());
+//        Validate.isTrue(dstOffset<dstBufferSize);
+
+//        if(commandBuffers[currentFrame] == null)
+//            this.commandBuffers[currentFrame] = TransferQueue.beginCommands();
+//            this.commandBuffers[currentFrame] = GraphicsQueue.getInstance().beginCommands();
+
+        StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(this.currentFrame);
+        stagingBuffer.copyBuffer2((int) bufferSize, src);
+        if(dstOffset>dstBufferSize) throw new IllegalStateException();
+
+        TransferQueue.uploadBufferImmediate(stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize, TransferQueue.beginCommands());
+
+//        this.recordedUploads[this.currentFrame].add(uploadSegment);
     }
 
 //    public void enqueueParameterUpdate(DrawBuffers.ParametersUpdate parametersUpdate) {

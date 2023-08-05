@@ -8,7 +8,6 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.ShaderMixed;
 import net.vulkanmod.render.chunk.AreaUploadManager;
-import net.vulkanmod.render.chunk.UberBufferSet;
 import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.memory.*;
 import net.vulkanmod.vulkan.shader.Pipeline;
@@ -16,6 +15,7 @@ import net.vulkanmod.vulkan.shader.PipelineState;
 import net.vulkanmod.vulkan.shader.ShaderManager;
 import net.vulkanmod.vulkan.shader.layout.PushConstants;
 import net.vulkanmod.vulkan.texture.VTextureSelector;
+import net.vulkanmod.vulkan.util.VBOUtil;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.opengl.GL11C;
@@ -516,8 +516,7 @@ public class Drawer {
             vkDestroySemaphore(device, imageAvailableSemaphores.get(i), null);
             vkDestroySemaphore(device, renderFinishedSemaphores.get(i), null);
         }
-        UberBufferSet.virtualBufferVtx.cleanUp();
-        UberBufferSet.TvirtualBufferVtx.cleanUp();
+
         buffer = this.quadsIndexBuffer.getIndexBuffer();
         memoryManager.freeBuffer(buffer.getId(), buffer.getAllocation());
         buffer = this.triangleFanIndexBuffer.getIndexBuffer();
