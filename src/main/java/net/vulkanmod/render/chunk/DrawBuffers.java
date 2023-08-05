@@ -29,10 +29,6 @@ public class DrawBuffers {
 //    AreaBuffer vertexBuffer;
 //    AreaBuffer indexBuffer;
 
-//    final StaticQueue<VkDrawIndexedIndirectCommand2> sectionQueue2 = new StaticQueue<>(512);
-    final StaticQueue<VkDrawIndexedIndirectCommand2> sectionQueue = new StaticQueue<>(512);
-    final StaticQueue<VkDrawIndexedIndirectCommand2> TsectionQueue = new StaticQueue<>(512);
-
 
     //                callPJPV(commandBuffer.address(), pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, 12, new float[]{(float) ((double) section.xOffset - camX), (float) ((double) section.yOffset - camY), (float) ((double) section.zOffset - camZ)}, commandBuffer.getCapabilities().vkCmdPushConstants);
 
@@ -105,9 +101,9 @@ public class DrawBuffers {
         final int size = parameters.vertSize;
         if(virtualBufferVtx1.remFrag(drawParameters.vertexBufferSegment)!=null)
         {
-          if(size!=drawParameters.vertexBufferSegment.size_t())  virtualBufferVtx1.remfragment(drawParameters.vertexBufferSegment);
+            virtualBufferVtx1.remfragment(drawParameters.vertexBufferSegment);
         }
-        else drawParameters.vertexBufferSegment = virtualBufferVtx1.allocSubSection(this.areaIndex, index, size, r);
+        drawParameters.vertexBufferSegment = virtualBufferVtx1.allocSubSection(this.areaIndex, index, size, r);
 
         AreaUploadManager.INSTANCE.uploadAsync(drawParameters.vertexBufferSegment, virtualBufferVtx1.bufferPointerSuperSet, virtualBufferVtx1.size_t, drawParameters.vertexBufferSegment.i2(), size, parameters.getVertexBuffer());
 //            this.vertOff= fakeVertexBuffer.i2()>>5;

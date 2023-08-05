@@ -144,15 +144,13 @@ public class Options {
                         particlesMode -> Component.translatable(particlesMode.getKey()),
                         value -> minecraftOptions.particles().set(value),
                         () -> minecraftOptions.particles().get()),
-                new SwitchOption("Unique opaque layer",
+                new SwitchOption("Render Sky",
                         value -> {
-                            config.uniqueOpaqueLayer = value;
+                            config.renderSky = value;
                             Minecraft.getInstance().levelRenderer.allChanged();
                         },
-                        () -> config.uniqueOpaqueLayer)
-                        .setTooltip(Component.nullToEmpty("""
-                        Improves performance by using a unique render layer for opaque terrain rendering.
-                        It changes distant grass aspect and may cause unexpected texture behaviour""")),
+                        () -> config.renderSky)
+                        .setTooltip(Component.nullToEmpty("")),
                 new CyclingOption<>("Mipmap Levels",
                         new Integer[]{0, 1, 2, 3, 4},
                         value -> Component.nullToEmpty(value.toString()),
