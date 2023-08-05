@@ -155,7 +155,7 @@ public final class VirtualBuffer {
         {
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
                     .size((size_t))
-                    .alignment(0)
+                    .alignment(32)
                     .flags(0)
                     .pUserData(NULL);
 
@@ -173,11 +173,20 @@ public final class VirtualBuffer {
             }
 
 //            updateStatistics(stack);
+            VmaVirtualAllocationInfo allocInfo = VmaVirtualAllocationInfo.malloc(stack);
+            final long allocation = memGetLong(pAlloc);
+            vmaGetVirtualAllocationInfo(virtualBlockBufferSuperSet, allocation, allocInfo);
             virtualSegmentBuffer virtualSegmentBuffer
-                    = new virtualSegmentBuffer(areaIndex, subIndex, memGetInt(pOffset), size_t, memGetLong(pAlloc), r);
+                    = new virtualSegmentBuffer(areaIndex, subIndex, memGetInt(pOffset), (int) allocInfo.size(), allocation, r);
             activeRanges.add(virtualSegmentBuffer);
             return virtualSegmentBuffer;
         }
+    }
+
+    private int alignAs() {
+        final int i = 127&0x31;
+        final int i1 = i & 0x31;
+        return i +(i1 - (32- i1));
     }
 
     private void reload(int actualSize) {
