@@ -3,19 +3,14 @@ package net.vulkanmod.vulkan.util;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.vulkanmod.render.chunk.UberBufferSet;
 import net.vulkanmod.render.virtualSegmentBuffer;
-import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.memory.MemoryTypes;
-import net.vulkanmod.vulkan.memory.StagingBuffer;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
-import static net.vulkanmod.render.chunk.UberBufferSet.SdrawCommands;
 import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
-import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
-import static org.lwjgl.system.MemoryUtil.memByteBuffer;
 
 //Use smaller class instead of WorldRenderer in case it helps GC/Heap fragmentation e.g.
 public class VBOUtil {
@@ -39,8 +34,8 @@ public class VBOUtil {
 //    private static final ShaderInstance test2;
 //    private static final VertexFormatElement ELEMENT_UV2 = new VertexFormatElement(2,VertexFormatElement.Type.USHORT, VertexFormatElement.Usage.UV, 2);
 //    private static final VertexFormat BLOCK2 = new VertexFormat(ImmutableMap.of("Position",ELEMENT_POSITION, "Color",ELEMENT_COLOR, "UV0",ELEMENT_UV0, "UV2",ELEMENT_UV2, "Normal",ELEMENT_NORMAL, "Padding",ELEMENT_PADDING));
-    public static  final IndirectBuffer SCmdAlloc = new IndirectBuffer(1024, MemoryTypes.GPU_MEM);
-    public static  final IndirectBuffer TCmdAlloc = new IndirectBuffer(1024, MemoryTypes.GPU_MEM);
+    public static  final IndirectBuffer SCmdAlloc = new IndirectBuffer(1024*20, MemoryTypes.GPU_MEM);
+    public static  final IndirectBuffer TCmdAlloc = new IndirectBuffer(1024*20, MemoryTypes.GPU_MEM);
     //    static {
 //        try {
 //            test = new ShaderInstance(Minecraft.getInstance().getResourceManager(), "rendertype_cutout", BLOCK);

@@ -610,10 +610,11 @@ public class WorldRenderer {
             else drawBatchedIndexedBindless(b, indirectDraw, address);
         }
 
-//        if(layerName.equals(CUTOUT)/* || layerName.equals(TRIPWIRE)*/) {
-//            indirectBuffers[Drawer.getCurrentFrame()].submitUploads();
-////            uniformBuffers.submitUploads();
-//        }
+        if(indirectDraw) switch (layerName)
+        {
+            case CUTOUT_MIPPED -> SCmdAlloc.submitUploads();
+            case TRANSLUCENT -> TCmdAlloc.submitUploads();
+        };
 //        p.pop();
 
         //Need to reset push constant in case the pipeline will still be used for rendering
