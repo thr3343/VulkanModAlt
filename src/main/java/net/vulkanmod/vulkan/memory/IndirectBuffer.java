@@ -1,17 +1,17 @@
 package net.vulkanmod.vulkan.memory;
 
-import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Synchronization;
-import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.queue.CommandPool;
-import net.vulkanmod.vulkan.util.VUtil;
+import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkDrawIndexedIndirectCommand;
 
 import java.nio.ByteBuffer;
 
 import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
+import static org.lwjgl.system.JNI.callPJJJPV;
 import static org.lwjgl.system.MemoryUtil.memByteBuffer;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+import static org.lwjgl.vulkan.VK10.vkCmdUpdateBuffer;
 
 public class IndirectBuffer extends Buffer {
     CommandPool.CommandBuffer commandBuffer;
@@ -28,20 +28,21 @@ public class IndirectBuffer extends Buffer {
             resizeBuffer();
         }
 
-        if(this.type.mappable()) {
-            VUtil.memcpy2(memByteBuffer(this.data.get(0), this.getBufferSize()), byteBuffer.address0(), this.getUsedBytes(), size);
-        }
-        else {
+
             if(commandBuffer == null)
                 commandBuffer=TransferQueue.beginCommands();
-            StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(Drawer.getCurrentFrame());
-            stagingBuffer.copyBuffer2(size, byteBuffer.address0());
 
-            TransferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.id, stagingBuffer.offset, this.getId(), this.getUsedBytes(), size);
-        }
+            VkCommandBuffer commandBuffer1 = commandBuffer.getHandle();
+            vkCmdUpdateBuffer(commandBuffer1, this.id, size, byteBuffer.address0());
+//            TransferQueue.uploadBufferCmd(commandBuffer, stagingBuffer.id, stagingBuffer.offset, this.getId(), this.getUsedBytes(), size);
+        
 
         offset = usedBytes;
         usedBytes += size;
+    }
+
+    private void vkCmdUpdateBuffer(VkCommandBuffer commandBuffer1, long id, int size, long param4) {
+        callPJJJPV(commandBuffer1.address(), id, 0, size, param4, commandBuffer1.getCapabilities().vkCmdUpdateBuffer);
     }
 
     private void resizeBuffer() {
