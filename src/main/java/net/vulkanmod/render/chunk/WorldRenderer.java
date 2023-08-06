@@ -36,7 +36,6 @@ import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
-import net.vulkanmod.vulkan.util.VBOUtil;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.joml.FrustumIntersection;
 import org.joml.Matrix4f;
@@ -576,7 +575,7 @@ public class WorldRenderer {
         this.sortTranslucentSections(camX, camY, camZ);
         final boolean bindless = Initializer.CONFIG.bindless;
         final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
-        if (indirectDraw) updateIndirectCommands();
+        if (indirectDraw) updateIndirectCommands(layerName);
 
 //        this.minecraft.getProfiler().push("filterempty");
 //        this.minecraft.getProfiler().popPush(() -> {
@@ -607,7 +606,8 @@ public class WorldRenderer {
         layerName.setCutoutUniform();
         terrainDirectShader.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
         if((COMPACT_RENDER_TYPES).contains(layerName)) {
-            if(bindless) drawIndexedBindlessIndirect(address, b ? Tprev : prev, b ? prev : 0);
+            if(!bindless) drawBatchedIndexed(b, address);
+            else drawBatchedIndexedBindless(b, indirectDraw, address);
         }
 
 //        if(layerName.equals(CUTOUT)/* || layerName.equals(TRIPWIRE)*/) {
@@ -630,26 +630,47 @@ public class WorldRenderer {
 
     }
 
-    private void updateIndirectCommands() {
-        if (sectionQueue.size() != prev || TsectionQueue.size() != Tprev) {
-            needsUpdate2=false;
-            prev = sectionQueue.size();
-            Tprev = TsectionQueue.size();
-            UberBufferSet.drawCommands.clear();
-            for (int i = 0; i < sectionQueue.size(); i++) {
+    private void updateIndirectCommands(TerrainRenderType b) {
 
-                final VkDrawIndexedIndirectCommand2 a = sectionQueue.get(i);
-                UberBufferSet.drawCommands.get().set(a.indexCount(), a.instanceCount(), a.firstIndex(), a.vertexOffset() / VERTEX_SIZE, a.firstInstance());
 
-            }
-            for(int x =TsectionQueue.size()-1; x>=0;x--)
-            {
-                final VkDrawIndexedIndirectCommand2 a = TsectionQueue.get(x);
-                UberBufferSet.drawCommands.get().set(a.indexCount(), a.instanceCount(), a.firstIndex(), a.vertexOffset()/ VERTEX_SIZE, a.firstInstance());
-
-            }
-            VBOUtil.AllocIndirectCmds();
+        if(sectionQueue.size() != prev || TsectionQueue.size() != Tprev)
+        {
+            updateSolid();
+            updateTranslucent();
         }
+
+
+
+
+
+    }
+
+    private void updateTranslucent() {
+        Tprev = TsectionQueue.size();
+        UberBufferSet.TdrawCommands.clear();
+
+
+        for(int x =TsectionQueue.size()-1; x>=0;x--)
+        {
+            final VkDrawIndexedIndirectCommand2 a = TsectionQueue.get(x);
+            TdrawCommands.get().set(a.indexCount(), 1, 0, a.vertexOffset()/ VERTEX_SIZE, 0);
+
+        }
+        TCmdAlloc.recordCopyCmd(TdrawCommands);
+        TCmdAlloc.reset();
+    }
+
+    private void updateSolid() {
+        prev = sectionQueue.size();
+        UberBufferSet.SdrawCommands.clear();
+        for (int i = 0; i < sectionQueue.size(); i++) {
+
+            final VkDrawIndexedIndirectCommand2 a = sectionQueue.get(i);
+            UberBufferSet.SdrawCommands.get().set(a.indexCount(), 1, 0, a.vertexOffset() / VERTEX_SIZE, 0);
+
+        }
+        SCmdAlloc.recordCopyCmd(UberBufferSet.SdrawCommands);
+        SCmdAlloc.reset();
     }
 
     private void drawBatchedIndexed(boolean b, long address) {
@@ -680,14 +701,12 @@ public class WorldRenderer {
     }
 
     private void drawBatchedIndexedBindless(boolean b, boolean indirectDraw, long address) {
-        if (indirectDraw){
-            drawIndexedBindlessIndirect(address, drawCommands.position(), b ? prev : 0);
-        }
+        if (indirectDraw) drawIndexedBindlessIndirect(address, b ? Tprev : prev, (b ? TCmdAlloc : SCmdAlloc).getId());
         else drawIndexBindless2(b, address);
     }
 
-    private void drawIndexedBindlessIndirect(long address, int drawCount, int offset) {
-        callPJJV(address, drawCmdBuffer, offset*20L, drawCount, 20, functionAddress2);
+    private void drawIndexedBindlessIndirect(long address, int drawCount, long drawCmdBuffer) {
+        callPJJV(address, drawCmdBuffer, 0, drawCount, 20, functionAddress2);
     }
 
     private static void drawIndexBindless2(boolean b, long address) {

@@ -201,7 +201,8 @@ public class Options {
                         () -> config.bindless=config.indirectDraw)
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
-                        Enabling it might help in CPU limited systems.""")),
+                        Enabling it might help in CPU limited systems.
+                        Automatically enables Bindless (if needed)""")),
                 new SwitchOption("Bindless",
                         value -> config.bindless = value,
                         () -> config.bindless)
