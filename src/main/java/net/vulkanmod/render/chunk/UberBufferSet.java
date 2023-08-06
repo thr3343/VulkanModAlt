@@ -1,12 +1,14 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.mixin.render.RenderSystemMixin;
 import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.vulkan.VkDrawIndexedIndirectCommand;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.CUTOUT_MIPPED;
 import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
@@ -24,6 +26,7 @@ public class UberBufferSet {
     public static final VirtualBuffer TvirtualBufferVtx=new VirtualBuffer(134217728, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
     public static final long SPtr = MemoryUtil.nmemAlignedAlloc(8, 8);
     public static final long TPtr = MemoryUtil.nmemAlignedAlloc(8, 8);
+    public static final VkDrawIndexedIndirectCommand.Buffer drawCommands=VkDrawIndexedIndirectCommand.malloc(2048);
     VirtualBuffer virtualBuffer;
     IndirectBuffer indirectBuffer;
 

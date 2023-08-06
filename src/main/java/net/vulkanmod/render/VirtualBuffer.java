@@ -1,13 +1,13 @@
 package net.vulkanmod.render;
 
-import it.unimi.dsi.fastutil.objects.*;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.util.vma.*;
-import org.lwjgl.vulkan.*;
+import org.lwjgl.vulkan.VkBufferCreateInfo;
 
 import java.nio.LongBuffer;
 import java.util.ArrayList;
@@ -156,7 +156,7 @@ public final class VirtualBuffer {
             VmaVirtualAllocationCreateInfo allocCreateInfo = VmaVirtualAllocationCreateInfo.malloc(stack)
                     .size((size_t))
                     .alignment(32)
-                    .flags(0)
+                    .flags(VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT)
                     .pUserData(NULL);
 
             long pAlloc = stack.nmalloc(POINTER_SIZE);
@@ -183,10 +183,8 @@ public final class VirtualBuffer {
         }
     }
 
-    private int alignAs() {
-        final int i = 127&0x31;
-        final int i1 = i & 0x31;
-        return i +(i1 - (32- i1));
+    private static int alignAs(int size) {
+        return size + (32 - (size-1&32-1) - 1);
     }
 
     private void reload(int actualSize) {

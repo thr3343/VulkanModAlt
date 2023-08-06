@@ -7,12 +7,12 @@ public abstract class Buffer {
     protected long allocation;
 
     protected int bufferSize;
-    protected int usedBytes;
-    protected int offset;
+    public int usedBytes;
+    public int offset;
 
     protected MemoryType type;
     protected int usage;
-    protected PointerBuffer data;
+    public PointerBuffer data;
 
     protected Buffer(int usage, MemoryType type) {
         //TODO: check usage

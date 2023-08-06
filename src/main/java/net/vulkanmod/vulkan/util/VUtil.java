@@ -11,6 +11,7 @@ import java.nio.FloatBuffer;
 import java.util.Collection;
 
 import static org.lwjgl.system.MemoryStack.stackGet;
+import static org.lwjgl.system.libc.LibCString.nmemcpy;
 
 public class VUtil {
     public static final int UINT32_MAX = 0xFFFFFFFF;
@@ -77,6 +78,14 @@ public class VUtil {
 
         MemoryUtil.memCopy(src, dst);
         src.limit(src.capacity()).rewind();
+    }
+    public static void memcpy2(ByteBuffer dst, long src, long offset, int size) {
+        dst.position((int)offset);
+
+        //Almost Always above 384 bytes if Draw Commands exceed 19 VBOs or more
+        nmemcpy(MemoryUtil.memAddress(dst), src, size);
+
+
     }
 
     public static void memcpy(ByteBuffer src, ByteBuffer dst, int size, long offset) {
