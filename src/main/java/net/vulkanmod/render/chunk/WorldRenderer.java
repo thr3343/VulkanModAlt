@@ -633,10 +633,10 @@ public class WorldRenderer {
     private void updateIndirectCommands(TerrainRenderType b) {
 
 
-        if(sectionQueue.size() != prev || TsectionQueue.size() != Tprev)
+        switch (b)
         {
-            updateSolid();
-            updateTranslucent();
+            case CUTOUT_MIPPED -> {if(sectionQueue.size()!=prev) updateSolid();}
+            case TRANSLUCENT -> {if(TsectionQueue.size()!=Tprev) updateTranslucent();}
         }
 
 
