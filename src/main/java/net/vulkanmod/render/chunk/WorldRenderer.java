@@ -93,7 +93,8 @@ public class WorldRenderer {
     RenderRegionCache renderRegionCache;
     int nonEmptyChunks;
     private int prev = 0;
-    private boolean needsUpdate2 = false;
+    private boolean needsUpdate2 = true;
+    private int Tprev=0;
 
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
@@ -601,12 +602,12 @@ public class WorldRenderer {
 //        p.push("draw batches");
 
         if(bindless) {
-            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, b ? TPtr : UberBufferSet.SPtr, (VUtil.nullptr));
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, b ? TPtr : SPtr, (VUtil.nullptr));
         }
         layerName.setCutoutUniform();
         terrainDirectShader.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
         if((COMPACT_RENDER_TYPES).contains(layerName)) {
-            if(indirectDraw) drawIndexedBindlessIndirect(address);
+            if(bindless) drawIndexedBindlessIndirect(address, b ? Tprev : prev, b ? prev : 0);
         }
 
 //        if(layerName.equals(CUTOUT)/* || layerName.equals(TRIPWIRE)*/) {
@@ -630,9 +631,10 @@ public class WorldRenderer {
     }
 
     private void updateIndirectCommands() {
-        if (sectionQueue.size() != prev || needsUpdate2) {
+        if (sectionQueue.size() != prev || TsectionQueue.size() != Tprev) {
             needsUpdate2=false;
             prev = sectionQueue.size();
+            Tprev = TsectionQueue.size();
             UberBufferSet.drawCommands.clear();
             for (int i = 0; i < sectionQueue.size(); i++) {
 
@@ -679,13 +681,13 @@ public class WorldRenderer {
 
     private void drawBatchedIndexedBindless(boolean b, boolean indirectDraw, long address) {
         if (indirectDraw){
-            drawIndexedBindlessIndirect(address);
+            drawIndexedBindlessIndirect(address, drawCommands.position(), b ? prev : 0);
         }
         else drawIndexBindless2(b, address);
     }
 
-    private void drawIndexedBindlessIndirect(long address) {
-        callPJJV(address, drawCmdBuffer, 0, drawCommands.position(), 20, functionAddress2);
+    private void drawIndexedBindlessIndirect(long address, int drawCount, int offset) {
+        callPJJV(address, drawCmdBuffer, offset*20L, drawCount, 20, functionAddress2);
     }
 
     private static void drawIndexBindless2(boolean b, long address) {

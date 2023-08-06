@@ -197,8 +197,8 @@ public class Options {
                         reducing the number of non visible chunk sections rendered.
                         """)),
                 new SwitchOption("Indirect Draw",
-                        value -> config.indirectDraw = value,
-                        () -> config.indirectDraw)
+                        value -> config.indirectDraw = config.bindless = value,
+                        () -> config.bindless=config.indirectDraw)
                         .setTooltip(Component.nullToEmpty("""
                         Reduces CPU overhead but increases GPU overhead.
                         Enabling it might help in CPU limited systems.""")),
@@ -208,7 +208,8 @@ public class Options {
                         .setTooltip(Component.nullToEmpty("""
                         Enables Bindless Rendering Optimisations
                         Gives a Small-Moderate Performance improvement on most modern GPUs
-                        May cause issues and/or performance regressions with some specific older Nvidia GPUs""")),
+                        May cause issues and/or performance regressions with some specific older Nvidia GPUs
+                        Must be enabled to use Indirect Draw""")),
         };
 
     }
