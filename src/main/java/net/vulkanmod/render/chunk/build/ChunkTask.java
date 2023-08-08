@@ -4,7 +4,6 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ItemBlockRenderTypes;
-import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.block.BlockRenderDispatcher;
 import net.minecraft.client.renderer.block.ModelBlockRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
@@ -18,7 +17,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.Vec3;
-import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.VisibilitySetExtended;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.WorldRenderer;
@@ -61,9 +59,11 @@ public class ChunkTask {
     }
 
     public static class BuildTask extends ChunkTask {
-        private final BlockPos blockPos = new BlockPos(this.renderSection.xOffset(), this.renderSection.yOffset(), this.renderSection.zOffset()).immutable();
-        private final BlockPos blockPos2 = blockPos.offset(15, 15, 15);
-        private final Iterable<BlockPos> blockPos1 = BlockPos.betweenClosed(blockPos, blockPos2);
+//        private final BlockPos blockPos = new BlockPos(this.renderSection.xOffset(), this.renderSection.yOffset(), this.renderSection.zOffset()).immutable();
+        private final int x;
+        private final int y;
+        private final int z;
+        private final Iterable<BlockPos> blockPos1;
         @Nullable
         protected RenderChunkRegion region;
 
@@ -75,6 +75,10 @@ public class ChunkTask {
             super(renderSection);
             this.region = renderChunkRegion;
             this.highPriority = highPriority;
+            x = renderSection.xOffset();
+            y = renderSection.yOffset();
+            z = renderSection.zOffset();
+            blockPos1 = BlockPos.betweenClosed(Math.min(x, x+15), Math.min(y, y+15), Math.min(z, z+15), Math.max(x, x+15), Math.max(y, y+15), Math.max(z, z+15));
         }
 
         public String name() {
@@ -194,7 +198,7 @@ public class ChunkTask {
                 if (set.contains(TRANSLUCENT)) {
                     TerrainBufferBuilder bufferBuilder2 = chunkBufferBuilderPack.builder(TRANSLUCENT);
                     if (!bufferBuilder2.isCurrentBatchEmpty()) {
-                        bufferBuilder2.setQuadSortOrigin(camX - (float) blockPos.getX(), camY - (float) blockPos.getY(), camZ - (float) blockPos.getZ());
+                        bufferBuilder2.setQuadSortOrigin(camX - (float) x, camY - (float) y, camZ - (float) z);
                         compileResults.transparencyState = bufferBuilder2.getSortState();
                     }
                 }
