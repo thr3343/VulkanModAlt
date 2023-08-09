@@ -57,7 +57,6 @@ public class VBOUtil {
         pose.pushPose();
         {
             translationOffset= pose.last().pose();
-            translationOffset.translate((float) originX, (float) -e, (float) originZ);
         }
         pose.popPose();
 //        pose.multiplyWithTranslation((float) originX, (float) -e, (float) originZ);

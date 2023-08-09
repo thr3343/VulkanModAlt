@@ -602,7 +602,7 @@ public class Drawer {
             long ptr = MemoryUtil.memAddress0(buffer);
             pushConstants.update(ptr);
 
-            nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_FRAGMENT_BIT, 0, pushConstants.getSize(), ptr);
+            nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), ptr);
         }
 
     }

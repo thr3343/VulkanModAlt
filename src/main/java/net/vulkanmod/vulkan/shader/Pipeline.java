@@ -287,7 +287,7 @@ public class Pipeline {
                 VkPushConstantRange.Buffer pushConstantRange = VkPushConstantRange.callocStack(1, stack);
                 pushConstantRange.size(this.pushConstants.getSize());
                 pushConstantRange.offset(0);
-                pushConstantRange.stageFlags(VK_SHADER_STAGE_FRAGMENT_BIT);
+                pushConstantRange.stageFlags(VK_SHADER_STAGE_VERTEX_BIT);
 
                 pipelineLayoutInfo.pPushConstantRanges(pushConstantRange);
             }

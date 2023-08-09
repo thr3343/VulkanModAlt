@@ -49,7 +49,7 @@ import static net.vulkanmod.render.chunk.UberBufferSet.*;
 import static net.vulkanmod.render.vertex.TerrainRenderType.*;
 import static net.vulkanmod.vulkan.util.VBOUtil.*;
 import static org.lwjgl.system.JNI.*;
-import static org.lwjgl.vulkan.VK10.nvkCmdBindVertexBuffers;
+import static org.lwjgl.vulkan.VK10.*;
 
 public class WorldRenderer {
     private static WorldRenderer INSTANCE;
@@ -474,7 +474,7 @@ public class WorldRenderer {
     }
 
     public void allChanged() {
-        resetOrigin();
+//        resetOrigin();
         if (this.level != null) {
 //            this.graphicsChanged();
             this.level.clearTintCaches();
@@ -544,7 +544,7 @@ public class WorldRenderer {
 
     }
     @SuppressWarnings("all")
-    public void renderChunkLayer(RenderType renderType, double camX, double camY, double camZ, Matrix4f projection) {
+    public void renderChunkLayer(RenderType renderType, Matrix4f modelViewMatrix, double camX, double camY, double camZ, Matrix4f projection) {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
 //        Profiler2 p = Profiler2.getMainProfiler();
@@ -572,7 +572,7 @@ public class WorldRenderer {
         RenderSystem.assertOnRenderThread();
         renderType.setupRenderState();
 
-        this.sortTranslucentSections(camX, camY, camZ);
+//        this.sortTranslucentSections(camX, camY, camZ);
         final boolean bindless = Initializer.CONFIG.bindless;
         final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
         if (indirectDraw) updateIndirectCommands(layerName);
@@ -583,7 +583,7 @@ public class WorldRenderer {
 //        });
 
 
-        VRenderSystem.applyMVP(translationOffset, projection);
+        VRenderSystem.applyMVP(modelViewMatrix, projection);
 
         Drawer drawer = Drawer.getInstance();
         final Pipeline terrainDirectShader = switch (layerName)
@@ -597,6 +597,21 @@ public class WorldRenderer {
         final long address = commandBuffer.address();
         final boolean b = layerName == TRANSLUCENT;
         if(!b) drawer.bindAutoIndexBuffer(commandBuffer, 7);
+        long layout = terrainDirectShader.getLayout();
+        final int camX1 = (int) (camX);
+        final int camZ1 = (int) (camZ);
+
+        final double v = camX1 - camX;
+        final double v1 = camZ1 - camZ;
+//        final float v2 = (float) (v > 0 ? -v : v);
+//        final float v3 = (float) (v1 > 0 ? -v1 : v1);
+        callPJPV(commandBuffer.address(),
+                layout,
+                VK_SHADER_STAGE_VERTEX_BIT,
+                0,
+                12,
+                new float[]{(float) v, (float) -camY, (float) v1},
+                commandBuffer.getCapabilities().vkCmdPushConstants);
 
 //        p.push("draw batches");
 
@@ -606,7 +621,7 @@ public class WorldRenderer {
         layerName.setCutoutUniform();
         terrainDirectShader.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
         if((COMPACT_RENDER_TYPES).contains(layerName)) {
-            if(!bindless) drawBatchedIndexed(b, address);
+            if(!bindless) drawBatchedIndexed(b, address, camX1, camZ1);
             else drawBatchedIndexedBindless(b, indirectDraw, address);
         }
 
@@ -674,29 +689,33 @@ public class WorldRenderer {
         SCmdAlloc.reset();
     }
 
-    private void drawBatchedIndexed(boolean b, long address) {
-        if(!b) drawSolid(address);
-        else drawTranslucent(address);
+    private void drawBatchedIndexed(boolean b, long address, int x1, int z1) {
+        if(!b) drawSolid(address, x1, z1);
+        else drawTranslucent(address, x1, z1);
     }
 
-    private static void drawTranslucent(long address) {
+    private void drawTranslucent(long address, int x1, int z1) {
         for (int i = TsectionQueue.size() - 1; i >= 0; i--) {
             {
                 final VkDrawIndexedIndirectCommand2 drawParameters = TsectionQueue.get(i);
                 VUtil.UNSAFE.putLong(vOffset, drawParameters.vertexOffset());
                 callPPPV(address, 0, 1, UberBufferSet.TPtr, vOffset, functionAddress);
 
-                callPV(address, drawParameters.indexCount(), 1, 0, 0, 0, functionAddress1);
+                final int x = drawParameters.xOffset() - x1;
+                final int z = drawParameters.zOffset() - z1 & 65535;
+                callPV(address, drawParameters.indexCount(), 1, 0, 0, x<<16 | z, functionAddress1);
             }
         }
     }
-    private static void drawSolid(long address) {
+    private void drawSolid(long address, int x1, int z1) {
         for (VkDrawIndexedIndirectCommand2 drawParameters : sectionQueue) {
             {
                 VUtil.UNSAFE.putLong(vOffset, drawParameters.vertexOffset());
                 callPPPV(address, 0, 1, UberBufferSet.SPtr, vOffset, functionAddress);
 
-                callPV(address, drawParameters.indexCount(), 1, 0, 0, 0, functionAddress1);
+                final int x = drawParameters.xOffset() - x1;
+                final int z = drawParameters.zOffset() - z1 & 65535;
+                callPV(address, drawParameters.indexCount(), 1, 0, 0, x<<16 | z, functionAddress1);
             }
         }
     }
@@ -713,7 +732,7 @@ public class WorldRenderer {
     private static void drawIndexBindless2(boolean b, long address) {
         for (VkDrawIndexedIndirectCommand2 drawParameters : b ? TsectionQueue : sectionQueue) {
             {
-                callPV(address, drawParameters.indexCount(), 1, 0, drawParameters.vertexOffset() / VERTEX_SIZE, 0, functionAddress1);
+                callPV(address, drawParameters.indexCount(), 1, 0, drawParameters.vertexOffset() / VERTEX_SIZE, drawParameters.firstInstance(), functionAddress1);
             }
         }
     }

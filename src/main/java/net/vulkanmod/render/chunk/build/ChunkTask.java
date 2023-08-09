@@ -11,6 +11,7 @@ import net.minecraft.client.renderer.chunk.RenderChunkRegion;
 import net.minecraft.client.renderer.chunk.VisGraph;
 import net.minecraft.client.renderer.chunk.VisibilitySet;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Vec3i;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -60,10 +61,10 @@ public class ChunkTask {
 
     public static class BuildTask extends ChunkTask {
 //        private final BlockPos blockPos = new BlockPos(this.renderSection.xOffset(), this.renderSection.yOffset(), this.renderSection.zOffset()).immutable();
-        private final int x;
-        private final int y;
-        private final int z;
-        private final Iterable<BlockPos> blockPos1;
+        private final int x = this.renderSection.xOffset();
+        private final int y = this.renderSection.yOffset();
+        private final int z = this.renderSection.zOffset();
+        private final Iterable<BlockPos> blockPos1 = BlockPos.betweenClosed(Math.min(x, x+15), Math.min(y, y+15), Math.min(z, z+15), Math.max(x, x+15), Math.max(y, y+15), Math.max(z, z+15));
         @Nullable
         protected RenderChunkRegion region;
 
@@ -75,10 +76,7 @@ public class ChunkTask {
             super(renderSection);
             this.region = renderChunkRegion;
             this.highPriority = highPriority;
-            x = renderSection.xOffset();
-            y = renderSection.yOffset();
-            z = renderSection.zOffset();
-            blockPos1 = BlockPos.betweenClosed(Math.min(x, x+15), Math.min(y, y+15), Math.min(z, z+15), Math.max(x, x+15), Math.max(y, y+15), Math.max(z, z+15));
+
         }
 
         public String name() {

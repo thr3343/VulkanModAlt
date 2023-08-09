@@ -10,7 +10,6 @@ import net.vulkanmod.vulkan.util.VBOUtil;
 import net.vulkanmod.vulkan.util.VUtil;
 
 import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
-import static net.vulkanmod.vulkan.util.VBOUtil.*;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.MemoryUtil.memAddress;
 import static org.lwjgl.vulkan.VK10.vkCmdBindDescriptorSets;
@@ -48,7 +47,7 @@ public class DrawBuffers {
             translateVBO(buffer, buffer.indexCount, xOffset, yOffset, zOffset);
 
             final VirtualBuffer virtualBufferVtx1 = r==TRANSLUCENT ? UberBufferSet.TvirtualBufferVtx : UberBufferSet.virtualBufferVtx;
-            drawParameters.vertexBufferSegment1=  this.configureVertexFormat(drawParameters, drawParameters.index, buffer, r, virtualBufferVtx1);
+            drawParameters.vertexBufferSegment1=  this.configureVertexFormat(drawParameters, drawParameters.index, buffer, r, virtualBufferVtx1, xOffset, zOffset);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
             drawParameters.initialised =true;
 //            drawParameters.firstIndex = 0;
@@ -76,22 +75,22 @@ public class DrawBuffers {
 
     private void translateVBO(UploadBuffer buffer, int indexCount, int xOffset, int yOffset, int zOffset) {
         final long addr = (buffer.getVertexBuffer());
-        final float v = (float) (xOffset - camX - originX);
-        final float v1 = (float) (zOffset - camZ - originZ);
-//        final float camX1 = (float) (v < (int) v ? v - 1 : v);
-//        final float camZ1 = (float) (v1 < (int) v1 ? v1 - 1 : v1)
-        final int camX1 = Mth.floor(v);
-        final int camZ1 = Mth.floor(v1);
+//        final float v = (float) (xOffset - camX - originX);
+//        final float v1 = (float) (zOffset - camZ - originZ);
+////        final float camX1 = (float) (v < (int) v ? v - 1 : v);
+////        final float camZ1 = (float) (v1 < (int) v1 ? v1 - 1 : v1)
+//        final int camX1 = Mth.floor(v);
+//        final int camZ1 = Mth.floor(v1);
 
         for (int i = 0; i < buffer.vertSize; i += VERTEX_SIZE) {
-            VUtil.UNSAFE.putFloat(addr + i, (VUtil.UNSAFE.getFloat(addr + i) + (camX1)));
+//            VUtil.UNSAFE.putFloat(addr + i, (VUtil.UNSAFE.getFloat(addr + i) + (xOffset)));
             VUtil.UNSAFE.putFloat(addr + i + 4, (VUtil.UNSAFE.getFloat(addr + i + 4) + yOffset));
-            VUtil.UNSAFE.putFloat(addr + i + 8, (VUtil.UNSAFE.getFloat(addr + i + 8) + (camZ1)));
+//            VUtil.UNSAFE.putFloat(addr + i + 8, (VUtil.UNSAFE.getFloat(addr + i + 8) +(zOffset)));
         }
 
     }
 
-    private VkDrawIndexedIndirectCommand2 configureVertexFormat(DrawParameters drawParameters, int index, UploadBuffer parameters, TerrainRenderType r, VirtualBuffer virtualBufferVtx1) {
+    private VkDrawIndexedIndirectCommand2 configureVertexFormat(DrawParameters drawParameters, int index, UploadBuffer parameters, TerrainRenderType r, VirtualBuffer virtualBufferVtx1, int xOffset, int zOffset) {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
 
         final int size = parameters.vertSize;
@@ -103,7 +102,8 @@ public class DrawBuffers {
 
         AreaUploadManager.INSTANCE.uploadAsync(drawParameters.vertexBufferSegment, virtualBufferVtx1.bufferPointerSuperSet, virtualBufferVtx1.size_t, drawParameters.vertexBufferSegment.i2(), size, parameters.getVertexBuffer());
 //            this.vertOff= fakeVertexBuffer.i2()>>5;
-        return new VkDrawIndexedIndirectCommand2(parameters.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2(), 0);
+//        final int floor = (Mth.floor( xOffset - WorldRenderer.getCameraPos().x));
+        return new VkDrawIndexedIndirectCommand2(parameters.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2(), 0, xOffset, zOffset);
     }
     public void releaseBuffers() {
         if(!this.allocated)

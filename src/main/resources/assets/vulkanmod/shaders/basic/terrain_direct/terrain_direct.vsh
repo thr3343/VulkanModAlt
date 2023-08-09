@@ -13,6 +13,12 @@ layout(binding = 0) uniform UniformBufferObject {
 };
 
 
+layout(push_constant) uniform PushConstant
+{
+	vec3 tst2;
+};
+
+
 layout(binding = 3) uniform sampler2D Sampler2;
 
 layout(location = 0) out vec4 vertexColor;
@@ -31,11 +37,15 @@ const float UV_INV = 1.0 / 65536.0;
 const float POSITION_INV = 1.0 / 1900.0;
 
 void main() {
-    gl_Position = MVP * vec4(Position, 1.0);
+
+	const int x = gl_InstanceIndex;
+	const int z = gl_InstanceIndex <<16;
+	
+    gl_Position = MVP * vec4(Position+(tst2+(ivec3(x,0,z)>>16)), 1);
 
     vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0*UV_INV;
-//    normal = MVP * vec4(Normal, 0.0);
+//    normal = MVP * vec4(Normal, 0);
 }
 
 //Default Vertex
