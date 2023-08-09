@@ -5,6 +5,7 @@ import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.TextureManager;
 import net.minecraft.client.renderer.texture.Tickable;
 import net.minecraft.resources.ResourceLocation;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.texture.SpriteUtil;
 import net.vulkanmod.vulkan.Drawer;
 import org.spongepowered.asm.mixin.Final;
@@ -30,7 +31,7 @@ public abstract class MTextureManager {
      */
     @Overwrite
     public void tick() {
-        if(Drawer.skipRendering)
+        if(Initializer.CONFIG.skipAnimations || Drawer.skipRendering)
             return;
 
         if(SpriteUtil.shouldUpload())

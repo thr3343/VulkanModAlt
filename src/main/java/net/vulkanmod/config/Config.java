@@ -27,6 +27,7 @@ public class Config {
             .excludeFieldsWithModifiers(Modifier.PRIVATE)
             .create();
     public boolean bindless=false;
+    public boolean skipAnimations=false;
 
     public static Config load(Path path) {
         Config config;

@@ -211,6 +211,10 @@ public class Options {
                         Gives a Small-Moderate Performance improvement on most modern GPUs
                         May cause issues and/or performance regressions with some specific older Nvidia GPUs
                         Must be enabled to use Indirect Draw""")),
+                new SwitchOption("DisableAnimations",
+                        value -> config.skipAnimations = value,
+                        () -> config.skipAnimations)
+                        .setTooltip(Component.nullToEmpty("")),
         };
 
     }
