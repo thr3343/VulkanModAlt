@@ -238,25 +238,26 @@ public class Pipeline {
             int bindingsSize = this.UBOs.size() + samplers.size();
 
             VkDescriptorSetLayoutBinding.Buffer bindings = VkDescriptorSetLayoutBinding.callocStack(bindingsSize, stack);
-
+            int x =0;
             for(UBO ubo : this.UBOs) {
-                VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(ubo.getBinding());
+                VkDescriptorSetLayoutBinding uboLayoutBinding = bindings.get(x);
                 uboLayoutBinding.binding(ubo.getBinding());
                 uboLayoutBinding.descriptorCount(1);
                 uboLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
                 uboLayoutBinding.pImmutableSamplers(null);
                 uboLayoutBinding.stageFlags(ubo.getFlags());
+                x++;
 
             }
 
-            for(Sampler sampler : this.samplers) {
-                VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(sampler.binding);
+            for (Sampler sampler : this.samplers) {
+                VkDescriptorSetLayoutBinding samplerLayoutBinding = bindings.get(x);
                 samplerLayoutBinding.binding(sampler.binding);
                 samplerLayoutBinding.descriptorCount(1);
                 samplerLayoutBinding.descriptorType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
                 samplerLayoutBinding.pImmutableSamplers(null);
-                samplerLayoutBinding.stageFlags(VK_SHADER_STAGE_ALL_GRAPHICS);
-
+                samplerLayoutBinding.stageFlags(sampler.stage);
+                x++;
 //                ++i;
             }
 
@@ -489,7 +490,7 @@ public class Pipeline {
 
     public long getLayout() { return pipelineLayout; }
 
-    public record Sampler(int binding, String type, String name) {}
+    public record Sampler(int binding, int stage, String type, String name) {}
 
     public void bindDescriptorSets(VkCommandBuffer commandBuffer, int frame) {
         UniformBuffers uniformBuffers = Drawer.getInstance().getUniformBuffers();
@@ -723,7 +724,7 @@ public class Pipeline {
         private ManualUBO manualUBO;
         private PushConstants pushConstants;
         private List<Sampler> samplers;
-        private int currentBinding;
+//        private int currentBinding;
 
         private SPIRV vertShaderSPIRV;
         private SPIRV fragShaderSPIRV;
@@ -831,8 +832,7 @@ public class Pipeline {
             }
             UBO ubo = builder.buildUBO(binding, type);
 
-            if(binding > this.currentBinding)
-                this.currentBinding = binding;
+
 
             this.UBOs.add(ubo);
         }
@@ -843,19 +843,20 @@ public class Pipeline {
             int type = getTypeFromString(GsonHelper.getAsString(jsonobject, "type"));
             int size = GsonHelper.getAsInt(jsonobject, "size");
 
-            if(binding > this.currentBinding)
-                this.currentBinding = binding;
+
 
             this.manualUBO = new ManualUBO(binding, type, size);
         }
 
         private void parseSamplerNode(JsonElement jsonelement) {
-            JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "UBO");
+            JsonObject jsonobject = GsonHelper.convertToJsonObject(jsonelement, "samplers");
             String name = GsonHelper.getAsString(jsonobject, "name");
+            String stage = GsonHelper.getAsString(jsonobject, "stage");
+            int binding = GsonHelper.getAsInt(jsonobject, "binding");
 
-            this.currentBinding++;
 
-            this.samplers.add(new Sampler(this.currentBinding, "sampler2D", name));
+
+            this.samplers.add(new Sampler(binding, getTypeFromString(stage), "sampler2D", name));
         }
 
         private void parsePushConstantNode(JsonArray jsonArray) {
