@@ -1,5 +1,7 @@
 <div align='center'>
 
+(Reverted from V2.2 due to perf regression from new translation method shader, which was physically slower and increasing GPU load/overhead)
+
 [![Logo](https://media.discordapp.net/attachments/963349566839738369/969920960373334076/Vlogo.png?width=200&height=200)](#)
 
 # VulkanMod
