@@ -8,6 +8,9 @@ import net.vulkanmod.vulkan.shader.layout.UBO;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_FRAGMENT_BIT;
+import static org.lwjgl.vulkan.VK10.VK_SHADER_STAGE_VERTEX_BIT;
+
 public class UniformParser {
 
     private final GlslConverter converterInstance;
@@ -86,7 +89,7 @@ public class UniformParser {
     public String createSamplersCode(GlslConverter.ShaderStage shaderStage) {
         StringBuilder builder = new StringBuilder();
 
-        this.samplers = createSamplerList();
+        this.samplers = createSamplerList(shaderStage);
 
         for(Pipeline.Sampler sampler : this.samplers) {
             builder.append(String.format("layout(binding = %d) uniform %s %s;\n", sampler.binding(), sampler.type(), sampler.name()));
@@ -107,14 +110,20 @@ public class UniformParser {
         return builder.buildUBO(0, Pipeline.Builder.getTypeFromString("all"));
     }
 
-    private List<Pipeline.Sampler> createSamplerList() {
+    private List<Pipeline.Sampler> createSamplerList(GlslConverter.ShaderStage shaderStage) {
         int currentLocation = 1;
 
         List<Pipeline.Sampler> samplers = new ObjectArrayList<>();
 
         for(StageUniforms stageUniforms : this.stageUniforms) {
             for(Uniform uniform : stageUniforms.samplers) {
-                samplers.add(new Pipeline.Sampler(currentLocation, uniform.type, uniform.name));
+                final int shaderStage1 = switch (shaderStage)
+                {
+
+                    case Vertex -> VK_SHADER_STAGE_VERTEX_BIT;
+                    case Fragment -> VK_SHADER_STAGE_FRAGMENT_BIT;
+                };
+                samplers.add(new Pipeline.Sampler(currentLocation, shaderStage1, uniform.type, uniform.name));
                 currentLocation++;
             }
         }
