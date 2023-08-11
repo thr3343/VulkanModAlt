@@ -28,7 +28,7 @@ public class Framebuffer {
 
     private final int format;
     private static final int depthFormat = findDepthFormat();
-    private static final ObjectArrayList<FramebufferInfo> frameBuffers = new ObjectArrayList<>(8);
+//    private static final ObjectArrayList<FramebufferInfo> frameBuffers = new ObjectArrayList<>(8);
 
     public int width, height;
     public final long renderPass;
@@ -154,11 +154,6 @@ public class Framebuffer {
                 throw new RuntimeException("Failed to create framebuffer");
             }
 
-            FramebufferInfo framebufferInfo1 = new FramebufferInfo(width, height, pFramebuffer.get(0), attachments);
-            if(!frameBuffers.contains(framebufferInfo1))
-            {
-                frameBuffers.add(framebufferInfo1);
-            }
             return (pFramebuffer.get(0));
 
         }
@@ -309,9 +304,7 @@ public class Framebuffer {
 
     public void cleanUp() {
 
-        for (final FramebufferInfo a : frameBuffers) {
-            vkDestroyFramebuffer(getDevice(), a.frameBuffer, null);
-        }
+        vkDestroyFramebuffer(getDevice(), this.frameBuffer, null);
         vkDestroyRenderPass(getDevice(), this.renderPass, null);
 
         if(colorAttachment!=null) this.colorAttachment.free();
@@ -348,7 +341,8 @@ public class Framebuffer {
     public void recreate(int width, int height) {
         this.width = width;
         this.height = height;
-        this.frameBuffer = checkForFrameBuffers();
+        vkDestroyFramebuffer(getDevice(), this.frameBuffer, null);
+        this.frameBuffer = createFramebuffers(this.attachmentTypes);;
 
 //        this.depthFormat = findDepthFormat();
         depthAttachment.free();
@@ -357,14 +351,4 @@ public class Framebuffer {
     }
 
 
-    private long checkForFrameBuffers() {
-        for (final FramebufferInfo a : frameBuffers) {
-            if (a.width== width && a.height ==this.height) {
-                System.out.println("FrameBuffer-->:"+width+"{-->}"+height);
-                return a.frameBuffer;
-            }
-        }
-        System.out.println("FAIL!");
-        return createFramebuffers(this.attachmentTypes); //Not sure best way to handle this rn...
-    }
 }

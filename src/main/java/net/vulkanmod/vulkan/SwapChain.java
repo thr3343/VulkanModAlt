@@ -46,7 +46,7 @@ public class SwapChain {
 
     public SwapChain() {
 
-        this.framesNum = Initializer.CONFIG.frameQueueSize-1;
+        this.framesNum = Math.max(Initializer.CONFIG.frameQueueSize - 1, 2);
         createSwapChain(this.framesNum);
         MemoryManager.createInstance(this.swapChainImages.size());
 
