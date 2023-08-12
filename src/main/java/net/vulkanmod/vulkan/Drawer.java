@@ -30,10 +30,10 @@ import java.util.*;
 import static net.vulkanmod.vulkan.Framebuffer.*;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.Vulkan.getSwapChainImages;
+import static net.vulkanmod.vulkan.queue.Queues.*;
 import static org.lwjgl.glfw.GLFW.glfwGetFramebufferSize;
 import static org.lwjgl.system.Checks.check;
-import static org.lwjgl.system.JNI.callPPI;
-import static org.lwjgl.system.JNI.callPPJI;
+import static org.lwjgl.system.JNI.*;
 import static org.lwjgl.system.MemoryStack.stackGet;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.memAddress;
@@ -48,6 +48,7 @@ public class Drawer {
     final IntArrayFIFOQueue frameBufferPresentIndices = new IntArrayFIFOQueue(Initializer.CONFIG.frameQueueSize-1);
     public static final Framebuffer tstFrameBuffer2;
     private int oldestFrameIndex = 0;
+    public boolean swapchain_ok;
 
     public static void initDrawer() { INSTANCE = new Drawer(); }
 
@@ -100,7 +101,7 @@ public class Drawer {
     }
     public Drawer(int VBOSize, int UBOSize) {
 
-
+        this.swapchain_ok=true;
 
         frameBufferPresentIndices.clear();
         for (int j = 0; j < Initializer.CONFIG.frameQueueSize-1; j++) {
@@ -390,21 +391,23 @@ public class Drawer {
         try(MemoryStack stack = stackPush()) {
 
             IntBuffer pImageIndex = stack.mallocInt(1);
+            int r;
+            if(swapchain_ok) {
+
+                r = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), -1,
+                        imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
 
 
-
-            int vkResult = vkAcquireNextImageKHR(device, Vulkan.getSwapChain().getId(), VUtil.UINT64_MAX,
-                    imageAvailableSemaphores.get(currentFrame), VK_NULL_HANDLE, pImageIndex);
-
-
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
-                shouldRecreate = false;
-                vkResetFences(device, frameFences.get(currentFrame));
-                recreateSwapChain(true);
-                return;
-            } else if(vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Cannot get image: " + vkResult);
+                if (r == VK_ERROR_OUT_OF_DATE_KHR) {
+                    shouldRecreate = false;
+                    swapchain_ok = false;
+                    return;
+                }  else if (r != VK_SUCCESS && r != VK_SUBOPTIMAL_KHR) {
+                    throw new RuntimeException("Cannot get image: " + r);
+                }
             }
+            if(!swapchain_ok)
+                return;
 //            frameBufferPresentIndices.enqueueFirst(pImageIndex.get(0));
 
 //            KHRPresentWait.vkWaitForPresentKHR(device, getSwapChain().getId(), pPresentId.get(0), 10000);
@@ -424,9 +427,9 @@ public class Drawer {
 
             Synchronization.INSTANCE.waitFences();
 
-            if((vkResult = callPPJI(getGraphicsQueue(), 1, submitInfo.address(), frameFences.get(currentFrame), device.getCapabilities().vkQueueSubmit)) != VK_SUCCESS) {
+            if((r = callPPJI(getGraphicsQueue(), 1, submitInfo.address(), frameFences.get(currentFrame), device.getCapabilities().vkQueueSubmit)) != VK_SUCCESS) {
                 vkResetFences(device, frameFences.get(currentFrame));
-                throw new RuntimeException("Failed to submit draw command buffer: " + vkResult);
+                throw new RuntimeException("Failed to submit draw command buffer: " + r);
             }
 
 
@@ -438,14 +441,14 @@ public class Drawer {
                     .pSwapchains(stack.longs(Vulkan.getSwapChain().getId()))
                     .pImageIndices(pImageIndex);
 
-            vkResult = callPPI(getPresentQueue(), presentInfo.address(), device.getCapabilities().vkQueuePresentKHR);
+            r = callPPI(getPresentQueue(), presentInfo.address(), device.getCapabilities().vkQueuePresentKHR);
 
-            if(vkResult == VK_ERROR_OUT_OF_DATE_KHR || vkResult == VK_SUBOPTIMAL_KHR || shouldRecreate) {
+            if (r == VK_ERROR_OUT_OF_DATE_KHR) {
                 shouldRecreate = false;
-                recreateSwapChain(false);
+                swapchain_ok = false;
                 return;
-            } else if(vkResult != VK_SUCCESS) {
-                throw new RuntimeException("Failed to present swap chain image");
+            }  else if (r != VK_SUCCESS && r != VK_SUBOPTIMAL_KHR) {
+                throw new RuntimeException();
             }
 
             currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -454,24 +457,25 @@ public class Drawer {
     void waitForSwapChain()
     {
 //        constexpr VkPipelineStageFlags t=VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        nvkWaitForFences(device, frameFences.capacity(), frameFences.address0(),  1, -1);
+        nvkResetFences(device, frameFences.capacity(), frameFences.address0());
         try(MemoryStack stack = MemoryStack.stackPush()) {
             //Empty Submit
             VkSubmitInfo info = VkSubmitInfo.calloc(stack)
                     .sType$Default()
                     .pWaitSemaphores(stack.longs(imageAvailableSemaphores.get(currentFrame)))
-                    .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT));
+                    .pWaitDstStageMask(stack.ints(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT));
 
             callPPJI(getGraphicsQueue(), 1, info.address(), frameFences.get(currentFrame), device.getCapabilities().vkQueueSubmit);
-            vkWaitForFences(device, frameFences.get(currentFrame),  true, -1);
+            nvkWaitForFences(device, 1, frameFences.address(currentFrame),  1, -1);
         }
     }
-    private void recreateSwapChain(boolean b) {
+    public void recreateSwapChain() {
 //        for(Long fence : inFlightFences) {
 //            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
 //        }
-
-        if(b) waitForSwapChain();
-        else vkDeviceWaitIdle(device);
+        //callPI(GraphicsQueue.Queue, device.getCapabilities().vkQueueWaitIdle);
+        waitForSwapChain();
 
         for(int i = 0; i < getSwapChainImages().size(); ++i) {
             vkDestroyFence(device, frameFences.get(i), null);
@@ -481,7 +485,7 @@ public class Drawer {
 
         commandBuffers.forEach(commandBuffer -> vkResetCommandBuffer(commandBuffer, 0));
 
-        Vulkan.recreateSwapChain();
+        swapchain_ok =  Vulkan.recreateSwapChain();
 
         createSyncObjects();
 

@@ -195,7 +195,7 @@ public class Framebuffer {
                     .initialLayout(VK_IMAGE_LAYOUT_UNDEFINED)
                     .finalLayout(getDeviceInfo().depthAttachmentOptimal);
 
-            VkAttachmentReference depthAttachmentRef = attachmentRefs.get(1).set(1, getDeviceInfo().depthAttachmentOptimal);
+            VkAttachmentReference depthAttachmentRef = attachmentRefs.get(1).set(1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
             VkSubpassDescription.Buffer subpass = VkSubpassDescription.callocStack(1, stack);
             subpass.pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -212,17 +212,7 @@ public class Framebuffer {
 
             LongBuffer pRenderPass = stack.mallocLong(1);
 
-            if (CHECKS) {
-                check(pRenderPass, 1);
-            }
-            long pCreateInfo = renderPassInfo.address();
-            long pAllocator = memAddressSafe((VkAllocationCallbacks) null);
-            long pRenderPass1 = memAddress(pRenderPass);
-            long __functionAddress = getDevice().getCapabilities().vkCreateRenderPass;
-            if (CHECKS) {
-                VkRenderPassCreateInfo.validate(pCreateInfo);
-            }
-            if(callPPPPI(getDevice().address(), pCreateInfo, pAllocator, pRenderPass1, __functionAddress) != VK_SUCCESS) {
+            if(vkCreateRenderPass(getDevice(), renderPassInfo, null, pRenderPass) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create render pass");
             }
 
