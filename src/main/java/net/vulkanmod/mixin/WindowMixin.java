@@ -2,11 +2,11 @@ package net.vulkanmod.mixin;
 
 import com.mojang.blaze3d.platform.*;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.config.Options;
 import net.vulkanmod.config.VideoResolution;
+import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.glfw.GLFW;
@@ -64,6 +64,17 @@ public abstract class WindowMixin {
     @Inject(method = "<init>", at = @At(value = "RETURN"))
     private void getHandle(WindowEventHandler windowEventHandler, ScreenManager screenManager, DisplayData displayData, String string, String string2, CallbackInfo ci) {
         VRenderSystem.setWindow(this.window);
+    }
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    private void onResize(long l, int i, int j) {
+        this.width = i;
+        this.height = j;
+        if (width > 0 && height > 0) Drawer.getInstance().recreateSwapChain();
     }
 
     /**
