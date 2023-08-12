@@ -207,17 +207,7 @@ public class Framebuffer {
 
             LongBuffer pRenderPass = stack.mallocLong(1);
 
-            if (CHECKS) {
-                check(pRenderPass, 1);
-            }
-            long pCreateInfo = renderPassInfo.address();
-            long pAllocator = memAddressSafe((VkAllocationCallbacks) null);
-            long pRenderPass1 = memAddress(pRenderPass);
-            long __functionAddress = getDevice().getCapabilities().vkCreateRenderPass;
-            if (CHECKS) {
-                VkRenderPassCreateInfo.validate(pCreateInfo);
-            }
-            if(callPPPPI(getDevice().address(), pCreateInfo, pAllocator, pRenderPass1, __functionAddress) != VK_SUCCESS) {
+            if(vkCreateRenderPass(getDevice(), renderPassInfo, null, pRenderPass) != VK_SUCCESS) {
                 throw new RuntimeException("Failed to create render pass");
             }
 

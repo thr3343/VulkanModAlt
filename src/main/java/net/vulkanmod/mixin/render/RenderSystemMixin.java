@@ -147,9 +147,16 @@ public abstract class RenderSystemMixin {
      */
     @Overwrite(remap = false)
     public static void flipFrame(long window) {
-        org.lwjgl.glfw.GLFW.glfwPollEvents();
-        RenderSystem.replayQueue();
-        Tesselator.getInstance().getBuilder().clear();
+      if(Drawer.getInstance().swapchain_ok)
+      {
+          org.lwjgl.glfw.GLFW.glfwPollEvents();
+          RenderSystem.replayQueue();
+          Tesselator.getInstance().getBuilder().clear();
+      }
+      else
+      {
+          org.lwjgl.glfw.GLFW.glfwWaitEvents(); // don't burn cpu
+      }
     }
 
     /**

@@ -56,7 +56,7 @@ public class SwapChain {
 
     }
 
-    public void recreateSwapChain() {
+    public boolean recreateSwapChain() {
         Synchronization.INSTANCE.waitFences();
 
         createSwapChain(this.framesNum);
@@ -68,6 +68,7 @@ public class SwapChain {
         }
 
         Drawer.tstFrameBuffer2.recreate(extent2D.width(), extent2D.height());
+        return true;
     }
     private void createSwapChain(int preferredImageCount) {
 
