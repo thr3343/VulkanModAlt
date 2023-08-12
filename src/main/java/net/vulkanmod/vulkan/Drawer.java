@@ -476,7 +476,14 @@ public class Drawer {
             nvkWaitForFences(device, 1, frameFences.address(currentFrame),  1, -1);
         }
     }
-    public void recreateSwapChain() {
+    public void recreateSwapChain(int width, int height) {
+        final VkExtent2D extent = getSwapChain().getExtent();
+        if(extent.width()==width && extent.height()==height)
+        {
+            System.out.println(width + "And+*->"+height + "Identical:  SKipping");
+            return;
+        }
+        System.out.println("New Size: "+width+"+"+height);
 //        for(Long fence : inFlightFences) {
 //            vkWaitForFences(device, fence, true, VUtil.UINT64_MAX);
 //        }

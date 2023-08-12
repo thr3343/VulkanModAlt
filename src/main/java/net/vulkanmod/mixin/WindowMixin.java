@@ -84,9 +84,13 @@ public abstract class WindowMixin {
      */
     @Overwrite
     private void onResize(long l, int i, int j) {
-        this.width = i;
-        this.height = j;
-        if (width > 0 && height > 0) Drawer.getInstance().recreateSwapChain();
+        if (i!=0 && j!=0 && width > 0 && height > 0) {
+//            boolean a = this.width!=i && this.height!=j;
+            this.width = i;
+            this.height = j;
+            Drawer.getInstance().recreateSwapChain(i, j);
+        }
+
     }
 
     /**
@@ -173,8 +177,7 @@ public abstract class WindowMixin {
 
         Config config = Initializer.CONFIG;
 
-        long monitor =  GLFW.glfwGetWindowMonitor(this.window);
-        monitor = GLFW.glfwGetPrimaryMonitor();
+        long monitor = this.window ==0 ?  GLFW.glfwGetWindowMonitor(this.window) :  GLFW.glfwGetPrimaryMonitor();
 
         GLFWVidMode vidMode = GLFW.glfwGetVideoMode(monitor);
         if(this.fullscreen) {
