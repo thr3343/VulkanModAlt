@@ -105,7 +105,7 @@ public abstract class LevelRendererMixin {
             VBOUtil.updateCamTranslation(poseStack, camX, camY, camZ, projectionMatrix);
         }
 
-        this.worldRenderer.renderChunkLayer(renderType, poseStack.last().pose(), camX, camY, camZ, projectionMatrix);
+        this.worldRenderer.renderChunkLayer(renderType, camX, camY, camZ, projectionMatrix);
     }
 
     /**

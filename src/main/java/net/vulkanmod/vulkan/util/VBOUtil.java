@@ -47,16 +47,20 @@ public class VBOUtil {
 
     public static void updateCamTranslation(PoseStack pose, double d, double e, double g, Matrix4f matrix4f)
     {
-        VRenderSystem.applyMVP(pose.last().pose(), matrix4f);
         camX =d;
         camZ =g;
+        final int camX1 = (int) (d);
+        final int camZ1 = (int) (g);
 
+        final float v = camX1 - d !=0 ? (float) (camX1 - d) : -1;
+        final float v1 = camZ1 - g !=0 ? (float) (camZ1 - g) : -1;
 
         originX+= (prevCamX - camX);
         originZ+= (prevCamZ - camZ);
         pose.pushPose();
         {
-            translationOffset= pose.last().pose();
+            translationOffset= pose.last().pose().translate(v, (float) -e, v1);
+            VRenderSystem.applyMVP(translationOffset, matrix4f);
         }
         pose.popPose();
 //        pose.multiplyWithTranslation((float) originX, (float) -e, (float) originZ);

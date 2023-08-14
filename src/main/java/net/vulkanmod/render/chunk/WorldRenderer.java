@@ -544,7 +544,7 @@ public class WorldRenderer {
 
     }
     @SuppressWarnings("all")
-    public void renderChunkLayer(RenderType renderType, Matrix4f modelViewMatrix, double camX, double camY, double camZ, Matrix4f projection) {
+    public void renderChunkLayer(RenderType renderType, double camX, double camY, double camZ, Matrix4f projection) {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
 //        Profiler2 p = Profiler2.getMainProfiler();
@@ -583,7 +583,7 @@ public class WorldRenderer {
 //        });
 
 
-        VRenderSystem.applyMVP(modelViewMatrix, projection);
+        VRenderSystem.applyMVP(translationOffset, projection);
 
         Drawer drawer = Drawer.getInstance();
         final Pipeline terrainDirectShader = switch (layerName)
@@ -601,17 +601,17 @@ public class WorldRenderer {
         final int camX1 = (int) (camX);
         final int camZ1 = (int) (camZ);
 
-        final double v = camX1 - camX;
-        final double v1 = camZ1 - camZ;
+//        final double v = camX1 - camX;
+//        final double v1 = camZ1 - camZ;
 //        final float v2 = (float) (v > 0 ? -v : v);
 //        final float v3 = (float) (v1 > 0 ? -v1 : v1);
-        callPJPV(commandBuffer.address(),
-                layout,
-                VK_SHADER_STAGE_VERTEX_BIT,
-                0,
-                12,
-                new float[]{(float) v, (float) -camY, (float) v1},
-                commandBuffer.getCapabilities().vkCmdPushConstants);
+//        callPJPV(commandBuffer.address(),
+//                layout,
+//                VK_SHADER_STAGE_VERTEX_BIT,
+//                0,
+//                12,
+//                new float[]{(float) v, (float) -camY, (float) v1},
+//                commandBuffer.getCapabilities().vkCmdPushConstants);
 
 //        p.push("draw batches");
 

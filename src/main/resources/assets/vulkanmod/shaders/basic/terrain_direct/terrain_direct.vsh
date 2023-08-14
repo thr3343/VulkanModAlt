@@ -38,10 +38,9 @@ const float POSITION_INV = 1.0 / 1900.0;
 
 void main() {
 
-	const int x = gl_InstanceIndex;
-	const int z = gl_InstanceIndex <<16;
+	const vec3 instXY = ivec3(gl_InstanceIndex) << ivec3(0, -1, 16) >> 16;
 	
-    gl_Position = MVP * vec4(Position+(tst2+(ivec3(x,0,z)>>16)), 1);
+    gl_Position = MVP * vec4(Position+(instXY), 1);
 
     vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0*UV_INV;
