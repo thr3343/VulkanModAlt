@@ -25,8 +25,5 @@
 		{ "type":  "fragment", "binding": 1, "fields": [
 			{ "name": "AlphaCutout", "type": "float", "count": 1, "values": [ 0.0 ] }
 		] }
-    ],
-	"PushConstants": [
-		{ "name": "tst2", "type": "float", "count": 3 }
-	]
+    ]
 }
