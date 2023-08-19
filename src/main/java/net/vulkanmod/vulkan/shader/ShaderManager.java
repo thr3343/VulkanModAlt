@@ -43,5 +43,7 @@ public class ShaderManager {
     public void destroyPipelines() {
 //        this.terrainShader.cleanUp();
         this.terrainDirectShader.cleanUp();
+        this.terrainDirectShader2.cleanUp();
+
     }
 }
