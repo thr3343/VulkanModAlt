@@ -8,11 +8,15 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderBuffers;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
+import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.chunk.RenderRegionCache;
 import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.resources.model.ModelBakery;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -20,6 +24,7 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
@@ -543,24 +548,20 @@ public class WorldRenderer {
         }
 
     }
-    @SuppressWarnings("all")
-    public void renderChunkLayer(RenderType renderType, double camX, double camY, double camZ, Matrix4f projection) {
+
+    public void renderChunkLayer(TerrainRenderType renderType, double camX, double camY, double camZ, Matrix4f projection, RenderType renderType1) {
         //debug
 //        Profiler p = Profiler.getProfiler("chunks");
 //        Profiler2 p = Profiler2.getMainProfiler();
 
-        final TerrainRenderType layerName=switch (renderType.name)
-        {
-            case "cutout_mipped" -> CUTOUT_MIPPED;
-            case "translucent" -> TRANSLUCENT;
-            default -> null;
-        };
-        if(!(COMPACT_RENDER_TYPES).contains(layerName)) return;
 
-//        p.pushMilestone("layer " + layerName);
-//        if(layerName.equals(CUTOUT_MIPPED))
+        if(!(COMPACT_RENDER_TYPES).contains(renderType)) return;
+
+
+//        p.pushMilestone("layer " + renderType);
+//        if(renderType.equals(CUTOUT_MIPPED))
 //            p.push("Opaque_terrain_pass");
-//        else if(layerName.equals(TRANSLUCENT))
+//        else if(renderType.equals(TRANSLUCENT))
 //        {
 //            p.pop();
 //            p.push("Translucent_terrain_pass");
@@ -570,12 +571,12 @@ public class WorldRenderer {
 
 
         RenderSystem.assertOnRenderThread();
-        renderType.setupRenderState();
+        renderType1.setupRenderState();
 
 //        this.sortTranslucentSections(camX, camY, camZ);
         final boolean bindless = Initializer.CONFIG.bindless;
         final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
-        if (indirectDraw) updateIndirectCommands(layerName);
+        if (indirectDraw) updateIndirectCommands(renderType);
 
 //        this.minecraft.getProfiler().push("filterempty");
 //        this.minecraft.getProfiler().popPush(() -> {
@@ -586,7 +587,7 @@ public class WorldRenderer {
         VRenderSystem.applyMVP(translationOffset, projection);
 
         Drawer drawer = Drawer.getInstance();
-        final Pipeline terrainDirectShader = switch (layerName)
+        final Pipeline terrainDirectShader = switch (renderType)
         {
 
             case CUTOUT_MIPPED -> ShaderManager.shaderManager.terrainDirectShader;
@@ -595,9 +596,8 @@ public class WorldRenderer {
         drawer.bindPipeline(terrainDirectShader);
         final VkCommandBuffer commandBuffer = Drawer.getCommandBuffer();
         final long address = commandBuffer.address();
-        final boolean b = layerName == TRANSLUCENT;
+        final boolean b = renderType == TRANSLUCENT;
         if(!b) drawer.bindAutoIndexBuffer(commandBuffer, 7);
-        long layout = terrainDirectShader.getLayout();
         final int camX1 = (int) (camX);
         final int camZ1 = (int) (camZ);
 
@@ -618,14 +618,14 @@ public class WorldRenderer {
         if(bindless) {
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, b ? TPtr : SPtr, (VUtil.nullptr));
         }
-        layerName.setCutoutUniform();
+        renderType.setCutoutUniform();
         terrainDirectShader.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
-        if((COMPACT_RENDER_TYPES).contains(layerName)) {
+        if((COMPACT_RENDER_TYPES).contains(renderType)) {
             if(!bindless) drawBatchedIndexed(b, address, camX1, camZ1);
             else drawBatchedIndexedBindless(b, indirectDraw, address);
         }
 
-        if(indirectDraw) switch (layerName)
+        if(indirectDraw) switch (renderType)
         {
             case CUTOUT_MIPPED -> SCmdAlloc.submitUploads();
             case TRANSLUCENT -> TCmdAlloc.submitUploads();
@@ -639,7 +639,7 @@ public class WorldRenderer {
 //        }
 
 //        this.minecraft.getProfiler().pop();
-        renderType.clearRenderState();
+        renderType1.clearRenderState();
 //        VRenderSystem.applyModelViewMatrix(RenderSystem.getModelViewMatrix());
         VRenderSystem.copyMVP();
 
@@ -663,7 +663,7 @@ public class WorldRenderer {
 
     private void updateTranslucent() {
         Tprev = TsectionQueue.size();
-        UberBufferSet.TdrawCommands.clear();
+        TdrawCommands.clear();
 
 
         for(int x =TsectionQueue.size()-1; x>=0;x--)
@@ -678,14 +678,14 @@ public class WorldRenderer {
 
     private void updateSolid() {
         prev = sectionQueue.size();
-        UberBufferSet.SdrawCommands.clear();
+        SdrawCommands.clear();
         for (int i = 0; i < sectionQueue.size(); i++) {
 
             final VkDrawIndexedIndirectCommand2 a = sectionQueue.get(i);
-            UberBufferSet.SdrawCommands.get().set(a.indexCount(), 1, 0, a.vertexOffset() / VERTEX_SIZE, 0);
+            SdrawCommands.get().set(a.indexCount(), 1, 0, a.vertexOffset() / VERTEX_SIZE, 0);
 
         }
-        SCmdAlloc.recordCopyCmd(UberBufferSet.SdrawCommands);
+        SCmdAlloc.recordCopyCmd(SdrawCommands);
         SCmdAlloc.reset();
     }
 
@@ -696,27 +696,24 @@ public class WorldRenderer {
 
     private void drawTranslucent(long address, int x1, int z1) {
         for (int i = TsectionQueue.size() - 1; i >= 0; i--) {
-            {
-                final VkDrawIndexedIndirectCommand2 drawParameters = TsectionQueue.get(i);
-                VUtil.UNSAFE.putLong(vOffset, drawParameters.vertexOffset());
-                callPPPV(address, 0, 1, UberBufferSet.TPtr, vOffset, functionAddress);
+            final VkDrawIndexedIndirectCommand2 drawParameters = TsectionQueue.get(i);
+            VUtil.UNSAFE.putLong(vOffset, drawParameters.vertexOffset());
+            callPPPV(address, 0, 1, TPtr, vOffset, functionAddress);
 
-                final int x = drawParameters.xOffset() - x1;
-                final int z = drawParameters.zOffset() - z1 & 65535;
-                callPV(address, drawParameters.indexCount(), 1, 0, 0, x<<16 | z, functionAddress1);
-            }
+            final int x = drawParameters.xOffset() - x1;
+            final int z = drawParameters.zOffset() - z1 & 65535;
+            callPV(address, drawParameters.indexCount(), 1, 0, 0, x << 16 | z, functionAddress1);
         }
     }
     private void drawSolid(long address, int x1, int z1) {
-        for (VkDrawIndexedIndirectCommand2 drawParameters : sectionQueue) {
-            {
-                VUtil.UNSAFE.putLong(vOffset, drawParameters.vertexOffset());
-                callPPPV(address, 0, 1, UberBufferSet.SPtr, vOffset, functionAddress);
+        for (int i = 0; i < sectionQueue.size(); i++) {
+            VkDrawIndexedIndirectCommand2 drawParameters = sectionQueue.get(i);
+            VUtil.UNSAFE.putLong(vOffset, drawParameters.vertexOffset());
+            callPPPV(address, 0, 1, SPtr, vOffset, functionAddress);
 
-                final int x = drawParameters.xOffset() - x1;
-                final int z = drawParameters.zOffset() - z1 & 65535;
-                callPV(address, drawParameters.indexCount(), 1, 0, 0, x<<16 | z, functionAddress1);
-            }
+            final int x = drawParameters.xOffset() - x1;
+            final int z = drawParameters.zOffset() - z1 & 65535;
+            callPV(address, drawParameters.indexCount(), 1, 0, 0, x << 16 | z, functionAddress1);
         }
     }
 
@@ -786,15 +783,29 @@ public class WorldRenderer {
                         int j1 = sortedset.last().getProgress();
                         if (j1 >= 0) {
                             PoseStack.Pose posestack$pose1 = poseStack.last();
-                            VertexConsumer vertexconsumer = new SheetedDecalTextureGenerator(this.renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(j1)), posestack$pose1.pose(), posestack$pose1.normal(), 1.0f);
                             multibuffersource1 = (p_194349_) -> {
                                 VertexConsumer vertexconsumer3 = bufferSource.getBuffer(p_194349_);
-                                return p_194349_.affectsCrumbling() ? VertexMultiConsumer.create(vertexconsumer, vertexconsumer3) : vertexconsumer3;
+                                return p_194349_.affectsCrumbling() ? VertexMultiConsumer.create(new SheetedDecalTextureGenerator(
+                                        this.renderBuffers.crumblingBufferSource().getBuffer(ModelBakery.DESTROY_TYPES.get(j1)),
+                                        posestack$pose1.pose(),
+                                        posestack$pose1.normal(),
+                                        1.0f), vertexconsumer3) : vertexconsumer3;
                             };
                         }
                     }
 
-                    this.minecraft.getBlockEntityRenderDispatcher().render(blockentity1, gameTime, poseStack, multibuffersource1);
+                    BlockEntityRenderDispatcher blockEntityRenderDispatcher = this.minecraft.getBlockEntityRenderDispatcher();
+                    BlockEntityRenderer<BlockEntity> blockEntityRenderer = blockEntityRenderDispatcher.getRenderer(blockentity1);
+                    if (blockEntityRenderer != null) {
+                        if (blockentity1.hasLevel() && blockentity1.getType().isValid(blockentity1.getBlockState())) {
+                            if (blockEntityRenderer.shouldRender(blockentity1, blockEntityRenderDispatcher.camera.getPosition())) {
+                                Level level1 = blockentity1.getLevel();
+                                int i = level1 != null ? LevelRenderer.getLightColor(level1, blockentity1.getBlockPos()) : 15728880;
+
+                                blockEntityRenderer.render(blockentity1, gameTime, poseStack, multibuffersource1, i, OverlayTexture.NO_OVERLAY);
+                            }
+                        }
+                    }
                     poseStack.popPose();
                 }
             }

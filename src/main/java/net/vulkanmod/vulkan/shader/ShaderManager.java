@@ -10,9 +10,9 @@ public class ShaderManager {
 //    public static final VertexFormat TERRAIN_VERTEX_FORMAT = DefaultVertexFormat.BLOCK;
 
     public static ShaderManager shaderManager;
-    private final ShaderSPIRVUtils.SPIRV vertShaderSPIRV1 = compileShaderFile("basic/terrain_direct/terrain_direct" + ".vsh", ShaderSPIRVUtils.ShaderKind.VERTEX_SHADER);
-    private final ShaderSPIRVUtils.SPIRV fragShaderSPIRV1 = compileShaderFile("basic/terrain_direct/terrain_direct" + ".fsh", ShaderSPIRVUtils.ShaderKind.FRAGMENT_SHADER);
-    private final ShaderSPIRVUtils.SPIRV fragShaderSPIRV2 = compileShaderFile("basic/terrain_direct/terrain_direct2" + ".fsh", ShaderSPIRVUtils.ShaderKind.FRAGMENT_SHADER);
+    private final ShaderInstance2 vertShaderSPIRV1 = new ShaderInstance2(ShaderSPIRVUtils.ShaderKind.VERTEX_SHADER, "basic/terrain_direct/terrain_direct" + ".vsh");
+    private final ShaderInstance2 fragShaderSPIRV1 = new ShaderInstance2(ShaderSPIRVUtils.ShaderKind.FRAGMENT_SHADER, "basic/terrain_direct/terrain_direct" + ".fsh");
+    private final ShaderInstance2 fragShaderSPIRV2 = new ShaderInstance2(ShaderSPIRVUtils.ShaderKind.FRAGMENT_SHADER, "basic/terrain_direct/terrain_direct2" + ".fsh");
 
     public static void initShaderManager() {
         shaderManager = new ShaderManager();
@@ -27,8 +27,8 @@ public class ShaderManager {
     public ShaderManager() {
         //        this.terrainShader = createPipeline("terrain");
 
-        this.terrainDirectShader = createPipeline("terrain_direct", vertShaderSPIRV1, fragShaderSPIRV1);
-        this.terrainDirectShader2 = createPipeline("terrain_direct", vertShaderSPIRV1, fragShaderSPIRV2);
+        this.terrainDirectShader = createPipeline("terrain_direct", vertShaderSPIRV1.shaderMdle, fragShaderSPIRV1.shaderMdle);
+        this.terrainDirectShader2 = createPipeline("terrain_direct", vertShaderSPIRV1.shaderMdle, fragShaderSPIRV2.shaderMdle);
     }
 
     private Pipeline createPipeline(String name, ShaderSPIRVUtils.SPIRV vertShaderSPIRV11, ShaderSPIRVUtils.SPIRV fragShaderSPIRV11) {

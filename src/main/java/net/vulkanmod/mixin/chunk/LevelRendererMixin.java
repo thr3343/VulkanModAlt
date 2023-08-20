@@ -15,6 +15,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.profiling.Profiler2;
+import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.util.VBOUtil;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
@@ -28,6 +29,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Set;
 import java.util.SortedSet;
+
+import static net.vulkanmod.render.vertex.TerrainRenderType.COMPACT_RENDER_TYPES;
+import static net.vulkanmod.render.vertex.TerrainRenderType.to;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
@@ -100,12 +104,19 @@ public abstract class LevelRendererMixin {
     @Overwrite
     private void renderChunkLayer(RenderType renderType, PoseStack poseStack, double camX, double camY, double camZ, Matrix4f projectionMatrix) {
 
-        if(renderType==RenderType.solid())
+        final TerrainRenderType renderType1 = switch (renderType.name) {
+            case "cutout_mipped" -> TerrainRenderType.CUTOUT_MIPPED;
+            case "translucent" -> TerrainRenderType.TRANSLUCENT;
+            default -> null;
+        };
+        if(!(COMPACT_RENDER_TYPES).contains(renderType1)) return;
+
+        if(renderType1==TerrainRenderType.CUTOUT_MIPPED)
         {
             VBOUtil.updateCamTranslation(poseStack, camX, camY, camZ, projectionMatrix);
         }
 
-        this.worldRenderer.renderChunkLayer(renderType, camX, camY, camZ, projectionMatrix);
+        this.worldRenderer.renderChunkLayer(renderType1, camX, camY, camZ, projectionMatrix, renderType);
     }
 
     /**

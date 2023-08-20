@@ -15,12 +15,21 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 @Mixin(ModelPart.class)
-public class ModelPartM {
+public abstract class ModelPartM {
 
     @Shadow @Final private List<ModelPart.Cube> cubes;
+
+    @Shadow public boolean visible;
+    @Shadow @Final private Map<String, ModelPart> children;
+
+    @Shadow public abstract void translateAndRotate(PoseStack poseStack);
+
+    @Shadow public boolean skipDraw;
 
     /**
      * @author
@@ -35,8 +44,7 @@ public class ModelPartM {
         int packedColor = VertexUtil.packColor(r, g, b, a);
 
         for (ModelPart.Cube cube : this.cubes) {
-            ModelPartCubeMixed cubeMixed = (ModelPartCubeMixed)(cube);
-            CubeModel cubeModel = cubeMixed.getCubeModel();
+            CubeModel cubeModel = ((ModelPartCubeMixed)(cube)).getCubeModel();
 
             ModelPart.Polygon[] var11 = cubeModel.getPolygons();
 //            int var12 = var11.length;
@@ -71,5 +79,29 @@ public class ModelPartM {
             }
         }
 
+    }
+
+
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    public void render(PoseStack poseStack, VertexConsumer vertexConsumer, int i, int j, float f, float g, float h, float k) {
+        if (this.visible) {
+            if (!this.cubes.isEmpty() || !this.children.isEmpty()) {
+                poseStack.pushPose();
+                this.translateAndRotate(poseStack);
+                if (!this.skipDraw) {
+                    this.compile(poseStack.last(), vertexConsumer, i, j, f, g, h, k);
+                }
+
+                for (ModelPart modelPart : this.children.values()) {
+                    modelPart.render(poseStack, vertexConsumer, i, j, f, g, h, k);
+                }
+
+                poseStack.popPose();
+            }
+        }
     }
 }
