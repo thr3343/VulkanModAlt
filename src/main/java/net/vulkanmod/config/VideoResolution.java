@@ -9,9 +9,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static net.vulkanmod.Initializer.LOGGER;
+import static org.lwjgl.glfw.GLFW.*;
+
 public class VideoResolution {
     private static VideoResolution[] videoResolutions;
+    private static final int[] plats = new int[]{
+            GLFW_PLATFORM_WIN32,
+            GLFW_PLATFORM_WAYLAND,
+            GLFW_PLATFORM_X11};
 
+    private static final int activePlat = getSupportedPlat();
+
+    private static final boolean isWayLand = activePlat == GLFW_PLATFORM_WAYLAND;
     int width;
     int height;
     int refreshRate;
@@ -49,12 +59,40 @@ public class VideoResolution {
 
         return arr;
     }
+    //Prioritise Wayland over X11 if xWayland (if correct) is present
 
     public static void init() {
         RenderSystem.assertOnRenderThread();
+        GLFW.glfwInitHint(GLFW_PLATFORM, activePlat);
         GLFW.glfwInit();
         videoResolutions = populateVideoResolutions(GLFW.glfwGetPrimaryMonitor());
     }
+
+    private static int getSupportedPlat() {
+
+        for (int plat : plats) {
+            if(GLFW.glfwPlatformSupported(plat))
+            {
+                LOGGER.info("Selecting Platform: "+getStringFromPlat(plat));
+                return plat;
+            }
+        }
+        throw new RuntimeException("No Supported Platforms Present!");
+    }
+
+    private static String getStringFromPlat(int plat) {
+        return switch (plat)
+        {
+            case GLFW_PLATFORM_WIN32 -> "WIN32";
+            case GLFW_PLATFORM_WAYLAND -> "WAYLAND";
+            case GLFW_PLATFORM_X11 -> "X11";
+            default -> throw new IllegalStateException("Unexpected value: " + plat);
+        };
+    }
+
+    public static int getActivePlat() { return activePlat; }
+
+    public static boolean isWayLand() { return isWayLand; }
 
     public static VideoResolution[] getVideoResolutions() {
         return videoResolutions;
