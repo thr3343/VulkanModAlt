@@ -3,6 +3,7 @@ package net.vulkanmod.vulkan;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import net.minecraft.util.Mth;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.vulkan.memory.MemoryManager;
 import net.vulkanmod.vulkan.queue.QueueFamilyIndices;
 import net.vulkanmod.vulkan.texture.VulkanImage;
@@ -29,7 +30,8 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class SwapChain {
 
-//    final Framebuffer fakeFBO;
+    private static final int DefUncappedMode = VideoResolution.isWayLand() ? VK_PRESENT_MODE_MAILBOX_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+    //    final Framebuffer fakeFBO;
     private long swapChain = VK_NULL_HANDLE;
     private List<Long> swapChainImages;
     private VkExtent2D extent2D;
@@ -323,13 +325,14 @@ public class SwapChain {
     }
 
     private int chooseSwapPresentMode(IntBuffer availablePresentModes) {
-        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : VK_PRESENT_MODE_IMMEDIATE_KHR;
+        int requestedMode = vsync ? VK_PRESENT_MODE_FIFO_KHR : DefUncappedMode;
 //
 //        //fifo mode is the only mode that has to be supported
         if(requestedMode == VK_PRESENT_MODE_FIFO_KHR) return VK_PRESENT_MODE_FIFO_KHR;
 
         for(int i = 0;i < availablePresentModes.capacity();i++) {
             if(availablePresentModes.get(i) == requestedMode) {
+                Initializer.LOGGER.info("Using DisplayMode: "+ getRequestedMode(requestedMode));
                 return requestedMode;
             }
         }
@@ -337,6 +340,17 @@ public class SwapChain {
         Initializer.LOGGER.warn("Requested mode not supported: using fallback VK_PRESENT_MODE_FIFO_KHR");
         return VK_PRESENT_MODE_FIFO_KHR;
 
+    }
+
+    private static String getRequestedMode(int requestedMode) {
+        return switch (requestedMode)
+        {
+            case VK_PRESENT_MODE_IMMEDIATE_KHR -> "IMMEDIATE";
+            case VK_PRESENT_MODE_MAILBOX_KHR -> "MAILBOX";
+            case VK_PRESENT_MODE_FIFO_KHR -> "FIFO";
+            case VK_PRESENT_MODE_FIFO_RELAXED_KHR -> "FIFO_RELAXED";
+            default -> throw new IllegalStateException("Unexpected value: " + requestedMode);
+        };
     }
 
     private static VkExtent2D chooseSwapExtent(VkSurfaceCapabilitiesKHR capabilities) {
