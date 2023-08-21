@@ -4,10 +4,12 @@
 ; Bound: 109
 ; Schema: 0
                OpCapability Shader
+               OpCapability DrawParameters
+               OpExtension "SPV_KHR_shader_draw_parameters"
           %1 = OpExtInstImport "GLSL.std.450"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint Vertex %4 "main" %gl_InstanceIndex %48 %58 %73 %75 %79 %86 %89
-               OpDecorate %gl_InstanceIndex BuiltIn InstanceIndex
+               OpEntryPoint Vertex %4 "main" %gl_BaseInstance %48 %58 %73 %75 %79 %86 %89
+               OpDecorate %gl_BaseInstance BuiltIn BaseInstance
                OpMemberDecorate %_struct_46 0 BuiltIn Position
                OpMemberDecorate %_struct_46 1 BuiltIn PointSize
                OpMemberDecorate %_struct_46 2 BuiltIn ClipDistance
@@ -41,7 +43,7 @@
       %int_0 = OpConstant %int 0
       %v3int = OpTypeVector %int 3
 %_ptr_Input_int = OpTypePointer Input %int
-%gl_InstanceIndex = OpVariable %_ptr_Input_int Input
+%gl_BaseInstance = OpVariable %_ptr_Input_int Input
      %int_16 = OpConstant %int 16
          %41 = OpConstantComposite %v3int %int_0 %int_0 %int_16
        %uint = OpTypeInt 32 0
@@ -78,7 +80,7 @@
         %108 = OpConstantComposite %v2int %int_4 %int_4
           %4 = OpFunction %void None %3
           %5 = OpLabel
-         %37 = OpLoad %int %gl_InstanceIndex
+         %37 = OpLoad %int %gl_BaseInstance
          %39 = OpCompositeConstruct %v3int %37 %int_0 %37
          %42 = OpShiftLeftLogical %v3int %39 %41
          %54 = OpAccessChain %_ptr_Uniform_mat4v4float %52 %int_0
