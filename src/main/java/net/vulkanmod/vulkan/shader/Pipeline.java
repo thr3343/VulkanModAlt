@@ -165,9 +165,9 @@ public class Pipeline {
 
             VkPipelineDepthStencilStateCreateInfo depthStencil = VkPipelineDepthStencilStateCreateInfo.callocStack(stack);
             depthStencil.sType(VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO);
-            depthStencil.depthTestEnable(state.depthState.depthTest);
-            depthStencil.depthWriteEnable(state.depthState.depthMask);
-            depthStencil.depthCompareOp(state.depthState.function);
+            depthStencil.depthTestEnable(state.depthState.depthTest());
+            depthStencil.depthWriteEnable(state.depthState.depthMask());
+            depthStencil.depthCompareOp(state.depthState.function());
             depthStencil.depthBoundsTestEnable(false);
             depthStencil.minDepthBounds(0.0f); // Optional
             depthStencil.maxDepthBounds(1.0f); // Optional

@@ -7,11 +7,14 @@ import org.checkerframework.dataflow.qual.Pure;
 import org.joml.Vector3f;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
+import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(CubicSampler.class)
 public class CubicSamplerM
 {
+   @Unique
    private static final float[] GAUSSIAN_SAMPLE_KERNEL=new float[]{0F, 1F, 4F, 6F, 4F, 1F, 0F};
+    @Unique
     private static final float[] GAUSSIAN_SAMPLE_KERNEL3=new float[6];
 
     static {
@@ -28,10 +31,13 @@ public class CubicSamplerM
         }
     }
 
+    @Unique
     private static final int anInt = 6;
+    @Unique
     @Pure private static float fastLerp(float f, float g, float h) {
         return org.joml.Math.fma(f, h - g, g);
     }
+    @Unique
     @Pure private static double fastLerp(double f, double g, double h) {
         return org.joml.Math.fma(f, h - g, g);
     }

@@ -9,7 +9,6 @@ import org.lwjgl.vulkan.*;
 import java.nio.LongBuffer;
 
 import static net.vulkanmod.vulkan.Framebuffer.AttachmentTypes.COLOR;
-import static net.vulkanmod.vulkan.Framebuffer.AttachmentTypes.DEPTH;
 import static net.vulkanmod.vulkan.Vulkan.*;
 import static net.vulkanmod.vulkan.texture.VulkanImage.createImageView;
 import static org.lwjgl.system.Checks.CHECKS;
@@ -64,7 +63,7 @@ public class Framebuffer {
     public enum AttachmentTypes
     {
         COLOR(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, DEFAULT_FORMAT, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT),
-        DEPTH(getDeviceInfo().depthAttachmentOptimal, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+        DEPTH(VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
         private final int layout, format, usage;
 
@@ -191,7 +190,7 @@ public class Framebuffer {
                 colorAttachment.finalLayout(attachmentType.layout);
             }
 
-            VkAttachmentReference depthAttachmentRef = attachmentRefs.get(1).set(1, getDeviceInfo().depthAttachmentOptimal);
+            VkAttachmentReference depthAttachmentRef = attachmentRefs.get(1).set(1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
 
             VkSubpassDescription.Buffer subpass = VkSubpassDescription.callocStack(1, stack);
             subpass.pipelineBindPoint(VK_PIPELINE_BIND_POINT_GRAPHICS);
@@ -258,7 +257,7 @@ public class Framebuffer {
 
         VkClearValue.Buffer clearValues = VkClearValue.malloc(this.attachmentTypes.length, stack);
 
-        clearValues.get(0).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr));
+        clearValues.get(0).color(VkClearValue.ncolor(VRenderSystem.clearColor.ptr()));
         clearValues.get(1).depthStencil().set(1.0f, 0);
 
         VkRenderPassBeginInfo renderingInfo = VkRenderPassBeginInfo.calloc(stack)

@@ -10,10 +10,7 @@ import net.vulkanmod.render.chunk.UberBufferSet;
 import net.vulkanmod.vulkan.DeviceInfo;
 import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.MemoryManager;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -30,6 +27,7 @@ import static net.vulkanmod.Initializer.getVersion;
 @Mixin(DebugScreenOverlay.class)
 public abstract class DebugHudM {
 
+    @Unique
     private static final long maxVRAM = Vulkan.memoryProperties.memoryHeaps(0).size();
     @Shadow @Final private Minecraft minecraft;
 
@@ -80,6 +78,7 @@ public abstract class DebugHudM {
         return strings;
     }
 
+    @Unique
     private long getOffHeapMemory() {
         return bytesToMegabytes(ManagementFactory.getMemoryMXBean().getNonHeapMemoryUsage().getUsed());
     }

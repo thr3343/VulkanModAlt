@@ -18,10 +18,7 @@ import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.util.VBOUtil;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -43,6 +40,7 @@ public abstract class LevelRendererMixin {
     @Shadow @Final private Minecraft minecraft;
     @Shadow @Final private Set<BlockEntity> globalBlockEntities;
     @Shadow private boolean generateClouds;
+    @Unique
     private WorldRenderer worldRenderer;
 
     @Inject(method = "<init>", at = @At("RETURN"))

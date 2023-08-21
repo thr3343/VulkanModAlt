@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.interfaces.VertexFormatMixed;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -18,12 +19,14 @@ import java.util.List;
 public class VertexFormatMixin implements VertexFormatMixed {
     @Shadow private IntList offsets;
 
+    @Unique
     private ObjectArrayList<VertexFormatElement> fastList;
 
     public int getOffset(int i) {
         return offsets.getInt(i);
     }
 
+    @Unique
     public VertexFormatElement getElement(int i) {
         return this.fastList.get(i);
     }

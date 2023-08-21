@@ -20,10 +20,7 @@ import net.vulkanmod.vulkan.util.MappedBuffer;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.Nullable;
 import org.lwjgl.system.MemoryUtil;
-import org.spongepowered.asm.mixin.Final;
-import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
-import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -48,8 +45,8 @@ public class ShaderInstanceM implements ShaderMixed {
     @Shadow @Final @Nullable public Uniform PROJECTION_MATRIX;
     @Shadow @Final @Nullable public Uniform COLOR_MODULATOR;
     @Shadow @Final @Nullable public Uniform LINE_WIDTH;
-    private Pipeline pipeline;
-    boolean isLegacy = false;
+    @Unique private Pipeline pipeline;
+    @Unique boolean isLegacy = false;
 
 
     public Pipeline getPipeline() {
@@ -124,6 +121,7 @@ public class ShaderInstanceM implements ShaderMixed {
     @Overwrite
     public void clear() {}
 
+    @Unique
     private void setUniformSuppliers(UBO ubo) {
 
         for(Field field : ubo.getFields()) {
@@ -136,21 +134,12 @@ public class ShaderInstanceM implements ShaderMixed {
             Supplier<MappedBuffer> supplier;
             ByteBuffer byteBuffer;
 
-            if(uniform != null) {
-                if (uniform.getType() <= 3) {
-                    byteBuffer = MemoryUtil.memByteBuffer(uniform.getIntBuffer());
-                }
-                else if (uniform.getType() <= 10) {
-                    byteBuffer = MemoryUtil.memByteBuffer(uniform.getFloatBuffer());
-                }
-                else {
-                    throw new RuntimeException("out of bounds value for uniform " + uniform);
-                }
+            if (uniform.getType() <= 3) {
+                byteBuffer = MemoryUtil.memByteBuffer(uniform.getIntBuffer());
+            } else if (uniform.getType() <= 10) {
+                byteBuffer = MemoryUtil.memByteBuffer(uniform.getFloatBuffer());
             } else {
-                Initializer.LOGGER.warn(String.format("Shader: %s field: %s not present in uniform map", this.name, field.getName()));
-
-                //TODO
-                byteBuffer = null;
+                throw new RuntimeException("out of bounds value for uniform " + uniform);
             }
 
 
@@ -163,6 +152,7 @@ public class ShaderInstanceM implements ShaderMixed {
 
     }
 
+    @Unique
     private void createLegacyShader(ResourceProvider resourceProvider, ResourceLocation location, VertexFormat format) {
         try {
             Reader reader = resourceProvider.openAsReader(location);

@@ -11,6 +11,7 @@ import org.lwjgl.system.MemoryUtil;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -39,8 +40,11 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
 
     @Shadow protected abstract it.unimi.dsi.fastutil.ints.IntConsumer intConsumer(int i, VertexFormat.IndexType indexType);
 
+    @Unique
     private long bufferPtr;
+    @Unique
     private long ptr;
+    @Unique
     private int offset;
 
     @Inject(method = "<init>", at = @At("RETURN"))
@@ -88,6 +92,7 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
 
     }
 
+    @Unique
     public void vertex(float x, float y, float z) {
         MemoryUtil.memPutFloat(ptr + 0, x);
         MemoryUtil.memPutFloat(ptr + 4, y);
@@ -96,6 +101,7 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
         this.nextElement();
     }
 
+    @Unique
     public void fastColor(int packedColor) {
         if (this.currentElement.getUsage() != VertexFormatElement.Usage.COLOR) return;
 
@@ -104,6 +110,7 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
         this.nextElement();
     }
 
+    @Unique
     public void fastUv(float u, float v) {
         if (this.currentElement.getUsage() != VertexFormatElement.Usage.UV) return;
 
@@ -113,6 +120,7 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
         this.nextElement();
     }
 
+    @Unique
     public void fastOverlay(int o) {
         if (this.currentElement.getUsage() != VertexFormatElement.Usage.UV) return;
 
@@ -121,6 +129,7 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
         this.nextElement();
     }
 
+    @Unique
     public void light(int l) {
         if (this.currentElement.getUsage() != VertexFormatElement.Usage.UV) return;
 
@@ -129,6 +138,7 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
         this.nextElement();
     }
 
+    @Unique
     public void fastNormal(int packedNormal) {
         if (this.currentElement.getUsage() != VertexFormatElement.Usage.NORMAL) return;
 
@@ -240,10 +250,12 @@ public abstract class BufferBuilderM extends DefaultedVertexConsumer
         MemoryUtil.memPutFloat(this.bufferPtr + this.nextElementByte + index, value);
     }
 
+    @Unique
     private long nextElementPtr() {
         return (this.bufferPtr + this.nextElementByte);
     }
 
+    @Unique
     protected void setNextElementByte(int i) {
         this.nextElementByte = i;
     }

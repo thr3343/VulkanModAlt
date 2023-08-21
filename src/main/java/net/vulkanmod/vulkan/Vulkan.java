@@ -409,7 +409,7 @@ public class Vulkan {
             }
 
             deviceVulkan12Features.imagelessFramebuffer(true);
-            deviceVulkan12Features.separateDepthStencilLayouts(true);
+            deviceVulkan12Features.separateDepthStencilLayouts(false);
 
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.callocStack(stack);
 

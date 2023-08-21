@@ -255,49 +255,41 @@ public class PipelineState {
         }
     }
 
-    public static class DepthState {
-        public final boolean depthTest;
-        public final boolean depthMask;
-        public final int function;
-
+    public record DepthState(boolean depthTest, boolean depthMask, int function) {
         public DepthState(boolean depthTest, boolean depthMask, int function) {
-            this.depthTest = depthTest;
-            this.depthMask = depthMask;
-            this.function = glToVulkan(function);
-        }
+                this.depthTest = depthTest;
+                this.depthMask = depthMask;
+                this.function = glToVulkan(function);
+            }
 
-        private static int glToVulkan(int value) {
-            return switch (value) {
-                case 515 -> VK_COMPARE_OP_LESS_OR_EQUAL;
-                case 519 -> VK_COMPARE_OP_ALWAYS;
-                case 516 -> VK_COMPARE_OP_GREATER;
-                case 518 -> VK_COMPARE_OP_GREATER_OR_EQUAL;
-                case 514 -> VK_COMPARE_OP_EQUAL;
-                default -> throw new RuntimeException("unknown blend factor..");
+            private static int glToVulkan(int value) {
+                return switch (value) {
+                    case 515 -> VK_COMPARE_OP_LESS_OR_EQUAL;
+                    case 519 -> VK_COMPARE_OP_ALWAYS;
+                    case 516 -> VK_COMPARE_OP_GREATER;
+                    case 518 -> VK_COMPARE_OP_GREATER_OR_EQUAL;
+                    case 514 -> VK_COMPARE_OP_EQUAL;
+                    default -> throw new RuntimeException("unknown blend factor..");
 
 
-//                public static final int GL_NEVER = 512;
-//                public static final int GL_LESS = 513;
-//                public static final int GL_EQUAL = 514;
-//                public static final int GL_LEQUAL = 515;
-//                public static final int GL_GREATER = 516;
-//                public static final int GL_NOTEQUAL = 517;
-//                public static final int GL_GEQUAL = 518;
-//                public static final int GL_ALWAYS = 519;
-            };
-        }
+    //                public static final int GL_NEVER = 512;
+    //                public static final int GL_LESS = 513;
+    //                public static final int GL_EQUAL = 514;
+    //                public static final int GL_LEQUAL = 515;
+    //                public static final int GL_GREATER = 516;
+    //                public static final int GL_NOTEQUAL = 517;
+    //                public static final int GL_GEQUAL = 518;
+    //                public static final int GL_ALWAYS = 519;
+                };
+            }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            DepthState that = (DepthState) o;
-            return depthTest == that.depthTest && depthMask == that.depthMask && function == that.function;
-        }
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                DepthState that = (DepthState) o;
+                return depthTest == that.depthTest && depthMask == that.depthMask && function == that.function;
+            }
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(depthTest, depthMask, function);
-        }
     }
 }

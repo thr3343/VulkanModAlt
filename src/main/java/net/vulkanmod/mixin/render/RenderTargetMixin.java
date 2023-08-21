@@ -9,6 +9,7 @@ import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 
 @Mixin(RenderTarget.class)
 public class RenderTargetMixin {
@@ -18,6 +19,7 @@ public class RenderTargetMixin {
     @Shadow public int width;
     @Shadow public int height;
 
+    @Unique
     Framebuffer framebuffer;
 
     /**

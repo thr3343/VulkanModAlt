@@ -8,7 +8,6 @@ import oshi.SystemInfo;
 import oshi.hardware.CentralProcessor;
 import oshi.hardware.GraphicsCard;
 
-import java.nio.ByteOrder;
 import java.nio.IntBuffer;
 import java.util.Arrays;
 import java.util.List;
@@ -38,7 +37,6 @@ public class DeviceInfo {
 
     public final VkPhysicalDeviceFeatures2 availableFeatures;
     public final VkPhysicalDeviceVulkan11Features availableFeatures11;
-    public final int depthAttachmentOptimal;
 
 //    public final VkPhysicalDeviceVulkan12Features availableFeatures12;
 //    public final boolean vulkan13Support;
@@ -82,8 +80,6 @@ public class DeviceInfo {
 //        this.vulkan13Support = this.device.getCapabilities().apiVersion == VK_API_VERSION_1_3;
 
         vkGetPhysicalDeviceFeatures2(this.device, this.availableFeatures);
-
-        this.depthAttachmentOptimal= hasDepthOnly() ? VK12.VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
 
         this.hasLoadStoreOpNone= device.getCapabilities().Vulkan13;
 
