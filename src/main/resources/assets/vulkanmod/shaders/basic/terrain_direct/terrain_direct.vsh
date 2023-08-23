@@ -8,7 +8,7 @@ vec4 minecraft_sample_lightmap(sampler2D lightMap, ivec2 uv) {
     return texelFetch(lightMap, (uv & 255) >> 4, 0);
 }
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(push_constant) uniform UniformBufferObject {
    mat4 MVP;
 };
 
@@ -33,7 +33,7 @@ const float POSITION_INV = 1.0 / 1900.0;
 
 void main() {
 
-	const ivec3 instXY = ivec3(gl_BaseInstance, 0, gl_BaseInstance) << ivec3(0, 0, 16);
+	const ivec3 instXY = ivec3(gl_InstanceIndex, 0, gl_InstanceIndex) << ivec3(0, 0, 16);
 
 	
 	//gl_Position = MVP * vec4(fma(instXY, UV_INV3, ivec3(1)), 1);

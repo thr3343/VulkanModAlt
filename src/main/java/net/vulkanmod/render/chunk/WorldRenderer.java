@@ -597,7 +597,6 @@ public class WorldRenderer {
         final long address = commandBuffer.address();
         final boolean b = layerName == TRANSLUCENT;
         if(!b) drawer.bindAutoIndexBuffer(commandBuffer, 7);
-        long layout = terrainDirectShader.getLayout();
         final int camX1 = (int) (camX);
         final int camZ1 = (int) (camZ);
 
@@ -618,8 +617,8 @@ public class WorldRenderer {
         if(bindless) {
             nvkCmdBindVertexBuffers(commandBuffer, 0, 1, b ? TPtr : SPtr, (VUtil.nullptr));
         }
-        layerName.setCutoutUniform();
         terrainDirectShader.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
+        drawer.pushConstants(terrainDirectShader.getLayout(), terrainDirectShader.getPushConstants());
         if((COMPACT_RENDER_TYPES).contains(layerName)) {
             if(!bindless) drawBatchedIndexed(b, address, camX1, camZ1);
             else drawBatchedIndexedBindless(b, indirectDraw, address);

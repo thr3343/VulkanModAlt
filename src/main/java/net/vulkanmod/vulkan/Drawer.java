@@ -592,18 +592,11 @@ public class Drawer {
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer.getId(), 0, VK_INDEX_TYPE_UINT16);
     }
 
-    public void pushConstants(Pipeline pipeline) {
-        VkCommandBuffer commandBuffer = commandBuffers.get(currentFrame);
+    public void pushConstants(long layout, PushConstants pushConstants1) {
 
-        PushConstants pushConstants = pipeline.getPushConstants();
+        pushConstants1.update();
 
-        try (MemoryStack stack = stackPush()) {
-            ByteBuffer buffer = stack.malloc(pushConstants.getSize());
-            long ptr = MemoryUtil.memAddress0(buffer);
-            pushConstants.update(ptr);
-
-            nvkCmdPushConstants(commandBuffer, pipeline.getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants.getSize(), ptr);
-        }
+        nvkCmdPushConstants(commandBuffers.get(currentFrame), layout, VK_SHADER_STAGE_VERTEX_BIT, 0, pushConstants1.getSize(), pushConstants1.getBufferPtr());
 
     }
 

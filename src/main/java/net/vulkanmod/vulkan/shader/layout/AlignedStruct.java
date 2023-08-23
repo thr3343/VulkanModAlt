@@ -27,10 +27,10 @@ public abstract class AlignedStruct {
         }
     }
 
-    @Deprecated
+
     public void update() {
         for(Field field : this.fields) {
-            field.update();
+            field.update(this.buffer.ptr());
         }
 
     }
