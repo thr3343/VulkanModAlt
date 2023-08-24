@@ -3,6 +3,8 @@ package net.vulkanmod.mixin;
 import com.mojang.blaze3d.platform.*;
 import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.Minecraft;
+import net.minecraft.server.packs.PackResources;
+import net.minecraft.server.packs.resources.IoSupplier;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.config.Options;
@@ -10,8 +12,11 @@ import net.vulkanmod.config.VideoResolution;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GLCapabilities;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,6 +26,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -97,6 +108,14 @@ public abstract class WindowMixin {
         if (Options.fullscreenDirty) {
             Options.fullscreenDirty = false;
             this.updateFullscreen(this.vsync);
+        }
+    }
+
+    @Inject(method = "setIcon", at=@At(value = "HEAD", target = "Lcom/mojang/blaze3d/platform/Window;setIcon(Lnet/minecraft/server/packs/PackResources;Lcom/mojang/blaze3d/platform/IconSet;)V"))
+    public void setIcon(PackResources packResources, IconSet iconSet, CallbackInfo ci) throws IOException {
+        if(VideoResolution.isWayLand())
+        {
+            return;
         }
     }
 
