@@ -34,8 +34,6 @@ public class VBOUtil {
 //    private static final ShaderInstance test2;
 //    private static final VertexFormatElement ELEMENT_UV2 = new VertexFormatElement(2,VertexFormatElement.Type.USHORT, VertexFormatElement.Usage.UV, 2);
 //    private static final VertexFormat BLOCK2 = new VertexFormat(ImmutableMap.of("Position",ELEMENT_POSITION, "Color",ELEMENT_COLOR, "UV0",ELEMENT_UV0, "UV2",ELEMENT_UV2, "Normal",ELEMENT_NORMAL, "Padding",ELEMENT_PADDING));
-    public static  final IndirectBuffer SCmdAlloc = new IndirectBuffer(1024*20, MemoryTypes.GPU_MEM);
-    public static  final IndirectBuffer TCmdAlloc = new IndirectBuffer(1024*20, MemoryTypes.GPU_MEM);
     //    static {
 //        try {
 //            test = new ShaderInstance(Minecraft.getInstance().getResourceManager(), "rendertype_cutout", BLOCK);

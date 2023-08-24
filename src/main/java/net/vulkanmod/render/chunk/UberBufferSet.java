@@ -24,8 +24,6 @@ public class UberBufferSet {
     public static final VirtualBuffer TvirtualBufferVtx=new VirtualBuffer(134217728, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
     public static final long SPtr = MemoryUtil.nmemAlignedAlloc(8, 8);
     public static final long TPtr = MemoryUtil.nmemAlignedAlloc(8, 8);
-    public static final VkDrawIndexedIndirectCommand.Buffer SdrawCommands =VkDrawIndexedIndirectCommand.calloc(2048);
-    public static final VkDrawIndexedIndirectCommand.Buffer TdrawCommands =VkDrawIndexedIndirectCommand.calloc(2048);
     VirtualBuffer virtualBuffer;
     IndirectBuffer indirectBuffer;
 

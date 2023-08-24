@@ -17,7 +17,7 @@ public class Config {
     public boolean windowedFullscreen = false;
     public boolean guiOptimizations = false;
     public int advCulling = 2;
-    public boolean indirectDraw = false;
+//    public boolean indirectDraw = false;
     public boolean renderSky = true;
 
     private static Path path;

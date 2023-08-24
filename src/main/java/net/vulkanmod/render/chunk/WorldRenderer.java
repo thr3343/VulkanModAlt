@@ -574,8 +574,7 @@ public class WorldRenderer {
 
 //        this.sortTranslucentSections(camX, camY, camZ);
         final boolean bindless = Initializer.CONFIG.bindless;
-        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
-        if (indirectDraw) updateIndirectCommands(layerName);
+//        final boolean indirectDraw = Initializer.CONFIG.indirectDraw;
 
 //        this.minecraft.getProfiler().push("filterempty");
 //        this.minecraft.getProfiler().popPush(() -> {
@@ -621,14 +620,8 @@ public class WorldRenderer {
         drawer.pushConstants(terrainDirectShader.getLayout(), terrainDirectShader.getPushConstants());
         if((COMPACT_RENDER_TYPES).contains(layerName)) {
             if(!bindless) drawBatchedIndexed(b, address, camX1, camZ1);
-            else drawBatchedIndexedBindless(b, indirectDraw, address);
+            else drawIndexBindless2(b, address, camX1, camZ1);
         }
-
-        if(indirectDraw) switch (layerName)
-        {
-            case CUTOUT_MIPPED -> SCmdAlloc.submitUploads();
-            case TRANSLUCENT -> TCmdAlloc.submitUploads();
-        };
 //        p.pop();
 
         //Need to reset push constant in case the pipeline will still be used for rendering
@@ -643,49 +636,6 @@ public class WorldRenderer {
         VRenderSystem.copyMVP();
 
 
-    }
-
-    private void updateIndirectCommands(TerrainRenderType b) {
-
-
-        switch (b)
-        {
-            case CUTOUT_MIPPED -> {if(sectionQueue.size()!=prev) updateSolid();}
-            case TRANSLUCENT -> {if(TsectionQueue.size()!=Tprev) updateTranslucent();}
-        }
-
-
-
-
-
-    }
-
-    private void updateTranslucent() {
-        Tprev = TsectionQueue.size();
-        UberBufferSet.TdrawCommands.clear();
-
-
-        for(int x =TsectionQueue.size()-1; x>=0;x--)
-        {
-            final VkDrawIndexedIndirectCommand2 a = TsectionQueue.get(x);
-            TdrawCommands.get().set(a.indexCount(), 1, 0, a.vertexOffset()/ VERTEX_SIZE, 0);
-
-        }
-        TCmdAlloc.recordCopyCmd(TdrawCommands);
-        TCmdAlloc.reset();
-    }
-
-    private void updateSolid() {
-        prev = sectionQueue.size();
-        UberBufferSet.SdrawCommands.clear();
-        for (int i = 0; i < sectionQueue.size(); i++) {
-
-            final VkDrawIndexedIndirectCommand2 a = sectionQueue.get(i);
-            UberBufferSet.SdrawCommands.get().set(a.indexCount(), 1, 0, a.vertexOffset() / VERTEX_SIZE, 0);
-
-        }
-        SCmdAlloc.recordCopyCmd(UberBufferSet.SdrawCommands);
-        SCmdAlloc.reset();
     }
 
     private void drawBatchedIndexed(boolean b, long address, int x1, int z1) {
@@ -719,19 +669,12 @@ public class WorldRenderer {
         }
     }
 
-    private void drawBatchedIndexedBindless(boolean b, boolean indirectDraw, long address) {
-        if (indirectDraw) drawIndexedBindlessIndirect(address, b ? Tprev : prev, (b ? TCmdAlloc : SCmdAlloc).getId());
-        else drawIndexBindless2(b, address);
-    }
-
-    private void drawIndexedBindlessIndirect(long address, int drawCount, long drawCmdBuffer) {
-        callPJJV(address, drawCmdBuffer, 0, drawCount, 20, functionAddress2);
-    }
-
-    private static void drawIndexBindless2(boolean b, long address) {
+    private static void drawIndexBindless2(boolean b, long address, int x1, int z1) {
         for (VkDrawIndexedIndirectCommand2 drawParameters : b ? TsectionQueue : sectionQueue) {
             {
-                callPV(address, drawParameters.indexCount(), 1, 0, drawParameters.vertexOffset() / VERTEX_SIZE, drawParameters.firstInstance(), functionAddress1);
+                final int x = drawParameters.xOffset() - x1;
+                final int z = drawParameters.zOffset() - z1 & 65535;
+                callPV(address, drawParameters.indexCount(), 1, 0, drawParameters.vertexOffset() / VERTEX_SIZE, x<<16 | z, functionAddress1);
             }
         }
     }

@@ -196,13 +196,13 @@ public class Options {
                         Use a culling algorithm that might improve performance by
                         reducing the number of non visible chunk sections rendered.
                         """)),
-                new SwitchOption("Indirect Draw",
-                        value -> config.indirectDraw = config.bindless = value,
-                        () -> config.bindless=config.indirectDraw)
-                        .setTooltip(Component.nullToEmpty("""
-                        Reduces CPU overhead but increases GPU overhead.
-                        Enabling it might help in CPU limited systems.
-                        Automatically enables Bindless (if needed)""")),
+//                new SwitchOption("Indirect Draw",
+//                        value -> config.indirectDraw = config.bindless = value,
+//                        () -> config.bindless)
+//                        .setTooltip(Component.nullToEmpty("""
+//                        Reduces CPU overhead but increases GPU overhead.
+//                        Enabling it might help in CPU limited systems.
+//                        Automatically enables Bindless (if needed)""")),
                 new SwitchOption("Bindless",
                         value -> config.bindless = value,
                         () -> config.bindless)
