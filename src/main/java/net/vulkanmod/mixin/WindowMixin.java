@@ -111,12 +111,13 @@ public abstract class WindowMixin {
         }
     }
 
-    @Inject(method = "setIcon", at=@At(value = "HEAD", target = "Lcom/mojang/blaze3d/platform/Window;setIcon(Lnet/minecraft/server/packs/PackResources;Lcom/mojang/blaze3d/platform/IconSet;)V"))
-    public void setIcon(PackResources packResources, IconSet iconSet, CallbackInfo ci) throws IOException {
-        if(VideoResolution.isWayLand())
-        {
-            return;
-        }
+    /**
+     * @author
+     * @reason
+     */
+    @Overwrite
+    public void setIcon(PackResources packResources, IconSet iconSet) throws IOException {
+
     }
 
     /**
