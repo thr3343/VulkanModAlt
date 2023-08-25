@@ -1,5 +1,6 @@
 package net.vulkanmod.vulkan;
 
+import net.vulkanmod.config.VideoResolution;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
@@ -16,6 +17,7 @@ import java.util.Set;
 
 import static java.util.stream.Collectors.toSet;
 import static net.vulkanmod.vulkan.SwapChain.querySwapChainSupport;
+import static org.lwjgl.glfw.GLFW.GLFW_PLATFORM_WIN32;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.*;
@@ -131,7 +133,7 @@ public class DeviceInfo {
     //Won't Work with older Drivers (15.45 And.or older)
     //Extremely unlikely to work as this uses Guess work+Assumptions
     private static String decIntelVersion(int v) {
-        return (v >>> 30) + "." + (v >>> 27 & 0x7) + "." + (v & 0xF);
+        return (VideoResolution.getActivePlat()==GLFW_PLATFORM_WIN32) ? (v >>> 14) + "." + (v & 0x3fff) : decDefVersion(v);
     }
 
     @NotNull
