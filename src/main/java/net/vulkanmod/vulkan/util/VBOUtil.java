@@ -5,8 +5,6 @@ import net.vulkanmod.render.chunk.UberBufferSet;
 import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.memory.IndirectBuffer;
-import net.vulkanmod.vulkan.memory.MemoryTypes;
 import org.joml.Matrix4f;
 import org.lwjgl.system.MemoryUtil;
 
@@ -71,8 +69,9 @@ public class VBOUtil {
 
     }
 
-    public static void freeBuff(virtualSegmentBuffer vertexBufferSegment) {
+    public static void freeBuff(virtualSegmentBuffer vertexBufferSegment, virtualSegmentBuffer indexBufferSegment) {
         (vertexBufferSegment.r()==TRANSLUCENT ? UberBufferSet.TvirtualBufferVtx : UberBufferSet.virtualBufferVtx).addFreeableRange(vertexBufferSegment);
+        if(indexBufferSegment!=null) UberBufferSet.TvirtualBufferIdx.addFreeableRange(indexBufferSegment);
     }
 
 //    public static void removeVBO(VBO vbo) {

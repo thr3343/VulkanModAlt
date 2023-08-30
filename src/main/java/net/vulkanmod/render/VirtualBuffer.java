@@ -1,11 +1,14 @@
 package net.vulkanmod.render;
 
+import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.vma.*;
 import org.lwjgl.vulkan.VkBufferCreateInfo;
 
@@ -19,6 +22,7 @@ import static org.lwjgl.util.vma.Vma.*;
 import static org.lwjgl.vulkan.VK10.*;
 
 public final class VirtualBuffer {
+    public long Ptr = MemoryUtil.nmemAlignedAlloc(8, 8);
     public final long bufferPointerSuperSet;
     private final long virtualBlockBufferSuperSet;
     public final long size_t;
@@ -68,7 +72,7 @@ public final class VirtualBuffer {
             PointerBuffer block = stack.mallocPointer(1);
             Vma.vmaCreateVirtualBlock(blockCreateInfo, block);
             virtualBlockBufferSuperSet = block.get(0);
-
+            VUtil.UNSAFE.putLong(Ptr, bufferPointerSuperSet);
 //            size_t=size;
 //            bound=true;
 
@@ -253,6 +257,7 @@ public final class VirtualBuffer {
         {
             Vma.vmaDestroyVirtualBlock(virtualBlockBufferSuperSet);
             vmaDestroyBuffer(Vulkan.getAllocator(), bufferPointerSuperSet, bufferPtrBackingAlloc);
+            MemoryUtil.nmemAlignedFree(this.Ptr);
         }
         System.out.println("FREED");
     }

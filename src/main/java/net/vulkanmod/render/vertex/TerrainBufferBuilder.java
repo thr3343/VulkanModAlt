@@ -164,30 +164,7 @@ public class TerrainBufferBuilder implements VertexConsumer {
 		int pointsNum = this.vertices / this.mode.primitiveStride;
 		Vector3f[] vector3fs = new Vector3f[pointsNum];
 
-		if (this.format == CustomVertexFormat.COMPRESSED_TERRAIN) {
-			stride = this.format.getVertexSize() * this.mode.primitiveStride;
-			j = this.format.getVertexSize();
-			float invConv = 1.0f / POS_CONV;
-			for(int m = 0; m < pointsNum; ++m) {
-				long ptr = this.bufferPtr + this.renderedBufferPointer + (long) m * stride;
-
-				short x1 = MemoryUtil.memGetShort(ptr + 0);
-				short y1 = MemoryUtil.memGetShort(ptr + 2);
-				short z1 = MemoryUtil.memGetShort(ptr + 4);
-//				short x2 = MemoryUtil.memGetShort(ptr + j * 2 + 0);
-//				short y2 = MemoryUtil.memGetShort(ptr + j * 2 + 2);
-//				short z2 = MemoryUtil.memGetShort(ptr + j * 2 + 4);
-				//Am I wrong?
-				short x2 = MemoryUtil.memGetShort(ptr + j * 3 + 0);
-				short y2 = MemoryUtil.memGetShort(ptr + j * 3 + 2);
-				short z2 = MemoryUtil.memGetShort(ptr + j * 3 + 4);
-
-				float q = ((x1 * invConv) + (x2 * invConv)) * 0.5f;
-				float r = ((y1 * invConv) + (y2 * invConv)) * 0.5f;
-				float s = ((z1 * invConv) + (z2 * invConv)) * 0.5f;
-				vector3fs[m] = new Vector3f(q, r, s);
-			}
-		} else {
+		{
 			stride = this.format.getVertexSize() * this.mode.primitiveStride;
 			j = this.format.getVertexSize();
 			for(int m = 0; m < pointsNum; ++m) {

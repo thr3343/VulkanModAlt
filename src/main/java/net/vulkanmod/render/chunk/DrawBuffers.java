@@ -1,6 +1,5 @@
 package net.vulkanmod.render.chunk;
 
-import net.minecraft.util.Mth;
 import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.render.chunk.build.UploadBuffer;
@@ -9,6 +8,7 @@ import net.vulkanmod.vulkan.shader.ShaderManager;
 import net.vulkanmod.vulkan.util.VBOUtil;
 import net.vulkanmod.vulkan.util.VUtil;
 
+import static net.vulkanmod.render.chunk.UberBufferSet.*;
 import static net.vulkanmod.render.vertex.TerrainRenderType.TRANSLUCENT;
 import static org.lwjgl.system.Checks.check;
 import static org.lwjgl.system.MemoryUtil.memAddress;
@@ -46,8 +46,8 @@ public class DrawBuffers {
         {
             translateVBO(buffer, buffer.indexCount, xOffset, yOffset, zOffset);
 
-            final VirtualBuffer virtualBufferVtx1 = r==TRANSLUCENT ? UberBufferSet.TvirtualBufferVtx : UberBufferSet.virtualBufferVtx;
-            drawParameters.vertexBufferSegment1=  this.configureVertexFormat(drawParameters, drawParameters.index, buffer, r, virtualBufferVtx1, xOffset, zOffset);
+            final VirtualBuffer virtualBufferVtx1 = r==TRANSLUCENT ? TvirtualBufferVtx : virtualBufferVtx;
+            drawParameters.drawIndexedCommand =  this.configureVertexFormat(drawParameters, drawParameters.index, buffer, r, virtualBufferVtx1, xOffset, zOffset);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
             drawParameters.initialised =true;
 //            drawParameters.firstIndex = 0;
@@ -56,11 +56,13 @@ public class DrawBuffers {
 
         }
 
-//        if(!buffer.autoIndices) {
+        if(!buffer.autoIndices) {
+
+            drawParameters.drawIndexedCommand = this.configureIndexFormat(drawParameters, drawParameters.index, buffer, xOffset, yOffset);
 //            this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.indexBufferSegment);
 ////            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
 //            firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
-//        }
+        }
 
 //        AreaUploadManager.INSTANCE.enqueueParameterUpdate(
 //                new ParametersUpdate(drawParameters, buffer.indexCount, firstIndex, vertexOffset));
@@ -105,6 +107,22 @@ public class DrawBuffers {
 //        final int floor = (Mth.floor( xOffset - WorldRenderer.getCameraPos().x));
         return new VkDrawIndexedIndirectCommand2(parameters.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2(), 0, xOffset, zOffset);
     }
+
+    private VkDrawIndexedIndirectCommand2 configureIndexFormat(DrawParameters drawParameters, int index, UploadBuffer parameters, int xOffset, int zOffset) {
+//        boolean bl = !parameters.format().equals(this.vertexFormat);
+
+        final int size = parameters.indexSize;
+        if(drawParameters.indexBufferSegment==null || !TvirtualBufferIdx.isAlreadyLoaded(drawParameters.index, size))
+        {
+            drawParameters.indexBufferSegment = TvirtualBufferIdx.allocSubSection(this.areaIndex, index, size, TerrainRenderType.TRANSLUCENT);
+        }
+
+
+        AreaUploadManager.INSTANCE.uploadAsync(drawParameters.indexBufferSegment, TvirtualBufferIdx.bufferPointerSuperSet, TvirtualBufferIdx.size_t, drawParameters.indexBufferSegment.i2(), size, parameters.getIndexBuffer());
+//            this.vertOff= fakeVertexBuffer.i2()>>5;
+//        final int floor = (Mth.floor( xOffset - WorldRenderer.getCameraPos().x));
+        return new VkDrawIndexedIndirectCommand2(parameters.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2()/INDEX_SIZE, 0, xOffset, zOffset);
+    }
     public void releaseBuffers() {
         if(!this.allocated)
             return;
@@ -121,8 +139,9 @@ public class DrawBuffers {
 //            a.initialised=false;
 //            a.vertexBufferSegment=null;
 //        }
-        UberBufferSet.virtualBufferVtx.freeRange(this.areaIndex);
-        UberBufferSet.TvirtualBufferVtx.freeRange(this.areaIndex);
+        virtualBufferVtx.freeRange(this.areaIndex);
+        TvirtualBufferVtx.freeRange(this.areaIndex);
+        TvirtualBufferIdx.freeRange(this.areaIndex);
 //        this.sectionQueue.clear();
 //        this.TsectionQueue.clear();
 
@@ -140,12 +159,14 @@ public class DrawBuffers {
 
     public static class DrawParameters {
         final int index;
+//        public VkDrawIndexedIndirectCommand2 firstIndex;
         //        private final TerrainRenderType r;
 //        int indexCount;
 //        int firstIndex;
-        VkDrawIndexedIndirectCommand2 vertexBufferSegment1 = null;
+        VkDrawIndexedIndirectCommand2 drawIndexedCommand = null;
         //        int vertexOffset;
         virtualSegmentBuffer vertexBufferSegment = null;
+        virtualSegmentBuffer indexBufferSegment = null;
 //        AreaBuffer.Segment indexBufferSegment;
         boolean initialised = false;
 
@@ -161,9 +182,10 @@ public class DrawBuffers {
         public void reset() {
             if(initialised) {
                 initialised = false;
-                VBOUtil.freeBuff(this.vertexBufferSegment);
+                VBOUtil.freeBuff(this.vertexBufferSegment, this.indexBufferSegment);
                 this.vertexBufferSegment = null;
-                this.vertexBufferSegment1 = null;
+                this.indexBufferSegment = null;
+                this.drawIndexedCommand = null;
             }
 
         }

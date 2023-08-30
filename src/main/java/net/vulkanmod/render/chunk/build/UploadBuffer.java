@@ -14,6 +14,7 @@ public class UploadBuffer {
     private final long vertexBuffer;
     private final long indexBuffer;
     public final int vertSize;
+    public final int indexSize;
 
     //debug
     private boolean released = false;
@@ -24,6 +25,7 @@ public class UploadBuffer {
         this.autoIndices = drawState.sequentialIndex();
         this.indexOnly = drawState.indexOnly();
         this.vertSize =renderedBuffer.size();
+        this.indexSize =renderedBuffer.size2();
         if(!this.indexOnly)
             this.vertexBuffer = Util.createCopy(renderedBuffer.vertexBufferPtr(), renderedBuffer.size());
         else

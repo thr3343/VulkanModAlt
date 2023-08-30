@@ -56,8 +56,8 @@ public abstract class DebugHudM {
         strings.add(String.format("Allocated: % 2d%% %03dMB", m * 100L / l, bytesToMegabytes(m)));
         strings.add(String.format("Off-heap: " + getOffHeapMemory() + "MB"));
         strings.add("NativeMemory: " + MemoryManager.getInstance().getNativeMemoryMB() + "MB");
-        strings.add("UsedVRAM: " + (UberBufferSet.TvirtualBufferVtx.usedBytes>>20)+"+"+(UberBufferSet.virtualBufferVtx.usedBytes>>20) + "MB");
-        strings.add("ReservedVRAM: " + (UberBufferSet.TvirtualBufferVtx.size_t>>20)+"+"+(UberBufferSet.virtualBufferVtx.size_t>>20) + "MB");
+        strings.add("UsedVRAM: "  + (UberBufferSet.TvirtualBufferIdx.usedBytes>>20)+"+"+(UberBufferSet.TvirtualBufferVtx.usedBytes>>20)+"+"+(UberBufferSet.virtualBufferVtx.usedBytes>>20) + "MB");
+        strings.add("ReservedVRAM:" + (UberBufferSet.TvirtualBufferIdx.size_t>>20)+"+"+(UberBufferSet.TvirtualBufferVtx.size_t>>20)+"+"+(UberBufferSet.virtualBufferVtx.size_t>>20) + "MB");
         strings.add("TotalVRAM: " + (maxVRAM >>20)+"MB");
         strings.add("");
         strings.add("VulkanMod " + getVersion());
