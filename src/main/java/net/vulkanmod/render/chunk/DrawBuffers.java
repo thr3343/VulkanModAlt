@@ -58,7 +58,7 @@ public class DrawBuffers {
 
         if(!buffer.autoIndices) {
 
-            drawParameters.drawIndexedCommand = this.configureIndexFormat(drawParameters, drawParameters.index, buffer, xOffset, yOffset);
+            drawParameters.drawIndexedCommand.firstIndex = this.configureIndexFormat(drawParameters, drawParameters.index, buffer, xOffset, yOffset)/INDEX_SIZE;
 //            this.indexBuffer.upload(buffer.getIndexBuffer(), drawParameters.indexBufferSegment);
 ////            drawParameters.firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
 //            firstIndex = drawParameters.indexBufferSegment.getOffset() / INDEX_SIZE;
@@ -108,7 +108,7 @@ public class DrawBuffers {
         return new VkDrawIndexedIndirectCommand2(parameters.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2(), 0, xOffset, zOffset);
     }
 
-    private VkDrawIndexedIndirectCommand2 configureIndexFormat(DrawParameters drawParameters, int index, UploadBuffer parameters, int xOffset, int zOffset) {
+    private int configureIndexFormat(DrawParameters drawParameters, int index, UploadBuffer parameters, int xOffset, int zOffset) {
 //        boolean bl = !parameters.format().equals(this.vertexFormat);
 
         final int size = parameters.indexSize;
@@ -121,7 +121,7 @@ public class DrawBuffers {
         AreaUploadManager.INSTANCE.uploadAsync(drawParameters.indexBufferSegment, TvirtualBufferIdx.bufferPointerSuperSet, TvirtualBufferIdx.size_t, drawParameters.indexBufferSegment.i2(), size, parameters.getIndexBuffer());
 //            this.vertOff= fakeVertexBuffer.i2()>>5;
 //        final int floor = (Mth.floor( xOffset - WorldRenderer.getCameraPos().x));
-        return new VkDrawIndexedIndirectCommand2(parameters.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2()/INDEX_SIZE, 0, xOffset, zOffset);
+        return drawParameters.indexBufferSegment.i2();
     }
     public void releaseBuffers() {
         if(!this.allocated)
