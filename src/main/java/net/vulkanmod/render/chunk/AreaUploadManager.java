@@ -1,6 +1,7 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.virtualSegmentBuffer;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.Synchronization;
@@ -8,9 +9,8 @@ import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.Buffer;
 import net.vulkanmod.vulkan.memory.StagingBuffer;
 import net.vulkanmod.vulkan.queue.CommandPool;
+import net.vulkanmod.vulkan.queue.Queues;
 import org.apache.commons.lang3.Validate;
-
-import java.nio.ByteBuffer;
 
 import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 
@@ -21,9 +21,9 @@ public class AreaUploadManager {
         INSTANCE = new AreaUploadManager(frames);
     }
 
-//    final Reference2LongOpenHashMap<ArrayList<AreaBuffer.Segment>> map = new Reference2LongOpenHashMap<>();
-    final ObjectArrayList<virtualSegmentBuffer>[] recordedUploads;
-//    final ObjectArrayList<UploadData>[] recordedUploads;
+    //    final Reference2LongOpenHashMap<ArrayList<AreaBuffer.Segment>> map = new Reference2LongOpenHashMap<>();
+    final ObjectArrayList<SubCopyCommand>[] recordedUploads;
+    //    final ObjectArrayList<UploadData>[] recordedUploads;
 //    final ObjectArrayList<DrawBuffers.UploadData>[] recordedUploads;
 ////    final ObjectArrayList<DrawBuffers.ParametersUpdate>[] updatedParameters;
     final ObjectArrayList<Runnable>[] frameOps;
@@ -46,14 +46,16 @@ public class AreaUploadManager {
 
     public synchronized void submitUploads() {
         Validate.isTrue(currentFrame == Drawer.getCurrentFrame());
-
-        if(this.recordedUploads[this.currentFrame].isEmpty())
+        if(commandBuffers[currentFrame] == null)
             return;
-
-        TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
+        var srcStaging = Vulkan.getStagingBuffer(this.currentFrame).getId();
+        UberBufferSet.TvirtualBufferIdx.uploadSubset(srcStaging, this.commandBuffers[currentFrame]);
+        UberBufferSet.virtualBufferVtx.uploadSubset(srcStaging, this.commandBuffers[currentFrame]);
+        UberBufferSet.TvirtualBufferVtx.uploadSubset(srcStaging, this.commandBuffers[currentFrame]);
+        Queues.TransferQueue.submitCommands(this.commandBuffers[currentFrame]);
     }
 
-    public void uploadAsync(virtualSegmentBuffer uploadSegment, long bufferId, long dstBufferSize, long dstOffset, long bufferSize, long src) {
+    public void uploadAsync(VirtualBuffer virtualBuffer, long bufferId, long dstBufferSize, long dstOffset, long bufferSize, long src) {
         Validate.isTrue(currentFrame == Drawer.getCurrentFrame());
         Validate.isTrue(dstOffset<dstBufferSize);
 
@@ -64,9 +66,10 @@ public class AreaUploadManager {
         StagingBuffer stagingBuffer = Vulkan.getStagingBuffer(this.currentFrame);
         stagingBuffer.copyBuffer2((int) bufferSize, src);
 
-        TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
-
-        this.recordedUploads[this.currentFrame].add(uploadSegment);
+//        TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
+        final SubCopyCommand k = new SubCopyCommand(stagingBuffer.getId(), bufferId, stagingBuffer.offset, dstOffset, bufferSize);
+//        this.recordedUploads[this.currentFrame].add(k);
+        virtualBuffer.addSubCpy(k);
     }
 
 //    public void enqueueParameterUpdate(DrawBuffers.ParametersUpdate parametersUpdate) {

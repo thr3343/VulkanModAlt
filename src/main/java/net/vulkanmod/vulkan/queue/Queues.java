@@ -2,15 +2,11 @@ package net.vulkanmod.vulkan.queue;
 
 import net.vulkanmod.vulkan.Synchronization;
 import net.vulkanmod.vulkan.Vulkan;
-import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.JNI;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.vulkan.VK10;
-import org.lwjgl.vulkan.VkBufferCopy;
-import org.lwjgl.vulkan.VkDevice;
+import org.lwjgl.vulkan.*;
 
-import static org.lwjgl.system.JNI.callPPV;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -141,4 +137,8 @@ public enum Queues {
 //        vkQueueWaitIdle(Vulkan.getTransferQueue());
     }
 
+    public void uploadSuperSet(CommandPool.CommandBuffer commandBuffer, VkBufferCopy.Buffer copyRegions, long srcBuffer, long dstBuffer) {
+        vkCmdCopyBuffer(commandBuffer.getHandle(), srcBuffer, dstBuffer, copyRegions);
+
+    }
 }

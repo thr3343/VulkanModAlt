@@ -102,7 +102,7 @@ public class DrawBuffers {
         }
 
 
-        AreaUploadManager.INSTANCE.uploadAsync(drawParameters.vertexBufferSegment, virtualBufferVtx1.bufferPointerSuperSet, virtualBufferVtx1.size_t, drawParameters.vertexBufferSegment.i2(), size, parameters.getVertexBuffer());
+        AreaUploadManager.INSTANCE.uploadAsync(virtualBufferVtx1, virtualBufferVtx1.bufferPointerSuperSet, virtualBufferVtx1.size_t, drawParameters.vertexBufferSegment.i2(), size, parameters.getVertexBuffer());
 //            this.vertOff= fakeVertexBuffer.i2()>>5;
 //        final int floor = (Mth.floor( xOffset - WorldRenderer.getCameraPos().x));
         return new VkDrawIndexedIndirectCommand2(parameters.indexCount, 1, 0, drawParameters.vertexBufferSegment.i2(), 0, xOffset, zOffset);
@@ -118,7 +118,7 @@ public class DrawBuffers {
         }
 
 
-        AreaUploadManager.INSTANCE.uploadAsync(drawParameters.indexBufferSegment, TvirtualBufferIdx.bufferPointerSuperSet, TvirtualBufferIdx.size_t, drawParameters.indexBufferSegment.i2(), size, parameters.getIndexBuffer());
+        AreaUploadManager.INSTANCE.uploadAsync(TvirtualBufferIdx, TvirtualBufferIdx.bufferPointerSuperSet, TvirtualBufferIdx.size_t, drawParameters.indexBufferSegment.i2(), size, parameters.getIndexBuffer());
 //            this.vertOff= fakeVertexBuffer.i2()>>5;
 //        final int floor = (Mth.floor( xOffset - WorldRenderer.getCameraPos().x));
         return drawParameters.indexBufferSegment.i2();

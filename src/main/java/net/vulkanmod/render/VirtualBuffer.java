@@ -1,20 +1,24 @@
 package net.vulkanmod.render;
 
-import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.render.chunk.SubCopyCommand;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Vulkan;
+import net.vulkanmod.vulkan.queue.CommandPool;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.vma.*;
+import org.lwjgl.vulkan.VkBufferCopy;
 import org.lwjgl.vulkan.VkBufferCreateInfo;
 
 import java.nio.LongBuffer;
 import java.util.ArrayList;
 
+import static net.vulkanmod.vulkan.queue.Queues.TransferQueue;
 import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.system.Pointer.POINTER_SIZE;
@@ -47,6 +51,7 @@ public final class VirtualBuffer {
     public final ObjectArrayList<virtualSegmentBuffer> activeRanges = new ObjectArrayList<>(1024);
     private final int vkBufferType;
     private final TerrainRenderType r;
+    private final ObjectArrayFIFOQueue<SubCopyCommand> recordedUploads=new ObjectArrayFIFOQueue<>(8);
 
 
     public VirtualBuffer(long size_t, int type, TerrainRenderType r)
@@ -299,5 +304,39 @@ public final class VirtualBuffer {
         vmaVirtualFree(virtualBlockBufferSuperSet, vertexBufferSegment.allocation());
         subAllocs--;
         usedBytes-= vertexBufferSegment.size_t();
+    }
+
+    public void uploadSubset(long src, CommandPool.CommandBuffer commandBuffer) {
+        if(this.recordedUploads.isEmpty())
+            return;
+        try(MemoryStack stack = MemoryStack.stackPush())
+        {
+            final int size = this.recordedUploads.size();
+            final VkBufferCopy.Buffer copyRegions = VkBufferCopy.malloc(size, stack);
+//            int i = 0;
+//            int rem=0;
+//            long src=0;
+//            long dst=0;
+            for(var copyRegion : copyRegions)
+            {
+//                var a =this.activeRanges.pop();
+                final SubCopyCommand virtualSegmentBuffer = this.recordedUploads.dequeue();
+                copyRegion.srcOffset(virtualSegmentBuffer.offset())
+                        .dstOffset(virtualSegmentBuffer.dstOffset())
+                        .size(virtualSegmentBuffer.bufferSize());
+
+//                rem+=virtualSegmentBuffer.bufferSize();
+//                src=virtualSegmentBuffer.id();
+//                dst=virtualSegmentBuffer.bufferId();
+            }
+//            Initializer.LOGGER.info(size+"+"+i+"+"+rem);
+
+            TransferQueue.uploadSuperSet(commandBuffer, copyRegions, src, this.bufferPointerSuperSet);
+        }
+        this.recordedUploads.clear();
+    }
+
+    public void addSubCpy(SubCopyCommand subCopyCommand) {
+        this.recordedUploads.enqueue(subCopyCommand);
     }
 }
