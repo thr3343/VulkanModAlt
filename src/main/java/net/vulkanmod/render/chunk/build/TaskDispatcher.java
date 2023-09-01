@@ -4,13 +4,15 @@ import com.google.common.collect.Queues;
 import com.mojang.logging.LogUtils;
 import net.vulkanmod.render.chunk.*;
 import net.vulkanmod.render.vertex.TerrainRenderType;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
 import java.util.Queue;
+import java.util.concurrent.Executor;
 
-public class TaskDispatcher {
+public class TaskDispatcher implements Executor {
     private static final Logger LOGGER = LogUtils.getLogger();
 
     private int highPriorityQuota = 2;
@@ -37,7 +39,7 @@ public class TaskDispatcher {
 
         this.stopThreads = false;
 
-        int j = Math.max((Runtime.getRuntime().availableProcessors() - 1) / 2, 1);
+        int j = Runtime.getRuntime().availableProcessors();
 
         this.threads = new Thread[j];
 
@@ -120,11 +122,9 @@ public class TaskDispatcher {
 
     public boolean uploadAllPendingUploads() {
 
-        Runnable runnable;
-        boolean flag = false;
-        while((runnable = this.toUpload.poll()) != null) {
-            flag = true;
-            runnable.run();
+        boolean flag = !this.toUpload.isEmpty();
+        while(!this.toUpload.isEmpty()) {
+            this.toUpload.poll().run();
         }
 
         AreaUploadManager.INSTANCE.submitUploads();
@@ -194,4 +194,8 @@ public class TaskDispatcher {
         return String.format("iT: %d", this.idleThreads);
     }
 
+    @Override
+    public void execute(@NotNull Runnable command) {
+        command.run();
+    }
 }

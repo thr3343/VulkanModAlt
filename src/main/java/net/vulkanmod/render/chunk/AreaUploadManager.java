@@ -44,7 +44,7 @@ public class AreaUploadManager {
         }
     }
 
-    public synchronized void submitUploads() {
+    public void submitUploads() {
         Validate.isTrue(currentFrame == Drawer.getCurrentFrame());
         if(commandBuffers[currentFrame] == null)
             return;
@@ -67,7 +67,7 @@ public class AreaUploadManager {
         stagingBuffer.copyBuffer2((int) bufferSize, src);
 
 //        TransferQueue.uploadBufferCmd(this.commandBuffers[currentFrame], stagingBuffer.getId(), stagingBuffer.getOffset(), bufferId, dstOffset, bufferSize);
-        final SubCopyCommand k = new SubCopyCommand(stagingBuffer.getId(), bufferId, stagingBuffer.offset, dstOffset, bufferSize);
+        final SubCopyCommand k = new SubCopyCommand(stagingBuffer.offset, dstOffset, bufferSize);
 //        this.recordedUploads[this.currentFrame].add(k);
         virtualBuffer.addSubCpy(k);
     }
@@ -129,7 +129,7 @@ public class AreaUploadManager {
         this.recordedUploads[frame].clear();
     }
 
-    public synchronized void waitAllUploads() {
+    public void waitAllUploads() {
         for(int i = 0; i < this.commandBuffers.length; ++i) {
             waitUploads(i);
         }

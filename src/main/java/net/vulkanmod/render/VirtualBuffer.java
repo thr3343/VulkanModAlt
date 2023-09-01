@@ -2,6 +2,7 @@ package net.vulkanmod.render;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.SubCopyCommand;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -329,7 +330,7 @@ public final class VirtualBuffer {
 //                src=virtualSegmentBuffer.id();
 //                dst=virtualSegmentBuffer.bufferId();
             }
-//            Initializer.LOGGER.info(size+"+"+i+"+"+rem);
+//            Initializer.LOGGER.info(size+"+"+rem);
 
             TransferQueue.uploadSuperSet(commandBuffer, copyRegions, src, this.bufferPointerSuperSet);
         }
