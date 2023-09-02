@@ -33,6 +33,8 @@ import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
+import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
+import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -588,6 +590,7 @@ public class WorldRenderer {
         drawer.bindPipeline(terrainDirectShader);
         final VkCommandBuffer commandBuffer = Drawer.getCommandBuffer();
         final long address = commandBuffer.address();
+        final long functionAddress11 = commandBuffer.getCapabilities().vkCmdDrawIndexed;
         final boolean b = layerName == TRANSLUCENT;
         if(layerName != TRANSLUCENT) drawer.bindAutoIndexBuffer(commandBuffer, 7);
         if(layerName == TRANSLUCENT) vkCmdBindIndexBuffer(commandBuffer, TvirtualBufferIdx.bufferPointerSuperSet, 0, VK_INDEX_TYPE_UINT16);
@@ -608,14 +611,15 @@ public class WorldRenderer {
 
 //        p.push("draw batches");
 
+        final long ptr = (b ? TvirtualBufferVtx : virtualBufferVtx).Ptr;
         if(bindless) {
-            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, (b ? TvirtualBufferVtx : virtualBufferVtx).Ptr, (VUtil.nullptr));
+            nvkCmdBindVertexBuffers(commandBuffer, 0, 1, ptr, (VUtil.nullptr));
         }
         terrainDirectShader.bindDescriptorSets(commandBuffer, Drawer.getCurrentFrame());
         drawer.pushConstants(terrainDirectShader.getLayout(), terrainDirectShader.getPushConstants());
         if((COMPACT_RENDER_TYPES).contains(layerName)) {
-            if(!bindless) drawBatchedIndexed(b, address, camX1, camZ1);
-            else drawIndexBindless2(b, address, camX1, camZ1);
+            if(!bindless) drawIndexed(b, address, ptr, camX1, camZ1, functionAddress11);
+            else drawIndexedBindless2(b, address, camX1, camZ1, functionAddress11);
         }
 //        p.pop();
 
@@ -633,48 +637,29 @@ public class WorldRenderer {
 
     }
 
-    private void drawBatchedIndexed(boolean b, long address, int x1, int z1) {
-        if(!b) drawSolid(address, x1, z1);
-        else drawTranslucent(address, x1, z1);
-    }
+    private void drawIndexed(boolean b, long address, long ptr, int x1, int z1, long vkCmdDrawIndexed) {
+        for (final Iterator<VkDrawIndexedIndirectCommand2> iterator = (b?TsectionQueue:sectionQueue).iterator(b); iterator.hasNext(); ) {
+            final VkDrawIndexedIndirectCommand2 drawParameters = iterator.next();
+            VUtil.UNSAFE.putLong(vOffset, drawParameters.vertexOffset());
+            callPPPV(address, 0, 1, ptr, vOffset, functionAddress);
 
-    private void drawTranslucent(long address, int x1, int z1) {
-        for (int i = TsectionQueue.size() - 1; i >= 0; i--) {
-            {
-                final VkDrawIndexedIndirectCommand2 drawParameters = TsectionQueue.get(i);
-                VUtil.UNSAFE.putLong(vOffset, drawParameters.vertexOffset());
-                callPPPV(address, 0, 1, TvirtualBufferVtx.Ptr, vOffset, functionAddress);
-
-                final int x = drawParameters.xOffset() - x1;
-                final int z = drawParameters.zOffset() - z1 & 65535;
-                callPV(address, drawParameters.indexCount(), 1, drawParameters.firstIndex(), 0, x<<16 | z, functionAddress1);
-            }
-        }
-    }
-    private void drawSolid(long address, int x1, int z1) {
-        for (VkDrawIndexedIndirectCommand2 drawParameters : sectionQueue) {
-            {
-                VUtil.UNSAFE.putLong(vOffset, drawParameters.vertexOffset());
-                callPPPV(address, 0, 1, virtualBufferVtx.Ptr, vOffset, functionAddress);
-
-                final int x = drawParameters.xOffset() - x1;
-                final int z = drawParameters.zOffset() - z1 & 65535;
-                callPV(address, drawParameters.indexCount(), 1, 0, 0, x<<16 | z, functionAddress1);
-            }
+            final int x = drawParameters.xOffset() - x1;
+            final int z = drawParameters.zOffset() - z1 & 65535;
+            callPV(address, drawParameters.indexCount(), drawParameters.instanceCount(), drawParameters.firstIndex(), 0, x << 16 | z, vkCmdDrawIndexed);
         }
     }
 
-    private static void drawIndexBindless2(boolean b, long address, int x1, int z1) {
-        for (VkDrawIndexedIndirectCommand2 drawParameters : b ? TsectionQueue : sectionQueue) {
-            {
-                final int x = drawParameters.xOffset() - x1;
-                final int z = drawParameters.zOffset() - z1 & 65535;
-                callPV(address, drawParameters.indexCount(), 1, 0, drawParameters.vertexOffset() / VERTEX_SIZE, x<<16 | z, functionAddress1);
-            }
+    private static void drawIndexedBindless2(boolean b, long address, int x1, int z1, long vkCmdDrawIndexed) {
+        for (final Iterator<VkDrawIndexedIndirectCommand2> iterator = (b ? TsectionQueue : sectionQueue).iterator(b); iterator.hasNext(); ) {
+            final VkDrawIndexedIndirectCommand2 drawParameters = iterator.next();
+            final int x = drawParameters.xOffset() - x1;
+            final int z = drawParameters.zOffset() - z1 & 65535;
+            callPV(address, drawParameters.indexCount(), drawParameters.instanceCount(), drawParameters.firstIndex(), drawParameters.vertexOffset() / VERTEX_SIZE, x << 16 | z, vkCmdDrawIndexed);
         }
     }
 
-    private void sortTranslucentSections(double camX, double camY, double camZ) {
+
+private void sortTranslucentSections(double camX, double camY, double camZ) {
         this.minecraft.getProfiler().push("translucent_sort");
         double d0 = camX - this.xTransparentOld;
         double d1 = camY - this.yTransparentOld;

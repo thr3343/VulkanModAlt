@@ -2,6 +2,7 @@ package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.render.VirtualBuffer;
+import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -14,8 +15,8 @@ import static org.lwjgl.vulkan.VK10.VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
 public class UberBufferSet {
 
-    public static final ObjectArrayList<VkDrawIndexedIndirectCommand2> sectionQueue = new ObjectArrayList<>();
-    public static final ObjectArrayList<VkDrawIndexedIndirectCommand2> TsectionQueue = new ObjectArrayList<>();
+    public static final ResettableQueue<VkDrawIndexedIndirectCommand2> sectionQueue = new ResettableQueue<>(1024);
+    public static final ResettableQueue<VkDrawIndexedIndirectCommand2> TsectionQueue = new ResettableQueue<>(1024);
     //TODO: Fix MipMaps Later...
 //    public static final ObjectArrayList<VBO> cutoutChunks = new ObjectArrayList<>(1024);
 ////    public static final ObjectArrayList<VBO> cutoutMippedChunks = new ObjectArrayList<>(1024);

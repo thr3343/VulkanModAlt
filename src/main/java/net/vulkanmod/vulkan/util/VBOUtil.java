@@ -15,7 +15,6 @@ public class VBOUtil {
 
     public static final long vOffset = MemoryUtil.nmemAlignedAlloc(8, 8);
     public static final long functionAddress = Vulkan.getDevice().getCapabilities().vkCmdBindVertexBuffers;
-    public static final long functionAddress1 = Vulkan.getDevice().getCapabilities().vkCmdDrawIndexed;
     public static final long functionAddress2 = Vulkan.getDevice().getCapabilities().vkCmdDrawIndexedIndirect;
 
     //    public static final VirtualBuffer virtualBufferVtx2=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
