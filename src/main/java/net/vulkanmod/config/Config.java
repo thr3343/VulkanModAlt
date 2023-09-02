@@ -28,6 +28,7 @@ public class Config {
             .create();
     public boolean bindless=false;
     public boolean skipAnimations=false;
+    public int chunkLoadFactor=1;
 
     public static Config load(Path path) {
         Config config;

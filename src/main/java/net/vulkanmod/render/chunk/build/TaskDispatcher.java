@@ -1,11 +1,10 @@
 package net.vulkanmod.render.chunk.build;
 
 import com.google.common.collect.Queues;
-import com.mojang.logging.LogUtils;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.*;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
@@ -13,8 +12,7 @@ import java.util.Queue;
 import java.util.concurrent.Executor;
 
 public class TaskDispatcher implements Executor {
-    private static final Logger LOGGER = LogUtils.getLogger();
-
+    public static final int availableProcessors = Runtime.getRuntime().availableProcessors();
     private int highPriorityQuota = 2;
 
     private final Queue<Runnable> toUpload = Queues.newLinkedBlockingDeque();
@@ -39,11 +37,9 @@ public class TaskDispatcher implements Executor {
 
         this.stopThreads = false;
 
-        int j = Runtime.getRuntime().availableProcessors();
+        this.threads = new Thread[Initializer.CONFIG.chunkLoadFactor*availableProcessors];
 
-        this.threads = new Thread[j];
-
-        for (int i = 0; i < j; i++) {
+        for (int i = 0; i < threads.length; i++) {
             ThreadBuilderPack builderPack = new ThreadBuilderPack();
             Thread thread = new Thread(
                     () -> runTaskThread(builderPack));

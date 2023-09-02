@@ -4,6 +4,8 @@ import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.render.chunk.build.TaskDispatcher;
 
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
@@ -215,6 +217,20 @@ public class Options {
                         value -> config.skipAnimations = value,
                         () -> config.skipAnimations)
                         .setTooltip(Component.nullToEmpty("")),
+                new RangeOption("ChunkLoadFactor", 1, 8, 1,
+                        value -> value * TaskDispatcher.availableProcessors +"x",
+                        value -> {
+                            config.chunkLoadFactor = value;
+                            WorldRenderer.taskDispatcher.stopThreads();
+                            WorldRenderer.taskDispatcher.createThreads();
+                        },
+                        () -> config.chunkLoadFactor)
+                        .setTooltip(Component.nullToEmpty("""
+                EXPERIMENTAL OPTION!:
+                The number of Threads used for uploading chunks
+                Multiples the concurrent chunkload speed by a multiple of the available CPU Cores
+                Gains may vary on hardware
+                Pushing this too high (e.g. >2x) may not perform well + cause massive lag""")),
         };
 
     }

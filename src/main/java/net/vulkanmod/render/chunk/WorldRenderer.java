@@ -24,7 +24,6 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.interfaces.FrustumMixed;
-import net.vulkanmod.render.chunk.build.ChunkTask;
 import net.vulkanmod.render.chunk.build.TaskDispatcher;
 import net.vulkanmod.render.profiling.Profiler;
 import net.vulkanmod.render.profiling.Profiler2;
@@ -75,7 +74,7 @@ public class WorldRenderer {
     private boolean needsUpdate;
     private final Set<BlockEntity> globalBlockEntities = Sets.newHashSet();
 
-    private final TaskDispatcher taskDispatcher;
+    public static final TaskDispatcher taskDispatcher = new TaskDispatcher();
     private final ResettableQueue<RenderSection> chunkQueue = new ResettableQueue<>();
     private AreaSetQueue chunkAreaQueue;
     private short lastFrame = 0;
@@ -91,15 +90,10 @@ public class WorldRenderer {
 
     RenderRegionCache renderRegionCache;
     int nonEmptyChunks;
-    private int prev = 0;
-    private boolean needsUpdate2 = true;
-    private int Tprev=0;
 
     private WorldRenderer(RenderBuffers renderBuffers) {
         this.minecraft = Minecraft.getInstance();
         this.renderBuffers = renderBuffers;
-        this.taskDispatcher = new TaskDispatcher();
-        ChunkTask.setTaskDispatcher(this.taskDispatcher);
     }
 
 /*    private void allocateIndirectBuffers() {
