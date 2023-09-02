@@ -33,8 +33,6 @@ import net.vulkanmod.render.chunk.util.Util;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
-import net.vulkanmod.vulkan.memory.AutoIndexBuffer;
-import net.vulkanmod.vulkan.memory.IndexBuffer;
 import net.vulkanmod.vulkan.shader.Pipeline;
 import net.vulkanmod.vulkan.shader.ShaderManager;
 import net.vulkanmod.vulkan.util.VUtil;
@@ -421,10 +419,10 @@ public class WorldRenderer {
         if(!section.isDirty())
             return false;
 
-        if(limit <= 0)
+        if(limit <= 0&&taskDispatcher.stopThreads)
             return false;
 
-        section.rebuildChunkAsync(this.taskDispatcher, this.renderRegionCache);
+        section.rebuildChunkAsync(taskDispatcher, this.renderRegionCache);
         section.setNotDirty();
         return true;
     }
@@ -439,7 +437,7 @@ public class WorldRenderer {
 
         Profiler2 profiler = Profiler2.getMainProfiler();
         profiler.push("Uploads");
-        if(this.taskDispatcher.uploadAllPendingUploads())
+        if(taskDispatcher.uploadAllPendingUploads())
             this.needsUpdate = true;
         profiler.pop();
         this.minecraft.getProfiler().popPush("schedule_async_compile");
@@ -475,7 +473,7 @@ public class WorldRenderer {
 //            this.graphicsChanged();
             this.level.clearTintCaches();
 
-            this.taskDispatcher.createThreads();
+            taskDispatcher.createThreads();
 
             this.needsUpdate = true;
 //            this.generateClouds = true;
@@ -485,7 +483,7 @@ public class WorldRenderer {
                 this.sectionGrid.releaseAllBuffers();
             }
 
-            this.taskDispatcher.clearBatchQueue();
+            taskDispatcher.clearBatchQueue();
             synchronized(this.globalBlockEntities) {
                 this.globalBlockEntities.clear();
             }
@@ -533,7 +531,7 @@ public class WorldRenderer {
                 this.sectionGrid = null;
             }
 
-            this.taskDispatcher.stopThreads();
+            taskDispatcher.stopThreads();
 
             this.needsUpdate = true;
         }
@@ -682,7 +680,7 @@ private void sortTranslucentSections(double camX, double camY, double camZ) {
             while(iterator.hasNext() && j < 15) {
                 RenderSection section = iterator.next();
 
-                section.resortTransparency(TRANSLUCENT, this.taskDispatcher);
+                section.resortTransparency(TRANSLUCENT, taskDispatcher);
 
                 ++j;
             }
@@ -747,7 +745,7 @@ private void sortTranslucentSections(double camX, double camY, double camZ) {
         int i = this.sectionGrid.chunks.length;
 //        int j = this.sectionsInFrustum.size();
         int j = this.chunkQueue.size();
-        String tasksInfo = this.taskDispatcher == null ? "null" : this.taskDispatcher.getStats();
+        String tasksInfo = taskDispatcher == null ? "null" : taskDispatcher.getStats();
         return String.format("Chunks: %d(%d)/%d D: %d, %s", this.nonEmptyChunks, j, i, this.lastViewDistance, tasksInfo);
     }
 

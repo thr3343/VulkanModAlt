@@ -1,13 +1,10 @@
 package net.vulkanmod.render.chunk.build;
 
-import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 public class ThreadBuilderPack {
     private final Map<TerrainRenderType, TerrainBufferBuilder> builders = new EnumMap<>(TerrainRenderType.class);
