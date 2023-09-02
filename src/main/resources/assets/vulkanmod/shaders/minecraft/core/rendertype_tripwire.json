@@ -14,9 +14,9 @@
         "Normal"
     ],
     "samplers": [
-        { "name": "Sampler0" },
-        { "name": "Sampler2" }
-    ],
+        { "name": "Sampler0", "binding": 2, "stage": "fragment" },
+        { "name": "Sampler2", "binding": 3, "stage": "vertex" }
+	],
     "uniforms": [
         { "name": "ModelViewMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
         { "name": "ProjMat", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0 ] },
@@ -37,8 +37,5 @@
             { "name": "FogStart", "type": "float", "count": 1, "values": [ 0.0 ] },
             { "name": "FogEnd", "type": "float", "count": 1, "values": [ 1.0 ] }
         ] }
-    ],
-    "PushConstants": [
-        { "name": "ChunkOffset", "type": "float", "count": 3, "values": [0.0, 0.0, 0.0] }
     ]
 }
