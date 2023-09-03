@@ -5,13 +5,15 @@ import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.WorldRenderer;
-import net.vulkanmod.render.chunk.build.TaskDispatcher;
+
+import static net.vulkanmod.render.chunk.WorldRenderer.taskDispatcher;
 
 public class Options {
     static net.minecraft.client.Options minecraftOptions = Minecraft.getInstance().options;
     static Config config = Initializer.CONFIG;
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
+    private static final int max = Runtime.getRuntime().availableProcessors();
 
 
     public static Option<?>[] getVideoOpts() {
@@ -217,20 +219,19 @@ public class Options {
                         value -> config.skipAnimations = value,
                         () -> config.skipAnimations)
                         .setTooltip(Component.nullToEmpty("")),
-                new RangeOption("ChunkLoadFactor", 1, 8, 1,
-                        value -> value * TaskDispatcher.availableProcessors +"x",
+                new RangeOption("Chunk Load Threads", 1, max, 1,
                         value -> {
                             config.chunkLoadFactor = value;
-                            WorldRenderer.taskDispatcher.stopThreads();
-                            WorldRenderer.taskDispatcher.createThreads();
+                            taskDispatcher.stopThreads();
+                            taskDispatcher.resizeThreads(value);
+                            WorldRenderer.getInstance().allChanged();
                         },
                         () -> config.chunkLoadFactor)
-                        .setTooltip(Component.nullToEmpty("""
-                EXPERIMENTAL OPTION!:
-                The number of Threads used for uploading chunks
-                Multiples the concurrent chunkload speed by a multiple of the available CPU Cores
-                Gains may vary on hardware
-                Pushing this too high (e.g. >2x) may not perform well + cause massive lag""")),
+                        .setTooltip(Component.nullToEmpty("EXPERIMENTAL OPTION!:\n" +
+                        "The number of Threads set for uploading chunks \n" +
+                        "Multiples the concurrent chunk load speed by a multiple of the available CPU Cores \n" +
+                        "Recommended to set no higher than 50% of available CPU Cores (to avoid stuttering when moving)\n" +
+                        "(i.e. "+max/2+" cores on This CPU")),
         };
 
     }

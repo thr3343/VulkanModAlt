@@ -2,6 +2,7 @@ package net.vulkanmod.render.chunk.build;
 
 import com.google.common.collect.Queues;
 import com.mojang.logging.LogUtils;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.*;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 import org.slf4j.Logger;
@@ -20,19 +21,16 @@ public class TaskDispatcher {
 
     //TODO volatile?
     public volatile boolean stopThreads;
-    private final Thread[] threads=new Thread[availableProcessors/2];
+    private Thread[] threads=new Thread[availableProcessors/2];
     private int idleThreads;
     private final Queue<ChunkTask> highPriorityTasks = Queues.newConcurrentLinkedQueue();
     private final Queue<ChunkTask> lowPriorityTasks = Queues.newConcurrentLinkedQueue();
 //    public boolean idle=false;
-    private int availableJobSlots=threads.length*2;
+    private int availableJobSlots;
 
     public TaskDispatcher() {
         this.fixedBuffers = new ThreadBuilderPack();
-        for (int i = 0; i < threads.length; i++) {
-            threads[i] = new Thread(
-                    () -> runTaskThread(new ThreadBuilderPack()));
-        }
+        resizeThreads(Initializer.CONFIG.chunkLoadFactor);
         this.stopThreads = true;
     }
 
@@ -44,7 +42,7 @@ public class TaskDispatcher {
 
 
         for(var thread: threads) {;
-            LOGGER.info(String.valueOf(thread.getState()));
+            LOGGER.info("INVOKE"+ thread.getState());
             thread.start();
         }
     }
@@ -55,17 +53,17 @@ public class TaskDispatcher {
             if(task1!=null)
             {
                 availableJobSlots--;
-                task1.execute(()-> task1.doTask(builderPack));
+                task1.doTask(builderPack);
             }
             else
             {
                 //Avoid busy wait (may cause loading perf overhead.regression)
                 //seems to count deadlock/contention issues with flickering Meshlet/Segment Acclocation
-//                Thread.onSpinWait();
                 availableJobSlots++;
                 synchronized (this){
                     try {
-                        this.wait();
+                        Thread.onSpinWait();
+                        this.wait(1000);
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
@@ -83,6 +81,7 @@ public class TaskDispatcher {
             } else {
                 this.lowPriorityTasks.offer(chunkTask);
             }
+            //TODO Scale number of launched threads based on available workGroupSlots (to avoid stuttering with Small/incremental chunk loads)
         //Wakeup thread
         synchronized (this) {
             this.notify();
@@ -97,14 +96,13 @@ public class TaskDispatcher {
 
         this.stopThreads = true;
 
-        synchronized (this) {
-            this.notifyAll();
-        }
+
 //        LOGGER.info(String.valueOf(this.threads.getState()));
         for(var thread : threads) {
-            if (thread.getState() == Thread.State.RUNNABLE) {
+            LOGGER.info("JOIN"+ thread.getState());
+            {
                 try {
-                    thread.join(1000);
+                    thread.join();
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
                 }
@@ -185,5 +183,14 @@ public class TaskDispatcher {
 //        this.toBatchCount = this.highPriorityTasks.size() + this.lowPriorityTasks.size();
 //        return String.format("tB: %03d, toUp: %02d, FB: %02d", this.toBatchCount, this.toUpload.size(), this.freeBufferCount);
         return String.format("iT: %d", this.availableJobSlots);
+    }
+
+    public void resizeThreads(int chunkLoadFactor) {
+        this.threads=new Thread[chunkLoadFactor];
+        for (int i = 0; i < threads.length; i++) {
+            threads[i] = new Thread(
+                    () -> runTaskThread(new ThreadBuilderPack()));
+        }
+        this.availableJobSlots=threads.length*2;
     }
 }

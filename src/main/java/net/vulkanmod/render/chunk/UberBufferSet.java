@@ -22,9 +22,9 @@ public class UberBufferSet {
 ////    public static final ObjectArrayList<VBO> cutoutMippedChunks = new ObjectArrayList<>(1024);
 //    public static final ObjectArrayList<VBO> translucentChunks = new ObjectArrayList<>(1024);
 //    public static final VirtualBuffer virtualBufferIdx=new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-    public static final VirtualBuffer virtualBufferVtx=new VirtualBuffer(536870912, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, CUTOUT_MIPPED);
-    public static final VirtualBuffer TvirtualBufferVtx=new VirtualBuffer(134217728, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
-    public static final VirtualBuffer TvirtualBufferIdx=new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
+    public static final VirtualBuffer virtualBufferVtx=new VirtualBuffer(536870912<<1, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, CUTOUT_MIPPED);
+    public static final VirtualBuffer TvirtualBufferVtx=new VirtualBuffer(134217728<<1, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
+    public static final VirtualBuffer TvirtualBufferIdx=new VirtualBuffer(16777216<<1, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
     VirtualBuffer virtualBuffer;
     IndirectBuffer indirectBuffer;
 

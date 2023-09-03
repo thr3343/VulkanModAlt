@@ -28,7 +28,8 @@ public class Config {
             .create();
     public boolean bindless=false;
     public boolean skipAnimations=false;
-    public int chunkLoadFactor=1;
+    private static final int max = Runtime.getRuntime().availableProcessors();
+    public int chunkLoadFactor= max;
 
     public static Config load(Path path) {
         Config config;
