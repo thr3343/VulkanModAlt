@@ -476,9 +476,9 @@ public class Drawer {
             nvkWaitForFences(device, 1, frameFences.address(currentFrame),  1, -1);
         }
     }
-    public void recreateSwapChain(int width, int height) {
+    public void recreateSwapChain(int width, int height, boolean shouldRecreate1) {
         final VkExtent2D extent = getSwapChain().getExtent();
-        if(extent.width()==width && extent.height()==height)
+        if(!shouldRecreate1 && extent.width()==width && extent.height()==height)
         {
             System.out.println(width + "And+*->"+height + "Identical:  SKipping");
             return;

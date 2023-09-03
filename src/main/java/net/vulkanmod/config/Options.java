@@ -214,7 +214,7 @@ public class Options {
                         Enables Bindless Rendering Optimisations
                         Gives a Small-Moderate Performance improvement on most modern GPUs
                         May cause issues and/or performance regressions with some specific older Nvidia GPUs
-                        Must be enabled to use Indirect Draw""")),
+                        """)),
                 new SwitchOption("DisableAnimations",
                         value -> config.skipAnimations = value,
                         () -> config.skipAnimations)
@@ -229,9 +229,9 @@ public class Options {
                         () -> config.chunkLoadFactor)
                         .setTooltip(Component.nullToEmpty("EXPERIMENTAL OPTION!:\n" +
                         "The number of Threads set for uploading chunks \n" +
-                        "Multiples the concurrent chunk load speed by a multiple of the available CPU Cores \n" +
-                        "Recommended to set no higher than 50% of available CPU Cores (to avoid stuttering when moving)\n" +
-                        "(i.e. "+max/2+" cores on This CPU")),
+                        "More threads will greatly improve Chunk load speed" +
+                        "But may cause stuttering if set to high\n" +
+                        "Max Recommended value is "+max/2+" threads on This CPU")),
         };
 
     }

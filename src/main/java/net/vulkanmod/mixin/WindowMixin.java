@@ -2,9 +2,7 @@ package net.vulkanmod.mixin;
 
 import com.mojang.blaze3d.platform.*;
 import com.mojang.blaze3d.systems.RenderSystem;
-import net.minecraft.client.Minecraft;
 import net.minecraft.server.packs.PackResources;
-import net.minecraft.server.packs.resources.IoSupplier;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.config.Config;
 import net.vulkanmod.config.Options;
@@ -13,11 +11,8 @@ import net.vulkanmod.vulkan.Drawer;
 import net.vulkanmod.vulkan.VRenderSystem;
 import net.vulkanmod.vulkan.Vulkan;
 import org.lwjgl.glfw.GLFW;
-import org.lwjgl.glfw.GLFWImage;
 import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.opengl.GLCapabilities;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,10 +24,6 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
 
@@ -88,7 +79,7 @@ public abstract class WindowMixin {
 //            boolean a = this.width!=i && this.height!=j;
             this.width = i;
             this.height = j;
-            Drawer.getInstance().recreateSwapChain(i, j);
+            Drawer.getInstance().recreateSwapChain(i, j, false);
         }
 
     }
@@ -99,7 +90,7 @@ public abstract class WindowMixin {
     @Overwrite
     public void updateVsync(boolean vsync) {
         this.vsync = vsync;
-        Vulkan.setVsync(vsync);
+        Vulkan.setVsync(vsync, width, height);
     }
 
     /**
