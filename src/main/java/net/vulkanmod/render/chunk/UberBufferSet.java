@@ -5,6 +5,7 @@ import net.vulkanmod.Initializer;
 import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
+import net.vulkanmod.vulkan.Vulkan;
 import net.vulkanmod.vulkan.memory.IndirectBuffer;
 import net.vulkanmod.vulkan.util.VUtil;
 import org.lwjgl.system.MemoryUtil;
@@ -33,14 +34,12 @@ public class UberBufferSet {
     public static void reload(long size_t)
     {
         long a = 1L<<size_t;
-        WorldRenderer.getInstance().setNeedsUpdate();
-        WorldRenderer.getInstance().allChanged();
+        //Deleting later not idea due to VRAm Spill, but is a quick and dirty mehtod for now
         virtualBufferVtx.cleanUp();
         TvirtualBufferVtx.cleanUp();
         TvirtualBufferIdx.cleanUp();
-        virtualBufferVtx = null;
-        TvirtualBufferVtx = null;
-        TvirtualBufferIdx = null;
+        WorldRenderer.getInstance().setNeedsUpdate();
+        WorldRenderer.getInstance().allChanged();
         virtualBufferVtx=new VirtualBuffer(a, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, CUTOUT_MIPPED);
         TvirtualBufferVtx=new VirtualBuffer(a>>2, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
         TvirtualBufferIdx=new VirtualBuffer(a>>5, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);

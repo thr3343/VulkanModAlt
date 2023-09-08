@@ -3,6 +3,7 @@ package net.vulkanmod.render;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.AreaUploadManager;
 import net.vulkanmod.render.chunk.SubCopyCommand;
 import net.vulkanmod.render.chunk.WorldRenderer;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -264,13 +265,14 @@ public final class VirtualBuffer {
         Vma.vmaClearVirtualBlock(virtualBlockBufferSuperSet);
         {
             Vma.vmaDestroyVirtualBlock(virtualBlockBufferSuperSet);
-            vmaDestroyBuffer(Vulkan.getAllocator(), bufferPointerSuperSet, bufferPtrBackingAlloc);
+            AreaUploadManager.INSTANCE.enqueueFrameOp(() -> vmaDestroyBuffer(Vulkan.getAllocator(), bufferPointerSuperSet, bufferPtrBackingAlloc));
             MemoryUtil.nmemAlignedFree(this.Ptr);
         }
         System.out.println("FREED");
     }
 
     public void freeRange(int index) {
+        if(vmaIsVirtualBlockEmpty(this.virtualBlockBufferSuperSet)) return;
         ArrayList<virtualSegmentBuffer> tmpfrees=new ArrayList<>(512);
         for (virtualSegmentBuffer virtualSegmentBuffer : activeRanges) {
             if (virtualSegmentBuffer.areaGlobalIndex() == index) {
