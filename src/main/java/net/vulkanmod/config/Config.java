@@ -30,6 +30,7 @@ public class Config {
     public boolean skipAnimations=false;
     private static final int max = Runtime.getRuntime().availableProcessors();
     public int chunkLoadFactor= max;
+    public int defBaseSize=29;
 
     public static Config load(Path path) {
         Config config;

@@ -1,6 +1,7 @@
 package net.vulkanmod.render.chunk;
 
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import net.vulkanmod.Initializer;
 import net.vulkanmod.render.VirtualBuffer;
 import net.vulkanmod.render.chunk.util.ResettableQueue;
 import net.vulkanmod.render.vertex.TerrainRenderType;
@@ -22,10 +23,28 @@ public class UberBufferSet {
 ////    public static final ObjectArrayList<VBO> cutoutMippedChunks = new ObjectArrayList<>(1024);
 //    public static final ObjectArrayList<VBO> translucentChunks = new ObjectArrayList<>(1024);
 //    public static final VirtualBuffer virtualBufferIdx=new VirtualBuffer(16777216, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
-    public static final VirtualBuffer virtualBufferVtx=new VirtualBuffer(536870912<<1, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, CUTOUT_MIPPED);
-    public static final VirtualBuffer TvirtualBufferVtx=new VirtualBuffer(134217728<<1, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
-    public static final VirtualBuffer TvirtualBufferIdx=new VirtualBuffer(16777216<<1, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
+    public static VirtualBuffer virtualBufferVtx=new VirtualBuffer((1L<<Initializer.CONFIG.defBaseSize), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, CUTOUT_MIPPED);
+    public static VirtualBuffer TvirtualBufferVtx=new VirtualBuffer((1L<<Initializer.CONFIG.defBaseSize)>>2, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
+    public static VirtualBuffer TvirtualBufferIdx=new VirtualBuffer((1L<<Initializer.CONFIG.defBaseSize)>>5, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
     VirtualBuffer virtualBuffer;
     IndirectBuffer indirectBuffer;
+
+
+    public static void reload(long size_t)
+    {
+        long a = 1L<<size_t;
+        WorldRenderer.getInstance().setNeedsUpdate();
+        WorldRenderer.getInstance().allChanged();
+        virtualBufferVtx.cleanUp();
+        TvirtualBufferVtx.cleanUp();
+        TvirtualBufferIdx.cleanUp();
+        virtualBufferVtx = null;
+        TvirtualBufferVtx = null;
+        TvirtualBufferIdx = null;
+        virtualBufferVtx=new VirtualBuffer(a, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, CUTOUT_MIPPED);
+        TvirtualBufferVtx=new VirtualBuffer(a>>2, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
+        TvirtualBufferIdx=new VirtualBuffer(a>>5, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, TerrainRenderType.TRANSLUCENT);
+    }
+
 
 }

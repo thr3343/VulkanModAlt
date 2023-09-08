@@ -41,12 +41,12 @@ public class DrawBuffers {
     }
 
     public void upload(UploadBuffer buffer, DrawParameters drawParameters, int xOffset, int yOffset, int zOffset, TerrainRenderType r) {
-
+//        if(virtualBufferVtx1==null) return;
         if(!buffer.indexOnly)
         {
+            final VirtualBuffer virtualBufferVtx1 = r==TRANSLUCENT ? TvirtualBufferVtx : virtualBufferVtx;
             translateVBO(buffer, buffer.indexCount, xOffset, yOffset, zOffset);
 
-            final VirtualBuffer virtualBufferVtx1 = r==TRANSLUCENT ? TvirtualBufferVtx : virtualBufferVtx;
             drawParameters.drawIndexedCommand =  this.configureVertexFormat(drawParameters, drawParameters.index, buffer, r, virtualBufferVtx1, xOffset, zOffset);
 //            drawParameters.vertexOffset = drawParameters.vertexBufferSegment.getOffset() / VERTEX_SIZE;
             drawParameters.initialised =true;

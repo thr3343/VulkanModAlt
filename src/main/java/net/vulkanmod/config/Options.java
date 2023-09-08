@@ -4,7 +4,9 @@ import com.mojang.blaze3d.platform.Window;
 import net.minecraft.client.*;
 import net.minecraft.network.chat.Component;
 import net.vulkanmod.Initializer;
+import net.vulkanmod.render.chunk.UberBufferSet;
 import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.vulkan.Vulkan;
 
 import static net.vulkanmod.render.chunk.WorldRenderer.taskDispatcher;
 
@@ -14,6 +16,7 @@ public class Options {
     static Window window = Minecraft.getInstance().getWindow();
     public static boolean fullscreenDirty = false;
     private static final int max = Runtime.getRuntime().availableProcessors();
+    private static final long maxVRAM = Vulkan.memoryProperties.memoryHeaps(0).size();
 
 
     public static Option<?>[] getVideoOpts() {
@@ -228,10 +231,20 @@ public class Options {
                         },
                         () -> config.chunkLoadFactor)
                         .setTooltip(Component.nullToEmpty("EXPERIMENTAL OPTION!:\n" +
-                        "The number of Threads set for uploading chunks \n" +
-                        "More threads will greatly improve Chunk load speed" +
+                        "The number of Threads set for uploading chunks\n" +
+                        "More threads will greatly improve Chunk load speed\n" +
                         "But may cause stuttering if set to high\n" +
                         "Max Recommended value is "+max/2+" threads on This CPU")),
+                new RangeOption("Base UberBuffer Size", 20, 37, 1,
+                        value -> ((1L << value) >> 20) + "MB",
+                        value -> {
+                            config.defBaseSize = value;
+                            UberBufferSet.reload(value);
+                        },
+                        () -> config.defBaseSize)
+                        .setTooltip(Component.nullToEmpty("EXPERIMENTAL OPTION!:\n" +
+                        "Reallocates VRAM to store all Loaded Chunks and Geometry data\n"+
+                        "Avoid setting this higher than your Max VRAM capacity "+((maxVRAM)>>20)+"MB" +" (Will cause massive Lag)")),
         };
 
     }
