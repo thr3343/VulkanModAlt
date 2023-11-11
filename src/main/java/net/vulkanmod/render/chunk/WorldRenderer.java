@@ -296,16 +296,11 @@ public class WorldRenderer {
         while(this.chunkQueue.hasNext()) {
             RenderSection renderSection = this.chunkQueue.poll();
 
-            for (TerrainRenderType rType : renderSection.getCompiledSection().renderTypes) {
-                final VkDrawIndexedIndirectCommand2 buffer = renderSection.drawParametersArray[rType.ordinal()].drawIndexedCommand;
-                if (buffer!=null) {
-                    (rType !=TRANSLUCENT ? sectionQueue : TsectionQueue).add(buffer);
-                }
-            }
 
 //            SolidVBOs.add(renderSection);
 
             if(!renderSection.isCompletelyEmpty()) {
+                addMeshlet(renderSection);
                 this.chunkAreaQueue.add(renderSection.getChunkArea());
                 this.nonEmptyChunks++;
             }
@@ -331,6 +326,15 @@ public class WorldRenderer {
             }
         }
 
+    }
+
+    private static void addMeshlet(RenderSection renderSection) {
+        for (TerrainRenderType rType : renderSection.getCompiledSection().renderTypes) {
+            final VkDrawIndexedIndirectCommand2 buffer = renderSection.drawParametersArray[rType.ordinal()].drawIndexedCommand;
+            if (buffer!=null && buffer.indexCount()>0) {
+                (rType !=TRANSLUCENT ? sectionQueue : TsectionQueue).add(buffer);
+            }
+        }
     }
 
     private void updateRenderChunksSpectator() {

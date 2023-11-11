@@ -19,7 +19,7 @@ public class VideoResolution {
             GLFW_PLATFORM_WAYLAND,
             GLFW_PLATFORM_X11};
 
-    private static final int activePlat = getSupportedPlat();
+    private static final int activePlat = GLFW_PLATFORM_X11;
 
     private static final boolean isWayLand = activePlat == GLFW_PLATFORM_WAYLAND;
     int width;

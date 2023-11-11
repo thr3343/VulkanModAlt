@@ -324,9 +324,7 @@ public final class VirtualBuffer {
             {
 //                var a =this.activeRanges.pop();
                 final SubCopyCommand virtualSegmentBuffer = this.recordedUploads.dequeue();
-                copyRegion.srcOffset(virtualSegmentBuffer.offset())
-                        .dstOffset(virtualSegmentBuffer.dstOffset())
-                        .size(virtualSegmentBuffer.bufferSize());
+                copyRegion.set(virtualSegmentBuffer.offset(),virtualSegmentBuffer.dstOffset(),virtualSegmentBuffer.bufferSize());
 
 //                rem+=virtualSegmentBuffer.bufferSize();
 //                src=virtualSegmentBuffer.id();
@@ -336,7 +334,7 @@ public final class VirtualBuffer {
 
             TransferQueue.uploadSuperSet(commandBuffer, copyRegions, src, this.bufferPointerSuperSet);
         }
-        this.recordedUploads.clear();
+
     }
 
     public void addSubCpy(SubCopyCommand subCopyCommand) {
